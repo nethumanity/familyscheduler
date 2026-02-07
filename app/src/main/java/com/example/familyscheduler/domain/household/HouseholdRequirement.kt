@@ -14,9 +14,10 @@ interface HouseholdRequirement {
 
     fun isRequiredAt(index: Int): Boolean
 
-    /*
+
     fun requiredCountAt(index: Int): Int
 
+    /*
     fun HouseholdRequirement.movableIndicesFor(index: Int): IntRange {
         return FlexCalculator.movableIndices(
             currentIndex = index,

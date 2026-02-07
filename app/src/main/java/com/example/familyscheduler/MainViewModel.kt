@@ -40,7 +40,7 @@ class MainViewModel : ViewModel() {
     var editingDailyStateFor by mutableStateOf<Person?>(null)
         private set
 
-    fun onDailyStateLongPress(person: Person) {
+    fun onDailyStateClick(person: Person) {
         editingDailyStateFor = person
     }
 
@@ -265,7 +265,7 @@ class MainViewModel : ViewModel() {
 
     data class FlexResolveProposal(
         val requirementName: String,
-        val person: Person?, //?を消して修正
+        val person: Person,
         val candidateIndex: Int,
         val initialIndex: Int,
         val deltaMinutes: Int,
@@ -280,8 +280,10 @@ class MainViewModel : ViewModel() {
     ): Boolean {
         val slot = slots.find { it.person == person && it.index == index }
             ?: return false
+        val candidatePriority = slot.state.weight
+        val initialPriority = requiredState.weight
 
-        return slot.state == SlotState.FREE || slot.state == SlotState.UNASSIGNED
+        return candidatePriority >= initialPriority
     }
 
     fun generateFlexResolveProposalsForReason(
@@ -289,12 +291,11 @@ class MainViewModel : ViewModel() {
         reason: MissingReason.NotEnoughPeople
     ): List<FlexResolveProposal> {
 
-        val stepMinutes = 30
-        val offsets = listOf(-1, 1)
-
         val requirement = householdRequirements
             .find { it.name == reason.requirementName }
             ?: return emptyList()
+        val window = requirement.flexWindowSlots
+        val offsets = (-window until 0) + (1..window)
 
         return offsets.flatMap { offset ->
             val candidateIndex = index + offset
@@ -307,12 +308,12 @@ class MainViewModel : ViewModel() {
                     it.person == person && it.index == candidateIndex
                 } ?: return@mapNotNull null
 
-                // ② 移動元が動かせる状態か
-                if (candidateSlot.state !in listOf(SlotState.FREE, SlotState.LIFE))
-                    return@mapNotNull null
+                // ② 移動元が動かせる状態か　←いらない？？
+                //if (candidateSlot.state !in listOf(SlotState.FREE, SlotState.LIFE))
+                //    return@mapNotNull null
 
                 // ③ 移動先で requirement を満たせるか
-                if (!canAssign(person, index, SlotState.CHILDCARE))
+                if (!canAssign(person, index, requirement.targetState))
                     return@mapNotNull null
 
                 FlexResolveProposal(
@@ -320,50 +321,23 @@ class MainViewModel : ViewModel() {
                     person = person,
                     candidateIndex = candidateIndex,
                     initialIndex = index,
-                    deltaMinutes = 30,
-                    targetState = SlotState.CHILDCARE
+                    deltaMinutes = offset * TimeAxis.stepMinutes,
+                    targetState = requirement.targetState
                 )
             }
         }
     }
-
-    enum class SlotPriority(val weight: Int) {
-        FIX_WORK(0),
-        FIX_REST(0),
-        FIX_FREE(0),
-        FIX_CHILDCARE(0),
-        FIX_LIFE(1),
-        FLEX_WORK(2),
-        FLEX_REST(3),
-        FLEX_FREE(4),
-        FLEX_CHILDCARE(5),
-        FLEX_LIFE(6)
-    }
-
-    /*
-    fun TimeSlot.priority(): SlotPriority =
-        when {
-            isFixed && state == SlotState.CHILDCARE -> SlotPriority.FIX_CHILDCARE
-            isFixed && state == SlotState.LIFE -> SlotPriority.FIX_LIFE
-            state == SlotState.WORK -> SlotPriority.WORK
-            state == SlotState.REST -> SlotPriority.REST
-            state == SlotState.FREE -> SlotPriority.FREE
-            !isFixed && state == SlotState.CHILDCARE -> SlotPriority.FLEX_CHILDCARE
-            !isFixed && state == SlotState.LIFE -> SlotPriority.FLEX_LIFE
-            else -> SlotPriority.FREE
-        }
 
     fun FlexResolveProposal.score(slots: List<TimeSlot>): Int {
         val candidateSlot = slots.find {
             it.person == person && it.index == candidateIndex
         } ?: return Int.MAX_VALUE
 
-        val moveCost = candidateSlot.priority().weight
+        val moveCost = candidateSlot.state.weight
         val distanceCost = kotlin.math.abs(deltaMinutes) / 30
 
         return moveCost * 10 + distanceCost
     }
-     */
 
     fun flexResolveProposalsAt(index: Int): List<FlexResolveProposal> {
         val evaluation = evaluations.value
@@ -377,86 +351,8 @@ class MainViewModel : ViewModel() {
             .flatMap { reason ->
                 generateFlexResolveProposalsForReason(index, reason)
             }
-            //.sortedBy { it.score(slots) } //いずれ解除
+            .sortedBy { it.score(slots) }
     }
-
-    /*
-    fun generateFlexResolveProposals(
-        evaluation: AvailabilityEvaluation
-    ): List<FlexResolveProposal> {
-
-        if (!evaluation.hasFlexRequirement) return emptyList()
-
-        return evaluation.reasons
-            .filterIsInstance<MissingReason.NotEnoughPeople>()
-            .map { reason ->
-                listOf(
-                    FlexResolveProposal(
-                        requirementName = reason.requirementName,
-                        person = reason.person,
-                        candidateIndex = targetIndex,
-                        initialIndex = index,
-                        deltaMinutes = 30,
-                        targetState = SlotState.CHILDCARE
-                    ),
-                    FlexResolveProposal(
-                        requirementName = reason.requirementName,
-                        person = reason.person,
-                        candidateIndex = targetIndex,
-                        initialIndex = index,
-                        deltaMinutes = 30,
-                        targetState = SlotState.CHILDCARE
-                    )
-                )
-            }
-            .flatten()
-    }
-
-    fun generateFlexResolveProposals(
-        index: Int,
-        slots: List<TimeSlot>,
-        requirements: List<HouseholdRequirement>
-    ): List<FlexResolveProposal> {
-        val proposals = mutableListOf<FlexResolveProposal>()
-
-        val flexReqs = requirements.filter {
-            it.type == RequirementType.FLEX &&
-                    it.requiredCountAt(index) > 0
-        }
-
-        for (req in flexReqs) {
-            val window = req.flexWindowSlots
-
-            for (offset in -window..window) {
-                if (offset == 0) continue
-                val targetIndex = index + offset
-                if (targetIndex !in TimeAxis.indices) continue
-
-                val candidateSlots =
-                    slots.filter { it.index == targetIndex }
-
-                for (slot in candidateSlots) {
-                    val allowedStates = req.allowed[slot.person] ?: continue
-
-                    if (
-                        slot.state in allowedStates &&
-                        canMoveSlot(slot, from = targetIndex, to = index)
-                    ) {
-                        proposals += FlexResolveProposal(
-                            requirementName = req.name,
-                            person = slot.person,
-                            fromIndex = targetIndex,
-                            toIndex = index,
-                            deltaMinutes = offset * TimeAxis.stepMinutes,
-                            targetState = slot.state
-                        )
-                    }
-                }
-            }
-        }
-        return proposals
-    }
-    */
 
     //状態変更
     fun changeSlotState(
@@ -489,7 +385,7 @@ class MainViewModel : ViewModel() {
         }
         recomputeAvailability()
     }
-
+    /*
     fun toggleDailyState(person: Person) {
         val newState =
             _dailyStates.value[person]?.next()
@@ -497,6 +393,7 @@ class MainViewModel : ViewModel() {
 
         updateDailyState(person, newState)
     }
+     */
 
     fun updateDailyState(person: Person, state: DailyState) {
         _dailyStates.value =

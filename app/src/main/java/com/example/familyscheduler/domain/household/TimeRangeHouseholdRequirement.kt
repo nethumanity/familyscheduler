@@ -21,11 +21,11 @@ class TimeRangeHouseholdRequirement(
         index in startIndex until endIndex
 
 
-    /*
+
     override fun requiredCountAt(index: Int): Int {
         return if (isRequiredAt(index)) requiredCount else 0
     }
-    */
+
 }
 
 /*

@@ -23,4 +23,6 @@ object TimeAxis {
         get() = times.size
 
     val indices = 0 until size
+
+    const val stepMinutes = STEP
 }

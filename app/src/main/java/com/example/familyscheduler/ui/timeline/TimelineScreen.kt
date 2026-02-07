@@ -9,7 +9,6 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -26,8 +25,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ModalBottomSheet
@@ -53,56 +52,10 @@ import com.example.familyscheduler.R
 import com.example.familyscheduler.domain.logic.MissingReason
 import com.example.familyscheduler.domain.model.DailyState
 import com.example.familyscheduler.domain.model.Person
-import com.example.familyscheduler.domain.model.SlotState
 import com.example.familyscheduler.domain.time.TimeAxis
 import com.example.familyscheduler.domain.time.TimeAxis.indexOf
 import com.example.familyscheduler.ui.mapper.slotStateColor
-import com.example.familyscheduler.ui.mapper.slotStateLabel
 import java.time.LocalTime
-
-@Composable
-fun TimelineHeaderRow(
-    persons: List<Person>,
-    dailyStates: Map<Person, DailyState>,
-    onDailyStateClick: (Person) -> Unit,
-    onDailyStateLongPress: (Person) -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(48.dp)
-            .background(Color(0xFFF5F5F5))
-            .border(0.5.dp, Color.LightGray)
-    ) {
-        Spacer(modifier = Modifier.width(64.dp))
-
-        persons.forEach { person ->
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight()
-                    .border(0.5.dp, Color.DarkGray)
-                    .combinedClickable(
-                        onClick = { onDailyStateClick(person) },
-                        onLongClick = { onDailyStateLongPress(person) }
-                    ),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    text = person.label,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = dailyStates[person]?.label ?: "",
-                    fontSize = 10.sp,
-                    color = Color.DarkGray
-                )
-            }
-        }
-    }
-}
 
 @Composable
 fun TimelineScreen(
@@ -135,10 +88,7 @@ fun TimelineScreen(
                 persons = persons,
                 dailyStates = dailyStates,
                 onDailyStateClick = { person ->
-                    viewModel.toggleDailyState(person)
-                },
-                onDailyStateLongPress = { person ->
-                    viewModel.onDailyStateLongPress(person)
+                    viewModel.onDailyStateClick(person)
                 }
             )
         }
@@ -335,39 +285,3 @@ fun TimelineScreen(
     }
 }
 
-@Composable
-fun SlotStateSelectionSheet(
-    time: LocalTime,
-    person: Person,
-    onSelect: (SlotState) -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp)
-    ) {
-        Text(
-            text = "${time} / ${person.label}",
-            fontSize = 16.sp
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        listOf(
-            SlotState.UNASSIGNED,
-            SlotState.CHILDCARE,
-            SlotState.LIFE,
-            SlotState.WORK,
-            SlotState.REST,
-            SlotState.FREE
-        ).forEach { state ->
-            Text(
-                text = slotStateLabel(state),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onSelect(state) }
-                    .padding(vertical = 12.dp)
-            )
-        }
-    }
-}
