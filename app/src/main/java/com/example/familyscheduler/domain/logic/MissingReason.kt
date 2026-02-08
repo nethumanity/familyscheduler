@@ -7,8 +7,9 @@ import com.example.familyscheduler.domain.model.SlotState
 sealed class MissingReason {
     data class NotEnoughPeople(
         val requirementName: String,
-        val required: Int,
-        val assigned: Int
+        val requiredCount: Int,
+        val assignedCount: Int,
+        val blockingPersons: List<BlockInfo>
     ) : MissingReason()
 
     data class NoAssignablePerson(
@@ -21,3 +22,9 @@ sealed class MissingReason {
         val actual: SlotState
     ) : MissingReason()
 }
+
+data class BlockInfo(
+    val person: List<Person>,
+    val currentState: List<SlotState>,
+    val taskName: String?
+)

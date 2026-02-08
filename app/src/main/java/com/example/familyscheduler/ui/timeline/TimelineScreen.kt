@@ -55,6 +55,7 @@ import com.example.familyscheduler.domain.model.Person
 import com.example.familyscheduler.domain.time.TimeAxis
 import com.example.familyscheduler.domain.time.TimeAxis.indexOf
 import com.example.familyscheduler.ui.mapper.slotStateColor
+import com.example.familyscheduler.ui.mapper.slotStateLabel
 import java.time.LocalTime
 
 @Composable
@@ -69,8 +70,19 @@ fun TimelineScreen(
 
     fun renderMissingReason(reason: MissingReason): String =
         when (reason) {
+
             is MissingReason.NotEnoughPeople ->
-                "${reason.requirementName}：${reason.required}人必要ですが、${reason.assigned}人しか割り当てられていません"
+
+                reason.blockingPersons.joinToString("\n") { block ->
+
+                    val personsText =
+                        block.person.joinToString("、") { it.label }
+
+                    val statesText =
+                        block.currentState.joinToString("、") { slotStateLabel(it) }
+
+                    "${personsText}に${block.taskName}の予定がありますが、すでに${statesText}が入っています"
+                }
 
             is MissingReason.NoAssignablePerson ->
                 "${reason.requirementName}：割り当て可能な人がいません"
@@ -78,7 +90,6 @@ fun TimelineScreen(
             is MissingReason.StateConflict ->
                 "${reason.person.label}は ${reason.actual} のため対応できません（必要: ${reason.expected}）"
         }
-
 
     LazyColumn(
         modifier = Modifier.fillMaxSize()

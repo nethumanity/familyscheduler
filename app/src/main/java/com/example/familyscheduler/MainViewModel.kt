@@ -1,5 +1,6 @@
 package com.example.familyscheduler
 
+import androidx.collection.intFloatMapOf
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -14,6 +15,7 @@ import com.example.familyscheduler.domain.model.RequirementType
 import com.example.familyscheduler.domain.model.SlotState
 import com.example.familyscheduler.domain.model.TimeSlot
 import com.example.familyscheduler.domain.household.HouseholdSamples
+import com.example.familyscheduler.domain.logic.BlockInfo
 import com.example.familyscheduler.domain.logic.MissingReason
 import com.example.familyscheduler.domain.time.TimeAxis
 import java.time.LocalDate
@@ -173,6 +175,25 @@ class MainViewModel : ViewModel() {
         }
     }
     //評価項
+    fun collectBlockInfo(
+        slots: List<TimeSlot>,
+        requirement: HouseholdRequirement
+    ): List<BlockInfo> {
+        val persons = requirement.allowedPersons
+        val currentState = slots
+            .filter { it.person in persons }
+            .map { it.state }
+        val taskName = requirement.name
+
+        return listOf(
+            BlockInfo(
+            person = persons.toList(),
+            currentState = currentState,
+            taskName = taskName
+            )
+        )
+    }
+
     fun evaluateAvailability(
         slots: List<TimeSlot>,
         requirements: List<HouseholdRequirement>
@@ -198,10 +219,12 @@ class MainViewModel : ViewModel() {
                 val missing = required - assigned
 
                 if (missing > 0) {
+                    val info = collectBlockInfo(slotsAtIndex, req)
                     reasons += MissingReason.NotEnoughPeople(
                         requirementName = req.name,
-                        required = required,
-                        assigned = assigned
+                        requiredCount = required,
+                        assignedCount = assigned,
+                        blockingPersons = info
                     )
                 }
 
