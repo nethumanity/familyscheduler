@@ -155,8 +155,25 @@ class MainViewModel : ViewModel() {
                 }
             }
         }
+
+        assignRemainingUnassignedToFree(slots)
     }
 
+    private fun assignRemainingUnassignedToFree(
+        slots: MutableList<TimeSlot>
+    ) {
+        for (i in slots.indices) {
+            val slot = slots[i]
+
+            if (slot.state == SlotState.UNASSIGNED) {
+                slots[i] = slot.copy(
+                    state = SlotState.FREE,
+                    taskName = null,
+                    flexWindow = 0
+                )
+            }
+        }
+    }
     //評価項
     fun evaluateAvailability(
         slots: List<TimeSlot>,
@@ -382,6 +399,7 @@ class MainViewModel : ViewModel() {
             if (slot.person == person) {
                 slot.copy(
                     state = state.defaultSlotStateAt(slot.index),
+                    flexWindow = 0,
                     taskName = null
                 )
             } else {
