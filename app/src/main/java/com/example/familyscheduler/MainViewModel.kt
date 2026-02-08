@@ -69,7 +69,8 @@ class MainViewModel : ViewModel() {
                     index = index,
                     person = person,
                     state = state,
-                    flexWindow = defaultFlexWindow(state)
+                    flexWindow = defaultFlexWindow(state),
+                    taskName = null
                 )
             }
         }
@@ -146,7 +147,10 @@ class MainViewModel : ViewModel() {
                     if (remaining <= 0) break
 
                     val i = slots.indexOf(slot)
-                    slots[i] = slot.copy(state = req.targetState)
+                    slots[i] = slot.copy(state = req.targetState,
+                        flexWindow = req.flexWindowSlots,
+                        taskName = req.name
+                    )
                     remaining--
                 }
             }
@@ -377,7 +381,8 @@ class MainViewModel : ViewModel() {
         slots = slots.map { slot ->
             if (slot.person == person) {
                 slot.copy(
-                    state = state.defaultSlotStateAt(slot.index)
+                    state = state.defaultSlotStateAt(slot.index),
+                    taskName = null
                 )
             } else {
                 slot

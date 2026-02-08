@@ -162,7 +162,7 @@ fun TimelineScreen(
                             .border(0.5.dp, Color.DarkGray),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(person.name, fontSize = 12.sp) //person.nameは実際の用事に変える
+                        Text(slot?.taskName ?: "", fontSize = 12.sp)
                     }
                 }
             }
