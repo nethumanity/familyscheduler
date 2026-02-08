@@ -236,7 +236,8 @@ fun TimelineScreen(
 
                                     Text(
                                         text =
-                                            "${proposal.requirementName} を " +
+                                            "${proposal.person} の " +
+                                            "${proposal.requirementName} 予定を " +
                                                     "${proposal.deltaMinutes}分ずらす",
                                         fontSize = 14.sp
                                     )

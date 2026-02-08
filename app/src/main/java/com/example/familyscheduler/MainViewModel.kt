@@ -167,9 +167,7 @@ class MainViewModel : ViewModel() {
 
             if (slot.state == SlotState.UNASSIGNED) {
                 slots[i] = slot.copy(
-                    state = SlotState.FREE,
-                    taskName = null,
-                    flexWindow = 0
+                    state = SlotState.FREE  //必要ならflexWindow = 0,taskName = nullを追加
                 )
             }
         }
@@ -383,7 +381,7 @@ class MainViewModel : ViewModel() {
     ) {
         slots = slots.map { slot ->
             if (slot.index == index && slot.person == person) {
-                slot.copy(state = newState)
+                slot.copy(state = newState, flexWindow = 0, taskName = null)
             } else {
                 slot
             }
