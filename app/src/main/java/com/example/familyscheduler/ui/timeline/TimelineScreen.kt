@@ -31,6 +31,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -62,11 +63,119 @@ import java.time.LocalTime
 fun TimelineScreen(
     viewModel: MainViewModel = viewModel()
 ) {
+    val currentDate by viewModel.currentDate
     val persons = viewModel.persons
     val times = viewModel.times
     val dailyStates by viewModel.dailyStates
 
     var editingSlot by remember { mutableStateOf<Pair<LocalTime, Person>?>(null) }
+
+    Scaffold(
+        topBar = {
+            HeaderBar(
+                date = currentDate,
+                onPreviousDay = { viewModel.moveToPreviousDay() },
+                onNextDay = { viewModel.moveToNextDay() }
+            )
+        },
+        bottomBar = {
+            FooterBar()
+        }
+    ) { paddingValues ->
+
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            stickyHeader {
+                TimelineHeaderRow(
+                    persons = persons,
+                    dailyStates = dailyStates,
+                    onDailyStateClick = { //person ->
+                        //viewModel.onDailyStateClick(person)
+                        viewModel.onDailyStateClick(it)
+                    }
+                )
+            }
+
+            items(times) { time ->
+
+                val slotsAtTime = viewModel.slotsAt(indexOf(time))
+                val availabilityState = viewModel.availabilityStateAt(time)
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp)
+                        .border(0.5.dp, Color.LightGray)
+                        .pointerInput(persons, time) {
+                            detectTapGestures(
+                                onTap = {
+                                    if (availabilityState.shouldWarn) {
+                                        viewModel.onAvailabilityWarningClick(indexOf(time))
+                                    }
+                                },
+                                onLongPress = { offset ->
+                                    val columnWidth =
+                                        (size.width - 64.dp.toPx()) / persons.size
+
+                                    val index =
+                                        ((offset.x - 64.dp.toPx()) / columnWidth).toInt()
+
+                                    val person = persons.getOrNull(index)
+                                    if (person != null) {
+                                        editingSlot = time to person
+                                    }
+                                }
+                            )
+                        }
+                ) {
+                    // 時刻
+                    Column(
+                        modifier = Modifier.width(64.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = time.toString(),
+                            fontSize = 12.sp
+                        )
+
+                        if (availabilityState.shouldWarn) {
+                            Spacer(modifier = Modifier.height(2.dp))
+
+                            Icon(
+                                painter = painterResource(R.drawable.ic_warning),
+                                contentDescription = "Household tasks required",
+                                tint = Color.Red,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+
+                    // 人ごとのセル
+                    persons.forEach { person ->
+                        val slot = slotsAtTime.find { it.person == person }
+
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight()
+                                .background(
+                                    slot?.let { slotStateColor(it.state) }
+                                        ?: Color.LightGray
+                                )
+                                .border(0.5.dp, Color.DarkGray),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(slot?.taskName ?: "", fontSize = 12.sp)
+                        }
+                    }
+                }
+            }
+        }
+
+    }
 
     fun renderMissingReason(reason: MissingReason): String =
         when (reason) {
@@ -90,95 +199,6 @@ fun TimelineScreen(
             is MissingReason.StateConflict ->
                 "${reason.person.label}は ${reason.actual} のため対応できません（必要: ${reason.expected}）"
         }
-
-    LazyColumn(
-        modifier = Modifier.fillMaxSize()
-    ) {
-        stickyHeader {
-            TimelineHeaderRow(
-                persons = persons,
-                dailyStates = dailyStates,
-                onDailyStateClick = { person ->
-                    viewModel.onDailyStateClick(person)
-                }
-            )
-        }
-
-        items(times) { time ->
-
-            val slotsAtTime = viewModel.slotsAt(indexOf(time))
-            val availabilityState = viewModel.availabilityStateAt(time)
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp)
-                    .border(0.5.dp, Color.LightGray)
-                    .pointerInput(persons, time) {
-                        detectTapGestures(
-                            onTap = {
-                                if (availabilityState.shouldWarn) {
-                                    viewModel.onAvailabilityWarningClick(indexOf(time))
-                                }
-                            },
-                            onLongPress = { offset ->
-                                val columnWidth =
-                                    (size.width - 64.dp.toPx()) / persons.size
-
-                                val index =
-                                    ((offset.x - 64.dp.toPx()) / columnWidth).toInt()
-
-                                val person = persons.getOrNull(index)
-                                if (person != null) {
-                                    editingSlot = time to person
-                                }
-                            }
-                        )
-                    }
-            ) {
-                // 時刻
-                Column(
-                    modifier = Modifier.width(64.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = time.toString(),
-                        fontSize = 12.sp
-                    )
-
-                    if (availabilityState.shouldWarn) {
-                        Spacer(modifier = Modifier.height(2.dp))
-
-                        Icon(
-                            painter = painterResource(R.drawable.ic_warning),
-                            contentDescription = "Household tasks required",
-                            tint = Color.Red,
-                            modifier = Modifier.size(16.dp)
-                        )
-                    }
-                }
-
-                // 人ごとのセル
-                persons.forEach { person ->
-                    val slot = slotsAtTime.find { it.person == person }
-
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight()
-                            .background(
-                                slot?.let { slotStateColor(it.state) }
-                                    ?: Color.LightGray
-                            )
-                            .border(0.5.dp, Color.DarkGray),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(slot?.taskName ?: "", fontSize = 12.sp)
-                    }
-                }
-            }
-        }
-    }
 
     val dialogIndex = viewModel.warningDialogIndex
 

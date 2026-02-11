@@ -1,27 +1,49 @@
 package com.example.familyscheduler
 
-import androidx.collection.intFloatMapOf
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import com.example.familyscheduler.domain.household.HouseholdRequirement
+import com.example.familyscheduler.domain.household.HouseholdSamples
 import com.example.familyscheduler.domain.logic.AvailabilityEvaluation
+import com.example.familyscheduler.domain.logic.BlockInfo
+import com.example.familyscheduler.domain.logic.MissingReason
 import com.example.familyscheduler.domain.model.AvailabilityState
 import com.example.familyscheduler.domain.model.DailyState
 import com.example.familyscheduler.domain.model.Person
 import com.example.familyscheduler.domain.model.RequirementType
 import com.example.familyscheduler.domain.model.SlotState
 import com.example.familyscheduler.domain.model.TimeSlot
-import com.example.familyscheduler.domain.household.HouseholdSamples
-import com.example.familyscheduler.domain.logic.BlockInfo
-import com.example.familyscheduler.domain.logic.MissingReason
 import com.example.familyscheduler.domain.time.TimeAxis
 import java.time.LocalDate
 import java.time.LocalTime
 
 class MainViewModel : ViewModel() {
+
+    private val _currentDate = mutableStateOf(LocalDate.now())
+    val currentDate: State<LocalDate> = _currentDate
+
+    fun moveToPreviousDay() {
+        _currentDate.value = _currentDate.value.minusDays(1)
+
+        reloadForDate()
+    }
+
+    fun moveToNextDay() {
+        _currentDate.value = _currentDate.value.plusDays(1)
+
+        reloadForDate()
+    }
+
+    private fun reloadForDate() {
+        // TODO:
+        // ・その日のDailyState生成
+        // ・TimeRangeRequirement適用
+        // ・slots再生成
+        // ・recomputeAvailability()
+    }
 
     private val _dailyStates =
         mutableStateOf(
