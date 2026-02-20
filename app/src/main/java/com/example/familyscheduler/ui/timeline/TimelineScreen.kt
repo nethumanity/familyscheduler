@@ -82,14 +82,8 @@ fun TimelineScreen(
                 onPreviousDay = { viewModel.moveToPreviousDay() },
                 onNextDay = { viewModel.moveToNextDay() }
             )
-        },
-        bottomBar = {
-            FooterBar(
-                onSettingsClick = {
-                    showAddDailyStateDialog = true
-                }
-            )
         }
+
     ) { paddingValues ->
 
         LazyColumn(
