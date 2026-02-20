@@ -22,13 +22,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.familyscheduler.domain.model.DailyState
-import com.example.familyscheduler.domain.model.Person
+import com.example.familyscheduler.domain.person.Person
+import com.example.familyscheduler.domain.schedule.DailyState
 
 @Composable
 fun TimelineHeaderRow(
     persons: List<Person>,
-    dailyStates: Map<Person, DailyState>,
+    dailyStates: List<DailyState>,
     onDailyStateClick: (Person) -> Unit
 ) {
     Row(
@@ -56,7 +56,8 @@ fun TimelineHeaderRow(
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = dailyStates[person]?.label ?: "",
+                    text = dailyStates.firstOrNull { it.person  == person }
+                        ?.templateName ?: "No Template",
                     fontSize = 10.sp,
                     color = Color.DarkGray
                 )

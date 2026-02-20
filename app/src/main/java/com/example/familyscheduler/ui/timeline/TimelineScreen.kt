@@ -28,13 +28,14 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.ListItem
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,27 +49,31 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.familyscheduler.MainViewModel
 import com.example.familyscheduler.R
-import com.example.familyscheduler.domain.logic.MissingReason
-import com.example.familyscheduler.domain.model.DailyState
-import com.example.familyscheduler.domain.model.Person
+import com.example.familyscheduler.domain.evaluation.FlexResolveProposal
+import com.example.familyscheduler.domain.person.Person
 import com.example.familyscheduler.domain.time.TimeAxis
 import com.example.familyscheduler.domain.time.TimeAxis.indexOf
-import com.example.familyscheduler.ui.mapper.slotStateColor
-import com.example.familyscheduler.ui.mapper.slotStateLabel
-import java.time.LocalTime
+import com.example.familyscheduler.ui.components.SlotStateSelectionSheet
+import com.example.familyscheduler.ui.components.renderMissingReason
+import com.example.familyscheduler.ui.components.slotStateColor
+import com.example.familyscheduler.viewmodel.MainViewModel
+import com.example.familyscheduler.viewmodel.TimelineViewModel
 
 @Composable
 fun TimelineScreen(
-    viewModel: MainViewModel = viewModel()
+    viewModel: TimelineViewModel,
+    viewModel_toBeRemoved: MainViewModel
 ) {
-    val currentDate by viewModel.currentDate
-    val persons = viewModel.persons
-    val times = viewModel.times
-    val dailyStates by viewModel.dailyStates
 
-    var editingSlot by remember { mutableStateOf<Pair<LocalTime, Person>?>(null) }
+    val persons = listOf(Person.FATHER, Person.MOTHER)
+
+    val currentDate by viewModel.currentDate.collectAsState()
+    val dailyStates by viewModel.dailyStates.collectAsState()
+    val slots by viewModel.slots.collectAsState()
+
+    var editingSlot by remember { mutableStateOf<Pair<Int, Person>?>(null) }
+    var showAddDailyStateDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -79,7 +84,11 @@ fun TimelineScreen(
             )
         },
         bottomBar = {
-            FooterBar()
+            FooterBar(
+                onSettingsClick = {
+                    showAddDailyStateDialog = true
+                }
+            )
         }
     ) { paddingValues ->
 
@@ -92,24 +101,25 @@ fun TimelineScreen(
                 TimelineHeaderRow(
                     persons = persons,
                     dailyStates = dailyStates,
-                    onDailyStateClick = { //person ->
-                        //viewModel.onDailyStateClick(person)
-                        viewModel.onDailyStateClick(it)
+                    onDailyStateClick = {
+                        //viewModel.onDailyStateClick(it)
                     }
                 )
             }
 
-            items(times) { time ->
+            items(TimeAxis.indices.toList()) { index ->
 
-                val slotsAtTime = viewModel.slotsAt(indexOf(time))
-                val availabilityState = viewModel.availabilityStateAt(time)
+                val time = TimeAxis.all[index]
+                val rowSlots = viewModel.slotsAt(index)
+                //val availabilityState =
+                  //  viewModel.availabilityStateAt(time)
 
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(48.dp)
                         .border(0.5.dp, Color.LightGray)
-                        .pointerInput(persons, time) {
+                        /*.pointerInput(persons, time) {
                             detectTapGestures(
                                 onTap = {
                                     if (availabilityState.shouldWarn) {
@@ -130,8 +140,11 @@ fun TimelineScreen(
                                 }
                             )
                         }
+
+                         */
                 ) {
-                    // 時刻
+
+                    // 時刻表示
                     Column(
                         modifier = Modifier.width(64.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
@@ -141,179 +154,166 @@ fun TimelineScreen(
                             fontSize = 12.sp
                         )
 
-                        if (availabilityState.shouldWarn) {
+                        /*if (availabilityState.shouldWarn) {
                             Spacer(modifier = Modifier.height(2.dp))
-
                             Icon(
                                 painter = painterResource(R.drawable.ic_warning),
-                                contentDescription = "Household tasks required",
+                                contentDescription = "warning",
                                 tint = Color.Red,
                                 modifier = Modifier.size(16.dp)
                             )
                         }
+
+                         */
                     }
 
-                    // 人ごとのセル
+                    // 各personのslot
                     persons.forEach { person ->
-                        val slot = slotsAtTime.find { it.person == person }
+                        val slot = rowSlots.find {
+                            it.person == person
+                        }
 
                         Box(
                             modifier = Modifier
                                 .weight(1f)
                                 .fillMaxHeight()
                                 .background(
-                                    slot?.let { slotStateColor(it.state) }
-                                        ?: Color.LightGray
+                                    slot?.let {
+                                        slotStateColor(it.state)
+                                    } ?: Color.LightGray
                                 )
                                 .border(0.5.dp, Color.DarkGray),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(slot?.taskName ?: "", fontSize = 12.sp)
+                            Text(
+                                slot?.taskName ?: "",
+                                fontSize = 12.sp
+                            )
                         }
                     }
                 }
             }
         }
-
     }
 
-    fun renderMissingReason(reason: MissingReason): String =
-        when (reason) {
+    // ============================
+    // Slot編集シート
+    // ============================
 
-            is MissingReason.NotEnoughPeople ->
+    editingSlot?.let { (index, person) ->
 
-                reason.blockingPersons.joinToString("\n") { block ->
+        val time = TimeAxis.all[index]
 
-                    val personsText =
-                        block.person.joinToString("、") { it.label }
-
-                    val statesText =
-                        block.currentState.joinToString("、") { slotStateLabel(it) }
-
-                    "${personsText}に${block.taskName}の予定がありますが、すでに${statesText}が入っています"
-                }
-
-            is MissingReason.NoAssignablePerson ->
-                "${reason.requirementName}：割り当て可能な人がいません"
-
-            is MissingReason.StateConflict ->
-                "${reason.person.label}は ${reason.actual} のため対応できません（必要: ${reason.expected}）"
-        }
-
-    val dialogIndex = viewModel.warningDialogIndex
-
-    //警告ダイアログ
-    dialogIndex?.let { index ->
-        val evaluation = viewModel.evaluations.value[index]
-        val flexProposals = viewModel.flexResolveProposalsAt(index)
-        var selectedProposal by remember(dialogIndex) {
-            mutableStateOf<MainViewModel.FlexResolveProposal?>(null)
-        }
-
-        AlertDialog(
-                onDismissRequest = {
-                    viewModel.dismissWarningDialog()
-                },
-                confirmButton = {
-                    TextButton(onClick = {
-                        viewModel.dismissWarningDialog()
-                    }) {
-                        Text("閉じる")
-                    }
-                },
-                dismissButton = {
-                    if (flexProposals.isNotEmpty()) {
-                        TextButton(
-                            enabled = selectedProposal != null,
-                            onClick = {
-                                selectedProposal?.let {
-                                    viewModel.applyFlexResolveProposal(it)
-                                }
-                            }
-                        ) {
-                            Text("この提案を実行")
-                        }
-                    }
-                },
-                title = {
-                    Text("${TimeAxis.times[dialogIndex]} の予定に問題があります")
-                },
-                text = {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-
-                        evaluation.reasons.forEach { reason ->
-                            Text(renderMissingReason(reason))
-                        }
-
-                        if (flexProposals.isNotEmpty()) {
-                            HorizontalDivider()
-
-                            Text("解消案", fontWeight = FontWeight.Bold)
-
-                            flexProposals.forEach { proposal ->
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable { selectedProposal = proposal }
-                                        .padding(vertical = 4.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    RadioButton(
-                                        selected = selectedProposal == proposal,
-                                        onClick = { selectedProposal = proposal }
-                                    )
-
-                                    Spacer(modifier = Modifier.width(8.dp))
-
-                                    Text(
-                                        text =
-                                            "${proposal.person} の " +
-                                            "${proposal.requirementName} 予定を " +
-                                                    "${proposal.deltaMinutes}分ずらす",
-                                        fontSize = 14.sp
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            )
-
-    }
-
-    // スロット編集シート
-    editingSlot?.let { (time, person) ->
         ModalBottomSheet(
-            onDismissRequest = { editingSlot = null }
+            onDismissRequest = {
+                editingSlot = null
+            }
         ) {
             SlotStateSelectionSheet(
                 time = time,
                 person = person,
                 onSelect = { newState ->
-                    viewModel.changeSlotState(TimeAxis.indexOf(time), person, newState)
+                    viewModel_toBeRemoved.changeSlotState(
+                        index = index,
+                        person = person,
+                        newState = newState
+                    )
                     editingSlot = null
                 }
             )
         }
     }
 
-    // 日状態編集シート
-    viewModel.editingDailyStateFor?.let { person ->
-        ModalBottomSheet(
-            onDismissRequest = {
-                viewModel.dismissDailyStateSheet()
-            }
-        ) {
-            DailyState.values().forEach { state ->
-                ListItem(
-                    headlineContent = { Text(state.label) },
-                    modifier = Modifier.clickable {
-                        viewModel.updateDailyState(person, state)
-                        viewModel.dismissDailyStateSheet()
-                    }
-                )
-            }
+    // ============================
+    // ③　警告ダイアログ　消された！！！
+    // ============================
+    /*
+    val dialogIndex = viewModel.warningDialogIndex
+
+    dialogIndex?.let { index ->
+        val evaluation = viewModel.evaluations.value[index]
+        val flexProposals = viewModel.flexResolveProposalsAt(index)
+        var selectedProposal by remember(dialogIndex) {
+            mutableStateOf<FlexResolveProposal?>(null)
         }
+
+        AlertDialog(
+            onDismissRequest = {
+                viewModel.dismissWarningDialog()
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.dismissWarningDialog()
+                }) {
+                    Text("閉じる")
+                }
+            },
+            dismissButton = {
+                if (flexProposals.isNotEmpty()) {
+                    TextButton(
+                        enabled = selectedProposal != null,
+                        onClick = {
+                            selectedProposal?.let {
+                                viewModel.applyFlexResolveProposal(it)
+                            }
+                        }
+                    ) {
+                        Text("この提案を実行")
+                    }
+                }
+            },
+            title = {
+                Text("${TimeAxis.all[dialogIndex]} の予定に問題があります")
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+
+                    evaluation.reasons.forEach { reason ->
+                        Text(renderMissingReason(reason))
+                    }
+
+                    if (flexProposals.isNotEmpty()) {
+                        HorizontalDivider()
+
+                        Text("解消案", fontWeight = FontWeight.Bold)
+
+                        flexProposals.forEach { proposal ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { selectedProposal = proposal }
+                                    .padding(vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                RadioButton(
+                                    selected = selectedProposal == proposal,
+                                    onClick = { selectedProposal = proposal }
+                                )
+
+                                Spacer(modifier = Modifier.width(8.dp))
+
+                                Text(
+                                    text =
+                                        "${proposal.person} の " +
+                                                "${proposal.requirementName} 予定を " +
+                                                "${proposal.deltaMinutes}分ずらす",
+                                    fontSize = 14.sp
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        )
+    }
+
+     */
+
+    // ============================
+    // 初期ロード
+    // ============================
+
+    LaunchedEffect(currentDate) {
+        viewModel.loadForDate(currentDate)
     }
 }
-
