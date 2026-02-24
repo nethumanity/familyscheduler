@@ -7,15 +7,19 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.familyscheduler.ui.components.ScheduleInputScreen
 import com.example.familyscheduler.ui.components.SettingsScreen
 import com.example.familyscheduler.ui.theme.FamilySchedulerTheme
 import com.example.familyscheduler.ui.timeline.FooterBar
+import com.example.familyscheduler.ui.timeline.HeaderBar
 import com.example.familyscheduler.ui.timeline.TimelineScreen
 import com.example.familyscheduler.viewmodel.MainViewModel
 import com.example.familyscheduler.viewmodel.TimelineViewModel
@@ -36,6 +40,8 @@ class MainActivity : ComponentActivity() {
 fun MainScreen() {
 
     val navController = rememberNavController()
+    val backStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = backStackEntry?.destination?.route
 
     val timelineViewModel:
             TimelineViewModel = viewModel()
@@ -43,6 +49,29 @@ fun MainScreen() {
             MainViewModel = viewModel()
 
     Scaffold(
+        topBar = {
+
+            when (currentRoute) {
+
+                "timeline" -> {
+
+                    HeaderBar(
+                        date = timelineViewModel.currentDate.collectAsState().value,
+                        onPreviousDay = {
+                            timelineViewModel.moveToPreviousDay()
+                        },
+                        onNextDay = {
+                            timelineViewModel.moveToNextDay()
+                        }
+                    )
+                }
+
+                else -> {
+                    // 設定画面ではTopBarなし
+                }
+            }
+        },
+
         bottomBar = {
             FooterBar(
                 onSettingsClick = {
@@ -83,6 +112,9 @@ fun MainScreen() {
                             timelineViewModel.currentDate.value
                         )
                         navController.popBackStack("timeline", false)
+                    },
+                    onBack = {
+                        navController.popBackStack()
                     }
                 )
             }

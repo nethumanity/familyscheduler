@@ -10,7 +10,7 @@ import java.util.UUID
 data class ScheduleTemplate(            //1つのScheduleTemplateは1つのDailyTemplateに紐づくのがわかりやすい
     val id: UUID = UUID.randomUUID(),   //DailyTemplateとの紐づけのため？
     val person: Person,                 //いらない？
-    val title: String,                  //いらない？
+    //val title: String,                  //いらない？
     val type: ScheduleType,
     val timeRange: TimeRange,
     val repeatRule: RepeatRule          //いらない？
