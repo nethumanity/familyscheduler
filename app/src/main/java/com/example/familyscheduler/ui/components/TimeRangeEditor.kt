@@ -10,7 +10,7 @@ import com.example.familyscheduler.domain.schedule.RepeatRule
 import com.example.familyscheduler.domain.schedule.ScheduleTemplate
 import com.example.familyscheduler.domain.schedule.ScheduleType
 import com.example.familyscheduler.domain.schedule.StateCategory
-import com.example.familyscheduler.domain.schedule.TimeRange
+import com.example.familyscheduler.domain.schedule.TimeRange.Companion.createOrNull
 import com.example.familyscheduler.domain.time.TimeDropdownPicker
 import java.time.LocalTime
 
@@ -22,25 +22,18 @@ fun TimeRangeEditor(
 ) {
 
     var start by remember {
-        mutableStateOf(LocalTime.of(9,0))
+        mutableStateOf(LocalTime.of(9, 0))
     }
 
     var end by remember {
-        mutableStateOf(LocalTime.of(17,0))
+        mutableStateOf(LocalTime.of(17, 0))
     }
 
-    TimeDropdownPicker(
-        "開始",
-        start
-    ) {
-        start = it
-    }
+    fun updateScheduleIfValid() {
 
-    TimeDropdownPicker(
-        "終了",
-        end
-    ) {
-        end = it
+        val timeRange =
+            createOrNull(start, end)
+                ?: return   // ← 無効なら何もしない（重要）
 
         val type =
             ScheduleType(
@@ -56,10 +49,25 @@ fun TimeRangeEditor(
             ScheduleTemplate(
                 person = person,
                 type = type,
-                timeRange =
-                    TimeRange(start, end),
+                timeRange = timeRange,
                 repeatRule = RepeatRule.Daily
             )
         )
+    }
+
+    TimeDropdownPicker(
+        label = "開始",
+        selectedTime = start
+    ) {
+        start = it
+        updateScheduleIfValid()
+    }
+
+    TimeDropdownPicker(
+        label = "終了",
+        selectedTime = end
+    ) {
+        end = it
+        updateScheduleIfValid()
     }
 }

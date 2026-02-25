@@ -6,55 +6,64 @@ import java.time.LocalTime
 
 object TemplateNormalizer {
 
-    /**
-     * ScheduleTemplate を正規化する
-     *
-     * 正規化内容：
-     * ・start == end → 削除（無効）
-     * ・start < end → そのまま
-     * ・start > end → 日跨ぎ → 2つに分割
-     */
+    private val axisStart =
+        LocalTime.MIDNIGHT
+
+    private val axisEndExclusive =
+        LocalTime.MIDNIGHT
+
     fun normalize(
         schedules: List<ScheduleTemplate>
     ): List<ScheduleTemplate> {
 
-        val result = mutableListOf<ScheduleTemplate>()
+        val result =
+            mutableListOf<ScheduleTemplate>()
 
         schedules.forEach { schedule ->
 
-            val start = schedule.timeRange.start
-            val end = schedule.timeRange.end
+            val start =
+                clampToAxis(schedule.timeRange.start)
+
+            val end =
+                clampToAxis(schedule.timeRange.end)
 
             when {
 
-                // 無効
                 start == end -> {
-                    // 何もしない
+                    // 無効
                 }
 
-                // 通常
                 start < end -> {
-                    result.add(schedule)
-                }
-
-                // 日跨ぎ（例：22:00 → 06:00）
-                start > end -> {
 
                     result.add(
                         schedule.copy(
-                            timeRange = TimeRange(
-                                start = start,
-                                end = LocalTime.MAX
-                            )
+                            timeRange =
+                                TimeRange(start, end)
+                        )
+                    )
+                }
+
+                start > end -> {
+
+                    // start → 24:00
+                    result.add(
+                        schedule.copy(
+                            timeRange =
+                                TimeRange(
+                                    start,
+                                    LocalTime.MIDNIGHT
+                                )
                         )
                     )
 
+                    // 00:00 → end
                     result.add(
                         schedule.copy(
-                            timeRange = TimeRange(
-                                start = LocalTime.MIN,
-                                end = end
-                            )
+                            timeRange =
+                                TimeRange(
+                                    axisStart,
+                                    end
+                                )
                         )
                     )
                 }
@@ -63,6 +72,20 @@ object TemplateNormalizer {
 
         return result.sortedBy {
             it.timeRange.start
+        }
+    }
+
+    private fun clampToAxis(
+        time: LocalTime
+    ): LocalTime {
+
+        return when {
+
+            time < axisStart ->
+                axisStart
+
+            else ->
+                time
         }
     }
 }

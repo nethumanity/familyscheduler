@@ -6,8 +6,23 @@ data class TimeRange(
     val start: LocalTime,
     val end: LocalTime
 ) {
+
     init {
-        require(start < end)    //「睡眠」はstart>endになるので、関数を作って処理が必要？
+        require(start < end)
+    }
+
+    companion object {
+
+        fun createOrNull(
+            start: LocalTime,
+            end: LocalTime
+        ): TimeRange? {
+            return if (start < end) {
+                TimeRange(start, end)
+            } else {
+                null
+            }
+        }
     }
 
     fun contains(time: LocalTime): Boolean =

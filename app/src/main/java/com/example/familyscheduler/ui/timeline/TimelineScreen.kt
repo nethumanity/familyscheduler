@@ -74,7 +74,7 @@ fun TimelineScreen(
     val slots by viewModel.slots.collectAsState()
 
     var editingSlot by remember { mutableStateOf<Pair<Int, Person>?>(null) }
-    var showAddDailyStateDialog by remember { mutableStateOf(false) }
+    //var showAddDailyStateDialog by remember { mutableStateOf(false) }
 
     LazyColumn(
         modifier = Modifier
@@ -90,7 +90,8 @@ fun TimelineScreen(
             )
         }
 
-        items(TimeAxis.indices.toList()) { index ->
+        items((TimeAxis.displayStartIndex..TimeAxis.displayEndIndex).toList()
+        ) { index ->
 
             val time = TimeAxis.all[index]
             val rowSlots = viewModel.slotsAt(index)

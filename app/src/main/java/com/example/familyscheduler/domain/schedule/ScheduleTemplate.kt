@@ -16,21 +16,27 @@ data class ScheduleTemplate(            //1つのScheduleTemplateは1つのDaily
     val repeatRule: RepeatRule          //いらない？
 ) {
     fun expandToSlots(
-        date: LocalDate,
-        timeAxis: List<LocalTime>
+        date: LocalDate
     ): List<TimeSlot> {
 
         if (!repeatRule.appliesTo(date)) return emptyList()
 
         val startIndex = TimeAxis.indexOf(timeRange.start)
-        val endIndex = TimeAxis.indexOf(timeRange.end)
-        val slotState = type.toSlotState()
+        val endIndex =
+            if (timeRange.end == LocalTime.MIDNIGHT)
+                TimeAxis.indices.last + 1
+            else
+                TimeAxis.indexOf(timeRange.end)
+
+        // ★ 安全装置（必須）
+        if (startIndex == -1 || endIndex == -1)
+            return emptyList()
 
         return (startIndex until endIndex).map { index ->
             TimeSlot(
                 index = index,
                 person = person,
-                state = slotState,
+                state = type.toSlotState(),
                 flexWindow = type.flexWindow,
                 taskName = null
             )

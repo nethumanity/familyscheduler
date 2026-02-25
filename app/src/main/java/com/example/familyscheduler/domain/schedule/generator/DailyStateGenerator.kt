@@ -29,7 +29,7 @@ object DailyStateGenerator {
         // ② 各ScheduleTemplateをexpandして上書き
         template.schedules.forEach { schedule ->
 
-            val expanded = schedule.expandToSlots(date, timeAxis)
+            val expanded = schedule.expandToSlots(date)
 
             expanded.forEach { slot ->
                 slots[slot.index] = slot

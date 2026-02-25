@@ -165,8 +165,8 @@ class TimelineViewModel : ViewModel() {
 
             val expanded =
                 schedule.expandToSlots(
-                    date,
-                    TimeAxis.all
+                    date//,
+                    //TimeAxis.all
                 )
 
             expanded.forEach { slot ->
@@ -179,6 +179,10 @@ class TimelineViewModel : ViewModel() {
 
     // UI用
     fun slotsAt(index: Int): List<TimeSlot> {
+
+        if (index !in TimeAxis.indices)
+            return emptyList()
+
         return _slots.value.filter {
             it.index == index
         }
