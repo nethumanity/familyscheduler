@@ -12,13 +12,16 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -31,8 +34,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.familyscheduler.R
 import com.example.familyscheduler.domain.person.Person
 import com.example.familyscheduler.domain.time.TimeAxis
 import com.example.familyscheduler.ui.components.SlotStateSelectionSheet
@@ -52,6 +57,7 @@ fun TimelineScreen(
     val currentDate by viewModel.currentDate.collectAsState()
     val dailyStates by viewModel.dailyStates.collectAsState()
     val slots by viewModel.slots.collectAsState()
+    val evaluations by viewModel.evaluations.collectAsState()
 
     LaunchedEffect(currentDate) {
         Log.d("TimelineScreen", "reload triggered")
@@ -135,7 +141,10 @@ fun TimelineScreen(
                         fontSize = 12.sp
                     )
 
-                    /*if (availabilityState.shouldWarn) {
+                    //★編集中
+                    val evaluation = evaluations.getOrNull(index)
+                    if (evaluation?.missing ?: 0 > 0) {
+                    //if (availabilityState.shouldWarn) {
                         Spacer(modifier = Modifier.height(2.dp))
                         Icon(
                             painter = painterResource(R.drawable.ic_warning),
@@ -144,8 +153,6 @@ fun TimelineScreen(
                             modifier = Modifier.size(16.dp)
                         )
                     }
-
-                     */
                 }
 
                 // 各personのslot

@@ -5,7 +5,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.familyscheduler.data.repository.InMemoryDailyStateRepository
 import com.example.familyscheduler.data.repository.InMemoryTemplateRepository
+import com.example.familyscheduler.domain.evaluation.AvailabilityEngine
+import com.example.familyscheduler.domain.evaluation.AvailabilityEvaluation
 import com.example.familyscheduler.domain.person.Person
+import com.example.familyscheduler.domain.requirement.HouseholdRequirement
 import com.example.familyscheduler.domain.schedule.DailyState
 import com.example.familyscheduler.domain.schedule.DailyTemplate
 import com.example.familyscheduler.domain.slot.SlotState
@@ -37,6 +40,18 @@ class TimelineViewModel : ViewModel() {
 
     val slots: StateFlow<List<TimeSlot>> =
         _slots
+
+    private val _evaluations =
+        MutableStateFlow<List<AvailabilityEvaluation>>(emptyList())
+
+    val evaluations: StateFlow<List<AvailabilityEvaluation>> =
+        _evaluations
+
+    private val _householdRequirements =
+        MutableStateFlow<List<HouseholdRequirement>>(emptyList())
+
+    val householdRequirements: StateFlow<List<HouseholdRequirement>> =
+        _householdRequirements
 
     // 初期化
     init {
@@ -81,12 +96,11 @@ class TimelineViewModel : ViewModel() {
             _slots.value =
                 states.flatMap { it.slots }
 
+            recomputeAvailability()
         }
-
-        //recomputeAvailability()
     }
 
-    //編集（状態変更）仮置き
+    //編集（状態変更）★仮置き
     fun changeSlotState(
         index: Int,
         person: Person,
@@ -100,7 +114,7 @@ class TimelineViewModel : ViewModel() {
             }
         }
 
-        //recomputeAvailability()
+        recomputeAvailability()
     }
 
     // 前日
@@ -153,5 +167,53 @@ class TimelineViewModel : ViewModel() {
 
         return InMemoryTemplateRepository
             .getTemplatesForPerson(person)
+    }
+
+    // Requirements
+    fun setHouseholdRequirements(
+        requirements: List<HouseholdRequirement>
+    ) {
+        _householdRequirements.value = requirements
+
+        recomputeAvailability()
+    }
+
+    // 割り当て + 評価
+    // UNASSIGNEDを探しChildCareSamples.allowedのSlotStateにする
+    // →余ったUNASSIGNEDはFREEにする
+    // →allowedを満たしているか全スロットを確認し、満たしてないRowに警告アイコンをだす）
+    private fun recomputeAvailability() {
+
+        val result =
+            AvailabilityEngine.recompute(
+                originalSlots = _slots.value,
+                requirements = _householdRequirements.value
+            )
+
+        /* 下記はAvailabilityEngine内で行う
+        if (slots.value.isEmpty()) return
+
+        // requirementsが無い日はそのまま表示
+        if (householdRequirements.isEmpty()) {
+            _evaluations.value = emptyList()
+            return
+        }
+
+        val workingSlots = _slots.value.toMutableList()
+
+        assignHouseholdTasks(
+            slots = workingSlots,
+            requirements = householdRequirements
+        )
+
+        val evaluations = evaluateAvailability(
+            slots = workingSlots,
+            requirements = householdRequirements
+        )
+
+         */
+
+        _slots.value = result.slots
+        _evaluations.value = result.evaluations
     }
 }

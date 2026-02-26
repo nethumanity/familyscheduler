@@ -8,11 +8,8 @@ import java.util.UUID
 
 data class ScheduleTemplate(            //1つのScheduleTemplateは1つのDailyTemplateに紐づくのがわかりやすい
     val id: UUID = UUID.randomUUID(),   //DailyTemplateとの紐づけのため？
-    //val person: Person,
-    //val title: String,
     val type: ScheduleType,
-    val timeRange: TimeRange,
-    //val repeatRule: RepeatRule
+    val timeRange: TimeRange
 ) {
     fun expandToSlots(
         person: Person

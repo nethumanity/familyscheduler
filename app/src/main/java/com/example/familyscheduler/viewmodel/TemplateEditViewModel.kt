@@ -22,4 +22,14 @@ class TemplateEditViewModel : ViewModel() {
             )
         }
     }
+
+    fun debugPrintTemplates() {
+        viewModelScope.launch {
+            val templates =
+                InMemoryTemplateRepository.getTemplates()
+            templates.forEach {
+                Log.d("TemplateDebug", it.toString())
+            }
+        }
+    }
 }

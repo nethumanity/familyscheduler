@@ -272,6 +272,8 @@ fun ScheduleInputScreen(
                     viewModel.saveTemplate(template)
 
                     onSaved()
+
+                    viewModel.debugPrintTemplates()
                 }
 
             ) {

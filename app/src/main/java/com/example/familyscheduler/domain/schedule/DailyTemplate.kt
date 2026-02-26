@@ -12,7 +12,7 @@ data class DailyTemplate(   //1つのDailyTemplateは複数のScheduleTemplate�
     val person: Person,
     val name: String,
     val schedules: List<ScheduleTemplate>,
-    val repeatRule: RepeatRule  //null可、RepeatRule?にする？
+    val repeatRule: RepeatRule
 ) {
     fun expandToSlots(date: LocalDate): List<TimeSlot> {
 

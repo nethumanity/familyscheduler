@@ -1,4 +1,4 @@
-package com.example.familyscheduler.domain.evaluation
+package com.example.familyscheduler.domain.proposal
 
 import com.example.familyscheduler.domain.person.Person
 import com.example.familyscheduler.domain.slot.SlotState
@@ -24,4 +24,3 @@ data class FlexResolveProposal(
         return moveCost * 10 + distanceCost
     }
 }
-
