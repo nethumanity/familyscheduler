@@ -2,90 +2,96 @@ package com.example.familyscheduler.ui.components
 
 import com.example.familyscheduler.domain.schedule.ScheduleTemplate
 import com.example.familyscheduler.domain.schedule.TimeRange
+import com.example.familyscheduler.domain.time.TimeAxis
 import java.time.LocalTime
 
 object TemplateNormalizer {
 
-    private val axisStart =
-        LocalTime.MIDNIGHT
+    private val axisStart = TimeAxis.all.first()
 
-    private val axisEndExclusive =
-        LocalTime.MIDNIGHT
+    private val axisEnd = TimeAxis.all.last()
 
     fun normalize(
         schedules: List<ScheduleTemplate>
     ): List<ScheduleTemplate> {
 
-        val result =
-            mutableListOf<ScheduleTemplate>()
+        val result = mutableListOf<ScheduleTemplate>()
 
         schedules.forEach { schedule ->
 
-            val start =
-                clampToAxis(schedule.timeRange.start)
+            val rawStart = snapToAxis(schedule.timeRange.start)
+            val rawEnd = snapToAxis(schedule.timeRange.end)
 
-            val end =
-                clampToAxis(schedule.timeRange.end)
+            if (rawStart == rawEnd) {
+                return@forEach
+            }
 
-            when {
+            if (rawStart < rawEnd) {
 
-                start == end -> {
-                    // 無効
-                }
-
-                start < end -> {
-
-                    result.add(
-                        schedule.copy(
-                            timeRange =
-                                TimeRange(start, end)
+                // 通常
+                result.add(
+                    schedule.copy(
+                        timeRange = TimeRange(
+                            start = rawStart,
+                            end = rawEnd
                         )
                     )
-                }
+                )
 
-                start > end -> {
+            } else {
 
-                    // start → 24:00
-                    result.add(
-                        schedule.copy(
-                            timeRange =
-                                TimeRange(
-                                    start,
-                                    LocalTime.MIDNIGHT
-                                )
+                // 日またぎ
+
+                result.add(
+                    schedule.copy(
+                        timeRange = TimeRange(
+                            start = rawStart,
+                            end = nextSlot(axisEnd)
                         )
                     )
+                )
 
-                    // 00:00 → end
-                    result.add(
-                        schedule.copy(
-                            timeRange =
-                                TimeRange(
-                                    axisStart,
-                                    end
-                                )
+                result.add(
+                    schedule.copy(
+                        timeRange = TimeRange(
+                            start = axisStart,
+                            end = rawEnd
                         )
                     )
-                }
+                )
             }
         }
 
-        return result.sortedBy {
-            it.timeRange.start
-        }
+        return result.sortedBy { it.timeRange.start }
     }
 
-    private fun clampToAxis(
-        time: LocalTime
-    ): LocalTime {
+    private fun snapToAxis(time: LocalTime): LocalTime {
 
-        return when {
+        val totalMinutes = time.hour * 60 + time.minute
 
-            time < axisStart ->
-                axisStart
+        val snapped =
+            (totalMinutes / TimeAxis.stepMinutes) * TimeAxis.stepMinutes
 
-            else ->
-                time
+        val snappedTime =
+            LocalTime.of(snapped / 60, snapped % 60)
+
+        return clamp(snappedTime)
+    }
+
+    private fun clamp(time: LocalTime): LocalTime =
+        when {
+            time < axisStart -> axisStart
+            time > axisEnd -> axisEnd
+            else -> time
         }
+
+    private fun nextSlot(time: LocalTime): LocalTime {
+
+        val idx = TimeAxis.indexOf(time)
+
+        return if (idx == -1 || idx == TimeAxis.all.lastIndex)
+            LocalTime.MIDNIGHT
+        else
+            TimeAxis.all[idx + 1]
     }
 }

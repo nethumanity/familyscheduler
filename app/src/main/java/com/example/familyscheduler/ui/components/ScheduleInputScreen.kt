@@ -1,11 +1,10 @@
 package com.example.familyscheduler.ui.components
 
-import android.R.attr.padding
+import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -16,7 +15,6 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults.contentPadding
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -217,7 +215,7 @@ fun ScheduleInputScreen(
         item {
 
             FixedScheduleSection(
-                person = selectedPerson,
+                //person = selectedPerson,
                 schedules = fixedSchedules
             )
         }
@@ -227,7 +225,7 @@ fun ScheduleInputScreen(
         item {
 
             AdditionalScheduleSection(
-                person = selectedPerson,
+                //person = selectedPerson,
                 schedules = additionalSchedules
             )
         }
@@ -248,15 +246,26 @@ fun ScheduleInputScreen(
                         else
                             RepeatRule.Daily
 
-                    val normalizedSchedules =
-                        TemplateNormalizer.normalize(
-                            fixedSchedules + additionalSchedules
-                        )
+                    val rawList = fixedSchedules + additionalSchedules
+
+                    println("--- Debug: 保存直前のリスト内容 ---")
+                    rawList.forEach {
+                        println("Title: ${it.type.title}, Category: ${it.type.category}, Time: ${it.timeRange}")
+                    }
+
+                    val schedules =
+                        TemplateNormalizer.normalize(rawList)
+
+                    schedules.forEach { schedule ->
+                        Log.d("DebugSave",
+                            "Title: ${schedule.type.title}, Category: ${schedule.type.category}," +
+                                    " Start: ${schedule.timeRange.start}, End: ${schedule.timeRange.end}")
+                    }
 
                     val template = DailyTemplate(
                         person = selectedPerson,
                         name = templateName,
-                        schedules = normalizedSchedules,
+                        schedules = schedules,
                         repeatRule = repeatRule
                     )
 
@@ -272,7 +281,7 @@ fun ScheduleInputScreen(
     }
 }
 
-/*
+/* 旧バージョンを念のため保管
 @Composable
 fun ScheduleInputScreen(
     viewModel: TemplateEditViewModel = viewModel(),
@@ -344,20 +353,20 @@ fun ScheduleInputScreen(
         Button(
             onClick = {
                 val type = ScheduleType(
-                    id = UUID.randomUUID(),
                     title = title,
                     category = selectedCategory
                 )
                 val schedule = ScheduleTemplate(
-                    person = Person.FATHER,
-                    title = title,
                     type = type,
                     timeRange = TimeRange(
                         start = startTime,
                         end = endTime
-                    ),
-                    repeatRule = RepeatRule.Weekly(selectedDays)
+                    )
                 )
+
+                Log.d("DebugSave",
+                    "Title: ${schedule.type.title}, Category: ${schedule.type.category}")
+
                 val template = DailyTemplate(
                     id = UUID.randomUUID(),
                     person = Person.FATHER,
@@ -373,157 +382,4 @@ fun ScheduleInputScreen(
         }
     }
 }
-
-/*
-@Composable
-fun ScheduleInputScreen(
-    viewModel: TemplateEditViewModel = viewModel(),
-    onSaved: () -> Unit
-) {
-
-    var title by remember { mutableStateOf("") }
-
-    var startHour by remember { mutableStateOf("9") }
-    var startMinute by remember { mutableStateOf("0") }
-
-    var endHour by remember { mutableStateOf("17") }
-    var endMinute by remember { mutableStateOf("0") }
-
-    var selectedPerson by remember { mutableStateOf(Person.FATHER) }
-
-    Column(
-        modifier = Modifier.padding(16.dp)
-    ) {
-
-        Text("スケジュール入力", style = MaterialTheme.typography.titleLarge)
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // 名前入力
-        OutlinedTextField(
-            value = title,
-            onValueChange = { title = it },
-            label = { Text("タイトル") },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Person選択
-        Text("対象者")
-
-        Row {
-
-            Person.entries.forEach { person ->
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-
-                    RadioButton(
-                        selected = selectedPerson == person,
-                        onClick = { selectedPerson = person }
-                    )
-
-                    Text(person.name)
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // 開始時刻
-        Text("開始時刻")
-
-        Row {
-
-            OutlinedTextField(
-                value = startHour,
-                onValueChange = { startHour = it },
-                label = { Text("時") },
-                modifier = Modifier.width(80.dp)
-            )
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            OutlinedTextField(
-                value = startMinute,
-                onValueChange = { startMinute = it },
-                label = { Text("分") },
-                modifier = Modifier.width(80.dp)
-            )
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // 終了時刻
-        Text("終了時刻")
-
-        Row {
-
-            OutlinedTextField(
-                value = endHour,
-                onValueChange = { endHour = it },
-                label = { Text("時") },
-                modifier = Modifier.width(80.dp)
-            )
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            OutlinedTextField(
-                value = endMinute,
-                onValueChange = { endMinute = it },
-                label = { Text("分") },
-                modifier = Modifier.width(80.dp)
-            )
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Button(
-            onClick = {
-
-                val start = LocalTime.of(
-                    startHour.toIntOrNull() ?: 0,
-                    startMinute.toIntOrNull() ?: 0
-                )
-
-                val end = LocalTime.of(
-                    endHour.toIntOrNull() ?: 0,
-                    endMinute.toIntOrNull() ?: 0
-                )
-
-                val type = ScheduleType(
-                    id = UUID.randomUUID(),
-                    title = title,
-                    category = StateCategory.WORK
-                )
-
-                val schedule = ScheduleTemplate(
-                    person = selectedPerson,
-                    title = title,
-                    type = type,
-                    timeRange = TimeRange(start, end),
-                    repeatRule = RepeatRule.Daily
-                )
-
-                val template = DailyTemplate(
-                    id = UUID.randomUUID(),
-                    person = selectedPerson,
-                    name = title,
-                    schedules = listOf(schedule),
-                    repeatRule = RepeatRule.Daily
-                )
-
-                viewModel.saveTemplate(template)
-
-                onSaved()
-            }
-        ) {
-
-            Text("保存")
-        }
-    }
-}
-
  */

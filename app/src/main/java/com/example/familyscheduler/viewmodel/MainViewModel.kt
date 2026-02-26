@@ -324,7 +324,7 @@ class MainViewModel(
         return candidatePriority <= initialPriority
     }
 
-    //編集（状態変更）
+    /*編集（状態変更） →当面、TimelineViewModelに移動
     fun changeSlotState(
         index: Int,
         person: Person,
@@ -340,6 +340,8 @@ class MainViewModel(
 
         recomputeAvailability()
     }
+
+     */
 
     fun applyFlexResolveProposal(proposal: FlexResolveProposal) {
         _slots.value = _slots.value.map { slot ->

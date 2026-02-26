@@ -8,7 +8,7 @@ data class TimeRange(
 ) {
 
     init {
-        require(start < end)
+        require(start != end)
     }
 
     companion object {
@@ -17,11 +17,8 @@ data class TimeRange(
             start: LocalTime,
             end: LocalTime
         ): TimeRange? {
-            return if (start < end) {
-                TimeRange(start, end)
-            } else {
-                null
-            }
+            if (start == end) return null
+            return TimeRange(start, end)
         }
     }
 

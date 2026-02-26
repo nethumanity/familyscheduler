@@ -14,13 +14,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.example.familyscheduler.domain.person.Person
 import com.example.familyscheduler.domain.schedule.ScheduleTemplate
 import com.example.familyscheduler.domain.schedule.StateCategory
 
 @Composable
 fun FixedScheduleSection(
-    person: Person,
     schedules: MutableList<ScheduleTemplate>
 ) {
 
@@ -48,8 +46,8 @@ fun FixedScheduleSection(
         if (enabled) {
 
             TimeRangeEditor(
-                person,
                 StateCategory.WORK,
+                "仕事",
                 schedules
             )
         }
@@ -59,8 +57,8 @@ fun FixedScheduleSection(
         Text("往路通勤")
 
         TimeRangeEditor(
-            person,
             StateCategory.BLOCKED,
+            "往路通勤",
             schedules
         )
 
@@ -69,8 +67,8 @@ fun FixedScheduleSection(
         Text("復路通勤")
 
         TimeRangeEditor(
-            person,
             StateCategory.BLOCKED,
+            "復路通勤",
             schedules
         )
 
@@ -79,8 +77,8 @@ fun FixedScheduleSection(
         Text("睡眠")
 
         TimeRangeEditor(
-            person,
             StateCategory.REST,
+            "睡眠",
             schedules
         )
     }

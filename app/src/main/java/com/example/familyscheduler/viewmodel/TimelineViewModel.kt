@@ -1,5 +1,6 @@
 package com.example.familyscheduler.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.familyscheduler.data.repository.InMemoryDailyStateRepository
@@ -7,8 +8,8 @@ import com.example.familyscheduler.data.repository.InMemoryTemplateRepository
 import com.example.familyscheduler.domain.person.Person
 import com.example.familyscheduler.domain.schedule.DailyState
 import com.example.familyscheduler.domain.schedule.DailyTemplate
+import com.example.familyscheduler.domain.slot.SlotState
 import com.example.familyscheduler.domain.slot.TimeSlot
-import com.example.familyscheduler.domain.time.TimeAxis
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -69,12 +70,34 @@ class TimelineViewModel : ViewModel() {
 
                 states =
                     InMemoryDailyStateRepository.get(date)
+
+                Log.d("TimelineVM", "templates size = ${templates.size}")
+                Log.d("TimelineVM", "states size = ${states.size}")
+                Log.d("TimelineVM", "slots size = ${states.flatMap { it.slots }.size}")
             }
 
             _dailyStates.value = states
 
             _slots.value =
                 states.flatMap { it.slots }
+
+        }
+
+        //recomputeAvailability()
+    }
+
+    //編集（状態変更）仮置き
+    fun changeSlotState(
+        index: Int,
+        person: Person,
+        newState: SlotState
+    ) {
+        _slots.value = _slots.value.map { slot ->
+            if (slot.index == index && slot.person == person) {
+                slot.copy(state = newState, flexWindow = 0, taskName = null)
+            } else {
+                slot
+            }
         }
 
         //recomputeAvailability()
@@ -94,30 +117,6 @@ class TimelineViewModel : ViewModel() {
         )
     }
 
-    fun applyTemplate(template: DailyTemplate) {
-
-        viewModelScope.launch {
-
-            val slots =
-                generateSlotsFromTemplate(
-                    template,
-                    _currentDate.value
-                )
-
-            val state =
-                DailyState(
-                    person = template.person,
-                    date = _currentDate.value,
-                    templateName = template.name,
-                    slots = slots
-                )
-
-            InMemoryDailyStateRepository.save(state)
-
-            loadForDate(_currentDate.value)
-        }
-    }
-
     // Template → DailyState生成
     private fun generateDailyStatesFromTemplates(
         templates: List<DailyTemplate>,
@@ -129,10 +128,7 @@ class TimelineViewModel : ViewModel() {
             .map { template ->
 
                 val slots =
-                    generateSlotsFromTemplate(
-                        template,
-                        date
-                    )
+                    template.expandToSlots(date)
 
                 DailyState(
                     person = template.person,
@@ -143,45 +139,8 @@ class TimelineViewModel : ViewModel() {
             }
     }
 
-    private fun generateSlotsFromTemplate(
-        template: DailyTemplate,
-        date: LocalDate
-    ): List<TimeSlot> {
-
-        // 初期：全部UNASSIGNED
-        val baseSlots =
-            TimeAxis.indices.map { index ->
-                TimeSlot(
-                    index = index,
-                    person = template.person,
-                    state = com.example.familyscheduler.domain.slot.SlotState.UNASSIGNED,
-                    flexWindow = 0,
-                    taskName = null
-                )
-            }.toMutableList()
-
-        // ScheduleTemplateで上書き
-        template.schedules.forEach { schedule ->
-
-            val expanded =
-                schedule.expandToSlots(
-                    date//,
-                    //TimeAxis.all
-                )
-
-            expanded.forEach { slot ->
-                baseSlots[slot.index] = slot
-            }
-        }
-
-        return baseSlots
-    }
-
-    // UI用
+    // UI用　（いらない？）
     fun slotsAt(index: Int): List<TimeSlot> {
-
-        if (index !in TimeAxis.indices)
-            return emptyList()
 
         return _slots.value.filter {
             it.index == index

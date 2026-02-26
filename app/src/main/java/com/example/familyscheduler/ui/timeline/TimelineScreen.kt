@@ -5,35 +5,22 @@
 
 package com.example.familyscheduler.ui.timeline
 
-import android.R.attr.padding
+import android.util.Log
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.RadioButton
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -44,34 +31,36 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.familyscheduler.R
-import com.example.familyscheduler.domain.evaluation.FlexResolveProposal
 import com.example.familyscheduler.domain.person.Person
 import com.example.familyscheduler.domain.time.TimeAxis
-import com.example.familyscheduler.domain.time.TimeAxis.indexOf
 import com.example.familyscheduler.ui.components.SlotStateSelectionSheet
-import com.example.familyscheduler.ui.components.renderMissingReason
 import com.example.familyscheduler.ui.components.slotStateColor
-import com.example.familyscheduler.viewmodel.MainViewModel
 import com.example.familyscheduler.viewmodel.TimelineViewModel
 
 @Composable
 fun TimelineScreen(
     viewModel: TimelineViewModel,
-    viewModel_toBeRemoved: MainViewModel
+    persons: List<Person> =
+        listOf(Person.FATHER, Person.MOTHER)
+    //viewModel_toBeRemoved: MainViewModel
 ) {
 
-    val persons = listOf(Person.FATHER, Person.MOTHER)
+    //val persons = listOf(Person.FATHER, Person.MOTHER)
 
     val currentDate by viewModel.currentDate.collectAsState()
     val dailyStates by viewModel.dailyStates.collectAsState()
     val slots by viewModel.slots.collectAsState()
+
+    LaunchedEffect(currentDate) {
+        Log.d("TimelineScreen", "reload triggered")
+        viewModel.loadForDate(currentDate)
+    }
+
+    LaunchedEffect(slots){
+        Log.d("TimelineScreen", "slots received = ${slots.size}")
+    }
 
     var editingSlot by remember { mutableStateOf<Pair<Int, Person>?>(null) }
     //var showAddDailyStateDialog by remember { mutableStateOf(false) }
@@ -90,11 +79,19 @@ fun TimelineScreen(
             )
         }
 
-        items((TimeAxis.displayStartIndex..TimeAxis.displayEndIndex).toList()
-        ) { index ->
+        items(
+            count = TimeAxis.displayEndIndex - TimeAxis.displayStartIndex + 1
+        ) { offset ->
+
+            val index = TimeAxis.displayStartIndex + offset
 
             val time = TimeAxis.all[index]
-            val rowSlots = viewModel.slotsAt(index)
+            val rowSlots = slots.filter { it.index == index }   //あるいは、viewModel.slotsAt(index)
+
+            Log.d(
+                "TimelineScreen",
+                "index=$index rowSlots=${rowSlots.map{it.person}}"
+            )
             //val availabilityState =
             //  viewModel.availabilityStateAt(time)
 
@@ -153,8 +150,8 @@ fun TimelineScreen(
 
                 // 各personのslot
                 persons.forEach { person ->
-                    val slot = rowSlots.find {
-                        it.person == person
+                    val slot = rowSlots.firstOrNull { slot ->
+                        slot.person.name == person.name
                     }
 
                     Box(
@@ -196,7 +193,7 @@ fun TimelineScreen(
                 time = time,
                 person = person,
                 onSelect = { newState ->
-                    viewModel_toBeRemoved.changeSlotState(
+                    viewModel.changeSlotState(
                         index = index,
                         person = person,
                         newState = newState
@@ -292,11 +289,4 @@ fun TimelineScreen(
 
      */
 
-    // ============================
-    // 初期ロード
-    // ============================
-
-    LaunchedEffect(currentDate) {
-        viewModel.loadForDate(currentDate)
-    }
 }

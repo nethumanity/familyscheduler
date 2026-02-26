@@ -1,23 +1,22 @@
 package com.example.familyscheduler.ui.components
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import com.example.familyscheduler.domain.person.Person
-import com.example.familyscheduler.domain.schedule.RepeatRule
 import com.example.familyscheduler.domain.schedule.ScheduleTemplate
 import com.example.familyscheduler.domain.schedule.ScheduleType
 import com.example.familyscheduler.domain.schedule.StateCategory
-import com.example.familyscheduler.domain.schedule.TimeRange.Companion.createOrNull
+import com.example.familyscheduler.domain.schedule.TimeRange
 import com.example.familyscheduler.domain.time.TimeDropdownPicker
 import java.time.LocalTime
 
 @Composable
 fun TimeRangeEditor(
-    person: Person,
     category: StateCategory,
+    title: String, // ← 追加：何のための時間枠か識別するため
     schedules: MutableList<ScheduleTemplate>
 ) {
 
@@ -31,28 +30,30 @@ fun TimeRangeEditor(
 
     fun updateScheduleIfValid() {
 
-        val timeRange =
-            createOrNull(start, end)
-                ?: return   // ← 無効なら何もしない（重要）
-
         val type =
             ScheduleType(
-                title = category.name,
+                title = title,
                 category = category
             )
 
         schedules.removeAll {
-            it.type.category == category
+            //it.type.category == category
+            // カテゴリではなく「タイトル」で重複排除する（通勤の重複を防ぐ）
+            it.type.title == title
         }
+
+        if (start == end) return
 
         schedules.add(
             ScheduleTemplate(
-                person = person,
                 type = type,
-                timeRange = timeRange,
-                repeatRule = RepeatRule.Daily
+                timeRange = TimeRange(start = start, end = end)
             )
         )
+    }
+
+    LaunchedEffect(start, end) {
+        updateScheduleIfValid()
     }
 
     TimeDropdownPicker(
@@ -60,7 +61,6 @@ fun TimeRangeEditor(
         selectedTime = start
     ) {
         start = it
-        updateScheduleIfValid()
     }
 
     TimeDropdownPicker(
@@ -68,6 +68,5 @@ fun TimeRangeEditor(
         selectedTime = end
     ) {
         end = it
-        updateScheduleIfValid()
     }
 }

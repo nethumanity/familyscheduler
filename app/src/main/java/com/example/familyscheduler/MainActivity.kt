@@ -21,7 +21,6 @@ import com.example.familyscheduler.ui.theme.FamilySchedulerTheme
 import com.example.familyscheduler.ui.timeline.FooterBar
 import com.example.familyscheduler.ui.timeline.HeaderBar
 import com.example.familyscheduler.ui.timeline.TimelineScreen
-import com.example.familyscheduler.viewmodel.MainViewModel
 import com.example.familyscheduler.viewmodel.TimelineViewModel
 
 class MainActivity : ComponentActivity() {
@@ -45,8 +44,6 @@ fun MainScreen() {
 
     val timelineViewModel:
             TimelineViewModel = viewModel()
-    val mainViewModel:
-            MainViewModel = viewModel()
 
     Scaffold(
         topBar = {
@@ -89,8 +86,7 @@ fun MainScreen() {
 
             composable("timeline") {
                 TimelineScreen(
-                    viewModel = timelineViewModel,
-                    viewModel_toBeRemoved = mainViewModel
+                    viewModel = timelineViewModel
                 )
             }
 
@@ -108,9 +104,6 @@ fun MainScreen() {
             composable("schedule_input") {
                 ScheduleInputScreen(
                     onSaved = {
-                        timelineViewModel.loadForDate(
-                            timelineViewModel.currentDate.value
-                        )
                         navController.popBackStack("timeline", false)
                     },
                     onBack = {
