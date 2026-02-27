@@ -1,6 +1,9 @@
 package com.example.familyscheduler.viewmodel
 
 import android.util.Log
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.familyscheduler.data.repository.InMemoryDailyStateRepository
@@ -52,6 +55,11 @@ class TimelineViewModel : ViewModel() {
 
     val householdRequirements: StateFlow<List<HouseholdRequirement>> =
         _householdRequirements
+
+    var editingTemplateFor by mutableStateOf<Person?>(null)
+        private set
+
+    val templates by mutableStateOf<List<DailyTemplate>>(emptyList())
 
     // 初期化
     init {
@@ -215,5 +223,32 @@ class TimelineViewModel : ViewModel() {
 
         _slots.value = result.slots
         _evaluations.value = result.evaluations
+    }
+
+    fun onTemplateHeaderClick(person: Person) {
+        editingTemplateFor = person
+    }
+
+    fun dismissTemplateSheet() {
+        editingTemplateFor = null
+    }
+
+    fun applyTemplate(person: Person, template: DailyTemplate) {
+        viewModelScope.launch {
+
+            val slots = template.expandToSlots(currentDate.value)
+
+            val state = DailyState(
+                date = currentDate.value,
+                person = person,
+                templateName = template.name,
+                slots = slots
+            )
+
+            InMemoryDailyStateRepository.save(state)
+
+            loadForDate(currentDate.value)
+            dismissTemplateSheet()
+        }
     }
 }
