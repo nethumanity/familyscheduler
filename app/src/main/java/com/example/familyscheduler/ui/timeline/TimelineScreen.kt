@@ -64,6 +64,7 @@ fun TimelineScreen(
     val dailyStates by viewModel.dailyStates.collectAsState()
     val slots by viewModel.slots.collectAsState()
     val evaluations by viewModel.evaluations.collectAsState()
+    val templates by viewModel.templates.collectAsState()
 
     LaunchedEffect(currentDate) {
         Log.d("TimelineScreen", "reload triggered")
@@ -86,7 +87,7 @@ fun TimelineScreen(
                 persons = persons,
                 dailyStates = dailyStates,
                 onDailyStateClick = { person ->
-                    viewModel.onTemplateHeaderClick(person)
+                    viewModel.showTemplateSheet(person)
                 }
             )
         }
@@ -237,7 +238,7 @@ fun TimelineScreen(
 
             LazyColumn {
 
-                items(viewModel.templates) { template ->
+                items(templates) { template ->
 
                     ListItem(
                         headlineContent = {

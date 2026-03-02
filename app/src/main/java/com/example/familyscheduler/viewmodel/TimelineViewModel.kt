@@ -59,7 +59,10 @@ class TimelineViewModel : ViewModel() {
     var editingTemplateFor by mutableStateOf<Person?>(null)
         private set
 
-    val templates by mutableStateOf<List<DailyTemplate>>(emptyList())
+    private val _templates =
+        MutableStateFlow<List<DailyTemplate>>(emptyList())
+
+    val templates: StateFlow<List<DailyTemplate>> = _templates
 
     // 初期化
     init {
@@ -139,7 +142,13 @@ class TimelineViewModel : ViewModel() {
         )
     }
 
-    // Template → DailyState生成
+    // Template表示・選択 → DailyState生成
+    fun showTemplateSheet(person: Person) {
+        editingTemplateFor = person
+        _templates.value =
+            InMemoryTemplateRepository.getTemplatesForPerson(person)
+    }
+
     private fun generateDailyStatesFromTemplates(
         templates: List<DailyTemplate>,
         date: LocalDate
@@ -225,9 +234,9 @@ class TimelineViewModel : ViewModel() {
         _evaluations.value = result.evaluations
     }
 
-    fun onTemplateHeaderClick(person: Person) {
-        editingTemplateFor = person
-    }
+    //fun onTemplateHeaderClick(person: Person) {
+    //    editingTemplateFor = person
+    //}
 
     fun dismissTemplateSheet() {
         editingTemplateFor = null
