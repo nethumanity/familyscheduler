@@ -3,12 +3,8 @@ package com.example.familyscheduler.viewmodel
 import androidx.lifecycle.ViewModel
 import com.example.familyscheduler.domain.evaluation.AvailabilityEvaluation
 import com.example.familyscheduler.domain.evaluation.AvailabilityState
-import com.example.familyscheduler.domain.evaluation.BlockInfo
 import com.example.familyscheduler.domain.proposal.FlexResolveProposal
-import com.example.familyscheduler.domain.evaluation.MissingReason
-import com.example.familyscheduler.domain.person.Person
 import com.example.familyscheduler.domain.requirement.HouseholdRequirement
-import com.example.familyscheduler.domain.requirement.RequirementType
 import com.example.familyscheduler.domain.slot.SlotState
 import com.example.familyscheduler.domain.slot.TimeSlot
 import com.example.familyscheduler.domain.time.TimeAxis

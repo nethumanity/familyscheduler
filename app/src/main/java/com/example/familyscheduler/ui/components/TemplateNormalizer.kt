@@ -1,7 +1,7 @@
 package com.example.familyscheduler.ui.components
 
 import com.example.familyscheduler.domain.schedule.ScheduleTemplate
-import com.example.familyscheduler.domain.schedule.TimeRange
+import com.example.familyscheduler.domain.time.TimeRange
 import com.example.familyscheduler.domain.time.TimeAxis
 import java.time.LocalTime
 

@@ -1,4 +1,4 @@
-package com.example.familyscheduler.ui.components
+package com.example.familyscheduler.ui.inputs
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row

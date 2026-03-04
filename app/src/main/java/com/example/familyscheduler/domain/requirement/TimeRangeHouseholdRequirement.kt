@@ -1,6 +1,7 @@
 package com.example.familyscheduler.domain.requirement
 
 import com.example.familyscheduler.domain.person.Person
+import com.example.familyscheduler.domain.slot.FlexWindowParameters
 import com.example.familyscheduler.domain.slot.SlotState
 
 class TimeRangeHouseholdRequirement(
@@ -8,8 +9,8 @@ class TimeRangeHouseholdRequirement(
     override val targetState: SlotState,
     override val requiredCount: Int,
     override val allowedPersons: Set<Person>,
-    override val type: RequirementType,
-    override val flexWindowSlots: Int,
+    //override val type: RequirementType,
+    override val flexWindowSlots: FlexWindowParameters, //Int,
     private val startIndex: Int,
     private val endIndex: Int
 ) : HouseholdRequirement {

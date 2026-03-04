@@ -1,4 +1,4 @@
-package com.example.familyscheduler.ui.components
+package com.example.familyscheduler.ui.inputs
 
 import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
@@ -33,6 +33,7 @@ import com.example.familyscheduler.domain.person.Person
 import com.example.familyscheduler.domain.schedule.DailyTemplate
 import com.example.familyscheduler.domain.schedule.RepeatRule
 import com.example.familyscheduler.domain.schedule.ScheduleTemplate
+import com.example.familyscheduler.ui.components.TemplateNormalizer
 import com.example.familyscheduler.viewmodel.TemplateEditViewModel
 import java.time.DayOfWeek
 

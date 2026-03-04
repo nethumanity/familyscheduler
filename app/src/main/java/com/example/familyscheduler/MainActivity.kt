@@ -15,7 +15,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.example.familyscheduler.ui.components.ScheduleInputScreen
+import com.example.familyscheduler.ui.inputs.ScheduleInputScreen
 import com.example.familyscheduler.ui.components.SettingsScreen
 import com.example.familyscheduler.ui.theme.FamilySchedulerTheme
 import com.example.familyscheduler.ui.timeline.FooterBar

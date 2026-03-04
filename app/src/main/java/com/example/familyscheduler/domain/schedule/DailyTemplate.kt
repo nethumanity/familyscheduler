@@ -1,6 +1,7 @@
 package com.example.familyscheduler.domain.schedule
 
 import com.example.familyscheduler.domain.person.Person
+import com.example.familyscheduler.domain.slot.FlexWindowParameters
 import com.example.familyscheduler.domain.slot.SlotState
 import com.example.familyscheduler.domain.slot.TimeSlot
 import com.example.familyscheduler.domain.time.TimeAxis
@@ -25,7 +26,7 @@ data class DailyTemplate(   //1つのDailyTemplateは複数のScheduleTemplate�
                     index = index,
                     person = person,
                     state = SlotState.UNASSIGNED,
-                    flexWindow = 0,
+                    flexWindow = FlexWindowParameters(0, 0),
                     taskName = null
                 )
             }.toMutableList()

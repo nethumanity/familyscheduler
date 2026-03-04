@@ -3,7 +3,7 @@ package com.example.familyscheduler.domain.evaluation
 import com.example.familyscheduler.domain.person.Person
 import com.example.familyscheduler.domain.proposal.FlexResolveProposal
 import com.example.familyscheduler.domain.requirement.HouseholdRequirement
-import com.example.familyscheduler.domain.requirement.RequirementType
+import com.example.familyscheduler.domain.slot.FlexWindowParameters
 import com.example.familyscheduler.domain.slot.SlotState
 import com.example.familyscheduler.domain.slot.TimeSlot
 import com.example.familyscheduler.domain.time.TimeAxis
@@ -52,7 +52,7 @@ object AvailabilityEngine {
         if (requirements.isNullOrEmpty()) return
         // FIX → FLEX
         val orderedReqs = requirements.sortedBy {
-            if (it.type == RequirementType.FIX) 0 else 1
+            if (it.flexWindowSlots.backward == 0 && it.flexWindowSlots.forward == 0) 0 else 1
         }
 
         for (req in orderedReqs) {
@@ -82,7 +82,10 @@ object AvailabilityEngine {
 
                     val i = slots.indexOf(slot)
                     slots[i] = slot.copy(state = req.targetState,
-                        flexWindow = req.flexWindowSlots,
+                        flexWindow = FlexWindowParameters(
+                            backward = req.flexWindowSlots.backward,
+                            forward = req.flexWindowSlots.forward
+                        ),
                         taskName = req.name
                     )
                     remaining--
@@ -174,8 +177,8 @@ object AvailabilityEngine {
                 index = index,
                 requiredCount = activeReqs.sumOf { it.requiredCount },
                 availableCount = slotsAtIndex.count { it.state == SlotState.FREE },
-                hasFixRequirement = activeReqs.any { it.type == RequirementType.FIX },
-                hasFlexRequirement = activeReqs.any { it.type == RequirementType.FLEX },
+                hasFixRequirement = activeReqs.any { it.flexWindowSlots.backward == 0 && it.flexWindowSlots.forward == 0 },
+                hasFlexRequirement = activeReqs.any { it.flexWindowSlots.backward != 0 || it.flexWindowSlots.forward != 0 },
                 missing = reasons.size,
                 reasons = reasons,
                 flexProposals = proposals   // ←ここが重要
@@ -211,7 +214,7 @@ object AvailabilityEngine {
 
         val hasFlexRequirement =
             requirements.any {
-                it.type == RequirementType.FLEX &&
+                (it.flexWindowSlots.backward != 0 || it.flexWindowSlots.forward != 0) &&
                         it.isRequiredAt(index)
             }
 
@@ -246,7 +249,7 @@ object AvailabilityEngine {
             .find { it.name == reason.requirementName }
             ?: return emptyList()
         val window = requirement.flexWindowSlots
-        val offsets = (-window until 0) + (1..window)
+        val offsets = (-window.backward until 0) + (1..window.forward)
 
         return offsets.flatMap { offset ->
             val candidateIndex = index + offset

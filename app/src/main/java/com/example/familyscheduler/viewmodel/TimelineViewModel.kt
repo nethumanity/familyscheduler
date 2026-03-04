@@ -14,6 +14,7 @@ import com.example.familyscheduler.domain.person.Person
 import com.example.familyscheduler.domain.requirement.HouseholdRequirement
 import com.example.familyscheduler.domain.schedule.DailyState
 import com.example.familyscheduler.domain.schedule.DailyTemplate
+import com.example.familyscheduler.domain.slot.FlexWindowParameters
 import com.example.familyscheduler.domain.slot.SlotState
 import com.example.familyscheduler.domain.slot.TimeSlot
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -119,7 +120,7 @@ class TimelineViewModel : ViewModel() {
     ) {
         _slots.value = _slots.value.map { slot ->
             if (slot.index == index && slot.person == person) {
-                slot.copy(state = newState, flexWindow = 0, taskName = null)
+                slot.copy(state = newState, flexWindow = FlexWindowParameters(0, 0), taskName = null)
             } else {
                 slot
             }

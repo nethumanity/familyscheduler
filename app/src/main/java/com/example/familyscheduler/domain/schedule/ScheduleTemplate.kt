@@ -1,8 +1,10 @@
 package com.example.familyscheduler.domain.schedule
 
 import com.example.familyscheduler.domain.person.Person
+import com.example.familyscheduler.domain.slot.FlexWindowParameters
 import com.example.familyscheduler.domain.slot.TimeSlot
 import com.example.familyscheduler.domain.time.TimeAxis
+import com.example.familyscheduler.domain.time.TimeRange
 import java.time.LocalTime
 import java.util.UUID
 
@@ -31,7 +33,7 @@ data class ScheduleTemplate(            //1つのScheduleTemplateは1つのDaily
                 index = index,
                 person = person,
                 state = type.toSlotState(),
-                flexWindow = type.flexWindow,
+                flexWindow = FlexWindowParameters(type.flexWindow, type.flexWindow),
                 taskName = null
             )
         }

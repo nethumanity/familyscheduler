@@ -1,6 +1,7 @@
 package com.example.familyscheduler.domain.requirement
 
 import com.example.familyscheduler.domain.person.Person
+import com.example.familyscheduler.domain.slot.FlexWindowParameters
 import com.example.familyscheduler.domain.slot.SlotState
 
 interface HouseholdRequirement {
@@ -8,8 +9,8 @@ interface HouseholdRequirement {
     val targetState: SlotState         // このRequirementが満たす意味的state
     val requiredCount: Int             // 同時に何人必要か
     val allowedPersons: Set<Person>    // 担当可能な人
-    val type: RequirementType          // FIX / FLEX
-    val flexWindowSlots: Int           // FLEX用（FIXなら0）
+    //val type: RequirementType          // FIX / FLEX
+    val flexWindowSlots: FlexWindowParameters //Int           // FLEX用（FIXなら0）
 
     fun isRequiredAt(index: Int): Boolean
 

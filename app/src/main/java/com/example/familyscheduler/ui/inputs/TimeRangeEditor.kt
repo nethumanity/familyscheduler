@@ -1,4 +1,4 @@
-package com.example.familyscheduler.ui.components
+package com.example.familyscheduler.ui.inputs
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -9,7 +9,7 @@ import androidx.compose.runtime.setValue
 import com.example.familyscheduler.domain.schedule.ScheduleTemplate
 import com.example.familyscheduler.domain.schedule.ScheduleType
 import com.example.familyscheduler.domain.schedule.StateCategory
-import com.example.familyscheduler.domain.schedule.TimeRange
+import com.example.familyscheduler.domain.time.TimeRange
 import com.example.familyscheduler.domain.time.TimeDropdownPicker
 import java.time.LocalTime
 

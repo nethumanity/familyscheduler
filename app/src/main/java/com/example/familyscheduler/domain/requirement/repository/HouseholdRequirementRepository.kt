@@ -1,14 +1,16 @@
 package com.example.familyscheduler.domain.requirement.repository
 
-import com.example.familyscheduler.domain.requirement.HouseholdRequirement
+import com.example.familyscheduler.domain.requirement.HouseholdRequirementRule
 import java.time.LocalDate
 
 interface HouseholdRequirementRepository {
 
-    suspend fun getByDate(date: LocalDate): List<HouseholdRequirement>
+    suspend fun getByDate(
+        date: LocalDate
+    ): List<HouseholdRequirementRule>
 
     suspend fun saveForDate(
         date: LocalDate,
-        requirements: List<HouseholdRequirement>
+        requirements: List<HouseholdRequirementRule>
     )
 }

@@ -20,25 +20,3 @@ object InMemoryDailyStateRepository {
             .toList()
     }
 }
-
-/*
-class InMemoryDailyStateRepository : DailyStateRepository {
-
-    private val states = mutableListOf<DailyState>()
-
-    override suspend fun get(date: LocalDate, person: Person): DailyState? {
-        return states.find {
-            it.date == date && it.person == person
-        }
-    }
-
-    override suspend fun save(state: DailyState) {
-        states.removeIf {
-            it.date == state.date && it.person == state.person
-        }
-        states.add(state)
-    }
-}
-
- */
-

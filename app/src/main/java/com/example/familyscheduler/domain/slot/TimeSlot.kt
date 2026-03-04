@@ -6,6 +6,6 @@ data class TimeSlot(
     val index: Int,
     val person: Person,
     val state: SlotState,
-    val flexWindow: Int = 0,
+    val flexWindow: FlexWindowParameters,
     val taskName: String?
 )
