@@ -3,7 +3,6 @@ package com.example.familyscheduler.viewmodel
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.familyscheduler.data.repository.InMemoryHouseholdRequirementRepository
 import com.example.familyscheduler.domain.person.Person
 import com.example.familyscheduler.domain.requirement.HouseholdRequirementRule
 import com.example.familyscheduler.domain.requirement.repository.HouseholdRequirementRepository
@@ -12,7 +11,6 @@ import com.example.familyscheduler.domain.slot.SlotState
 import com.example.familyscheduler.domain.time.TimeRange
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -57,11 +55,6 @@ class OneTimeAppointmentViewModel(
     fun updateFlex(minutes: Int) =
         _uiState.update { it.copy(flexMinutes = minutes) }
 
-    fun isValid(): Boolean {
-        val s = _uiState.value
-        return s.taskName.isNotBlank() && s.startTime != null
-    }
-
     fun onSave() {
         val input = _uiState.value
         val rule = convertToRule(input)
@@ -74,6 +67,13 @@ class OneTimeAppointmentViewModel(
             val current = repository.getByDate(date)
             val updated = current + rule
             repository.saveForDate(date, updated)
+
+            /* 後で実装する
+            AvailabilityEngine.recompute(
+                originalSlots =,
+                requirements =
+            )
+             */
 
             Log.d("OneTimeSave", "After save: $updated")
 
@@ -144,7 +144,7 @@ class OneTimeAppointmentViewModel(
         val flexMinutes: Int = 0
     )
 
-    enum class AllowedPersonOption(label: String) {
+    enum class AllowedPersonOption(val label: String) {
         EITHER("どちらでも"),
         FATHER_ONLY("父のみ"),
         MOTHER_ONLY("母のみ")
