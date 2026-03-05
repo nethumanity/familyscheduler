@@ -9,18 +9,23 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.familyscheduler.data.repository.InMemoryHouseholdRequirementRepository
 import com.example.familyscheduler.ui.inputs.ScheduleInputScreen
 import com.example.familyscheduler.ui.components.SettingsScreen
+import com.example.familyscheduler.ui.inputs.OneTimeAppointmentInputScreen
 import com.example.familyscheduler.ui.theme.FamilySchedulerTheme
 import com.example.familyscheduler.ui.timeline.FooterBar
 import com.example.familyscheduler.ui.timeline.HeaderBar
 import com.example.familyscheduler.ui.timeline.TimelineScreen
+import com.example.familyscheduler.viewmodel.Factory.OneTimeAppointmentViewModelFactory
+import com.example.familyscheduler.viewmodel.OneTimeAppointmentViewModel
 import com.example.familyscheduler.viewmodel.TimelineViewModel
 
 class MainActivity : ComponentActivity() {
@@ -44,6 +49,8 @@ fun MainScreen() {
 
     val timelineViewModel:
             TimelineViewModel = viewModel()
+
+    val repository = remember{ InMemoryHouseholdRequirementRepository() }
 
     Scaffold(
         topBar = {
@@ -71,6 +78,9 @@ fun MainScreen() {
 
         bottomBar = {
             FooterBar(
+                onAddClick = {
+                    navController.navigate("add")
+                },    //編集中
                 onSettingsClick = {
                     navController.navigate("settings")
                 }
@@ -87,6 +97,24 @@ fun MainScreen() {
             composable("timeline") {
                 TimelineScreen(
                     viewModel = timelineViewModel
+                )
+            }
+
+            composable("add") {
+
+                val oneTimeViewModel: OneTimeAppointmentViewModel =
+                    viewModel(
+                        factory = OneTimeAppointmentViewModelFactory(repository)
+                    )
+
+                OneTimeAppointmentInputScreen(
+                    viewModel = oneTimeViewModel,
+                    onBack = {
+                        navController.popBackStack("timeline", false)
+                             },
+                    onSaved ={
+                        navController.popBackStack("timeline", false)
+                    }
                 )
             }
 

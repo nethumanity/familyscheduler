@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -16,7 +17,8 @@ import com.example.familyscheduler.viewmodel.OneTimeAppointmentViewModel
 @Composable
 fun OneTimeAppointmentInputScreen(
     viewModel: OneTimeAppointmentViewModel,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onSaved: () -> Unit
 ) {
     val state by viewModel.uiState.collectAsState()
 
@@ -55,6 +57,12 @@ fun OneTimeAppointmentInputScreen(
             enabled = viewModel.isValid()
         ) {
             Text("保存")
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.saveCompleted.collect {
+            onSaved()
         }
     }
 }

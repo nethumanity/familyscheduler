@@ -1,26 +1,34 @@
 package com.example.familyscheduler.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.familyscheduler.data.repository.InMemoryHouseholdRequirementRepository
 import com.example.familyscheduler.domain.person.Person
 import com.example.familyscheduler.domain.requirement.HouseholdRequirementRule
+import com.example.familyscheduler.domain.requirement.repository.HouseholdRequirementRepository
 import com.example.familyscheduler.domain.slot.FlexWindowParameters
 import com.example.familyscheduler.domain.slot.SlotState
 import com.example.familyscheduler.domain.time.TimeRange
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalTime
 
 class OneTimeAppointmentViewModel(
-    private val repository: InMemoryHouseholdRequirementRepository
+    private val repository: HouseholdRequirementRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(OneTimeAppointmentInput())
-    val uiState: StateFlow<OneTimeAppointmentInput> = _uiState
+    val uiState = _uiState.asStateFlow()
+
+    private val _saveCompleted = MutableSharedFlow<Unit>()
+    val saveCompleted = _saveCompleted.asSharedFlow()
 
     fun updateDate(date: LocalDate) =
         _uiState.update { it.copy(date = date) }
@@ -57,12 +65,19 @@ class OneTimeAppointmentViewModel(
     fun onSave() {
         val input = _uiState.value
         val rule = convertToRule(input)
+
+        Log.d("OneTimeSave", "Saving rule: $rule")
+
         val date = rule.date ?: return
 
         viewModelScope.launch {
             val current = repository.getByDate(date)
             val updated = current + rule
             repository.saveForDate(date, updated)
+
+            Log.d("OneTimeSave", "After save: $updated")
+
+            _saveCompleted.emit(Unit)
         }
     }
 

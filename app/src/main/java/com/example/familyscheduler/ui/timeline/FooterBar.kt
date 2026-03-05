@@ -14,6 +14,7 @@ import com.example.familyscheduler.R
 
 @Composable
 fun FooterBar(
+    onAddClick: () -> Unit,
     onSettingsClick: () -> Unit
 ) {
     NavigationBar {
@@ -60,9 +61,9 @@ fun FooterBar(
             label = { Text("今日") }
         )
 
-        NavigationBarItem(
+        NavigationBarItem(      // ここをタップして呼ぶ
             selected = false,
-            onClick = {},
+            onClick = onAddClick,
             icon = {
                 Icon(
                     painter = painterResource(R.drawable.ic_add),
@@ -74,7 +75,7 @@ fun FooterBar(
             label = { Text("予定を追加") }
         )
 
-        NavigationBarItem(  //ここをタップしたら「SettingScreen」→「ScheduleInputScreen」になるようにしてください
+        NavigationBarItem(
             selected = false,
             onClick = onSettingsClick,
             icon = {
