@@ -25,6 +25,7 @@ import com.example.familyscheduler.ui.timeline.FooterBar
 import com.example.familyscheduler.ui.timeline.HeaderBar
 import com.example.familyscheduler.ui.timeline.TimelineScreen
 import com.example.familyscheduler.viewmodel.Factory.OneTimeAppointmentViewModelFactory
+import com.example.familyscheduler.viewmodel.Factory.TimelineViewModelFactory
 import com.example.familyscheduler.viewmodel.OneTimeAppointmentViewModel
 import com.example.familyscheduler.viewmodel.TimelineViewModel
 
@@ -47,10 +48,12 @@ fun MainScreen() {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
 
-    val timelineViewModel:
-            TimelineViewModel = viewModel()
-
     val repository = remember{ InMemoryHouseholdRequirementRepository() }
+
+    val timelineViewModel: TimelineViewModel =
+        viewModel(factory = TimelineViewModelFactory(repository))
+
+
 
     Scaffold(
         topBar = {

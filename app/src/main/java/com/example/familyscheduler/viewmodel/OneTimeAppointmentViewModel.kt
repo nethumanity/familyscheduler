@@ -68,12 +68,11 @@ class OneTimeAppointmentViewModel(
             val updated = current + rule
             repository.saveForDate(date, updated)
 
-            /* 後で実装する
-            AvailabilityEngine.recompute(
-                originalSlots =,
-                requirements =
-            )
-             */
+            //後で実装する
+            //timelineViewModel.setHouseholdRequirements(
+                //originalSlots =,
+                //requirements =
+            //)
 
             Log.d("OneTimeSave", "After save: $updated")
 

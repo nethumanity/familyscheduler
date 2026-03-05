@@ -15,12 +15,14 @@ object AvailabilityEngine {
         requirements: List<HouseholdRequirement>
     ): AvailabilityResult {
 
+        /*
         if (requirements.isEmpty()) {
             return AvailabilityResult(
                 slots = originalSlots,
                 evaluations = emptyList()
             )
         }
+         */
 
         val workingSlots =
             originalSlots.map { it.copy() }.toMutableList()
@@ -93,7 +95,7 @@ object AvailabilityEngine {
             }
         }
 
-        assignRemainingUnassignedToFree(slots)
+        //assignRemainingUnassignedToFree(slots)
     }
 
     private fun assignRemainingUnassignedToFree(

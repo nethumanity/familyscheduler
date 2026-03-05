@@ -19,4 +19,3 @@ data class HouseholdRequirementRule(
     val daysOfWeek: Set<DayOfWeek>?,    // 入力系②毎日/曜日指定パターン、③子どもルーティン用
     val timeRange: TimeRange
 )
-

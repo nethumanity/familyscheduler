@@ -12,6 +12,7 @@ import com.example.familyscheduler.domain.evaluation.AvailabilityEngine
 import com.example.familyscheduler.domain.evaluation.AvailabilityEvaluation
 import com.example.familyscheduler.domain.person.Person
 import com.example.familyscheduler.domain.requirement.HouseholdRequirement
+import com.example.familyscheduler.domain.requirement.repository.HouseholdRequirementRepository
 import com.example.familyscheduler.domain.schedule.DailyState
 import com.example.familyscheduler.domain.schedule.DailyTemplate
 import com.example.familyscheduler.domain.slot.FlexWindowParameters
@@ -22,7 +23,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 
-class TimelineViewModel : ViewModel() {
+class TimelineViewModel(
+    private val repository: HouseholdRequirementRepository
+) : ViewModel() {
 
     // 現在日付
     private val _currentDate =
