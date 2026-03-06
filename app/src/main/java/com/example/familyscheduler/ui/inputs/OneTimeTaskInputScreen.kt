@@ -17,11 +17,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.familyscheduler.viewmodel.OneTimeAppointmentViewModel
+import com.example.familyscheduler.viewmodel.OneTimeTaskViewModel
 
 @Composable
-fun OneTimeAppointmentInputScreen(
-    viewModel: OneTimeAppointmentViewModel,
+fun OneTimeTaskInputScreen(
+    viewModel: OneTimeTaskViewModel,
     onBack: () -> Unit,
     onSaved: () -> Unit
 ) {

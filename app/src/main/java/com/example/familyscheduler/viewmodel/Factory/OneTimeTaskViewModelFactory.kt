@@ -3,9 +3,9 @@ package com.example.familyscheduler.viewmodel.Factory
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.example.familyscheduler.domain.requirement.repository.HouseholdRequirementRepository
-import com.example.familyscheduler.viewmodel.OneTimeAppointmentViewModel
+import com.example.familyscheduler.viewmodel.OneTimeTaskViewModel
 
-class OneTimeAppointmentViewModelFactory(
+class OneTimeTaskViewModelFactory(
     private val repository: HouseholdRequirementRepository
 ) : ViewModelProvider.Factory {
 
@@ -14,10 +14,10 @@ class OneTimeAppointmentViewModelFactory(
     ): T {
 
         if (modelClass.isAssignableFrom(
-                OneTimeAppointmentViewModel::class.java
+                OneTimeTaskViewModel::class.java
             )
         ) {
-            return OneTimeAppointmentViewModel(repository) as T
+            return OneTimeTaskViewModel(repository) as T
         }
 
         throw IllegalArgumentException("Unknown ViewModel class")

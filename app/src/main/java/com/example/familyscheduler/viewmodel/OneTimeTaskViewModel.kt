@@ -19,7 +19,7 @@ import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalTime
 
-class OneTimeAppointmentViewModel(
+class OneTimeTaskViewModel(
     private val repository: HouseholdRequirementRepository
 ) : ViewModel() {
 

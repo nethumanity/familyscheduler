@@ -17,16 +17,16 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.familyscheduler.data.repository.InMemoryHouseholdRequirementRepository
-import com.example.familyscheduler.ui.inputs.ScheduleInputScreen
 import com.example.familyscheduler.ui.components.SettingsScreen
-import com.example.familyscheduler.ui.inputs.OneTimeAppointmentInputScreen
+import com.example.familyscheduler.ui.inputs.OneTimeTaskInputScreen
+import com.example.familyscheduler.ui.inputs.ScheduleInputScreen
 import com.example.familyscheduler.ui.theme.FamilySchedulerTheme
 import com.example.familyscheduler.ui.timeline.FooterBar
 import com.example.familyscheduler.ui.timeline.HeaderBar
 import com.example.familyscheduler.ui.timeline.TimelineScreen
-import com.example.familyscheduler.viewmodel.Factory.OneTimeAppointmentViewModelFactory
+import com.example.familyscheduler.viewmodel.Factory.OneTimeTaskViewModelFactory
 import com.example.familyscheduler.viewmodel.Factory.TimelineViewModelFactory
-import com.example.familyscheduler.viewmodel.OneTimeAppointmentViewModel
+import com.example.familyscheduler.viewmodel.OneTimeTaskViewModel
 import com.example.familyscheduler.viewmodel.TimelineViewModel
 
 class MainActivity : ComponentActivity() {
@@ -108,12 +108,12 @@ fun MainScreen() {
 
             composable("add") {
 
-                val oneTimeViewModel: OneTimeAppointmentViewModel =
+                val oneTimeViewModel: OneTimeTaskViewModel =
                     viewModel(
-                        factory = OneTimeAppointmentViewModelFactory(repository)
+                        factory = OneTimeTaskViewModelFactory(repository)
                     )
 
-                OneTimeAppointmentInputScreen(
+                OneTimeTaskInputScreen(
                     viewModel = oneTimeViewModel,
                     onBack = {
                         navController.popBackStack("timeline", false)

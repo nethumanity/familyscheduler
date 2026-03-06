@@ -9,14 +9,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.example.familyscheduler.viewmodel.OneTimeAppointmentViewModel
+import com.example.familyscheduler.viewmodel.OneTimeTaskViewModel
 import java.time.*
 import java.time.format.DateTimeFormatter
 
 @Composable
 fun DateSection(
-    state: OneTimeAppointmentViewModel.OneTimeAppointmentInput,
-    viewModel: OneTimeAppointmentViewModel
+    state: OneTimeTaskViewModel.OneTimeAppointmentInput,
+    viewModel: OneTimeTaskViewModel
 ) {
     var showDialog by remember { mutableStateOf(false) }
 
