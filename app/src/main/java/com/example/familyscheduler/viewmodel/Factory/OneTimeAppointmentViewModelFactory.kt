@@ -9,14 +9,17 @@ class OneTimeAppointmentViewModelFactory(
     private val repository: HouseholdRequirementRepository
 ) : ViewModelProvider.Factory {
 
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+    override fun <T : ViewModel> create(
+        modelClass: Class<T>
+    ): T {
+
         if (modelClass.isAssignableFrom(
                 OneTimeAppointmentViewModel::class.java
             )
         ) {
-            @Suppress("UNCHECKED_CAST")
             return OneTimeAppointmentViewModel(repository) as T
         }
-        throw IllegalArgumentException("Unknown ViewModel")
+
+        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }

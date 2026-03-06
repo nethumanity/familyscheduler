@@ -59,22 +59,12 @@ class OneTimeAppointmentViewModel(
         val input = _uiState.value
         val rule = convertToRule(input)
 
-        Log.d("OneTimeSave", "Saving rule: $rule")
-
-        val date = rule.date ?: return
+        //val date = rule.date ?: return
 
         viewModelScope.launch {
-            val current = repository.getByDate(date)
-            val updated = current + rule
-            repository.saveForDate(date, updated)
+            repository.add(rule)
 
-            //後で実装する
-            //timelineViewModel.setHouseholdRequirements(
-                //originalSlots =,
-                //requirements =
-            //)
-
-            Log.d("OneTimeSave", "After save: $updated")
+            Log.d("OneTimeSave", "Saved rule: $rule")
 
             _saveCompleted.emit(Unit)
         }

@@ -159,7 +159,7 @@ class TimelineViewModel(
     ): List<DailyState> {
 
         return templates
-            .filter { it.repeatRule.appliesTo(date) }
+            .filter { it.repeatRule.appliesTo(date) }   // ここでRepeatRuleのフィルターかかる
             .map { template ->
 
                 val slots =
@@ -190,57 +190,32 @@ class TimelineViewModel(
             .getTemplatesForPerson(person)
     }
 
-    // Requirements
-    fun setHouseholdRequirements(
-        requirements: List<HouseholdRequirement>
-    ) {
-        _householdRequirements.value = requirements
-
-        recomputeAvailability()
-    }
-
     // 割り当て + 評価
     // UNASSIGNEDを探しChildCareSamples.allowedのSlotStateにする
     // →余ったUNASSIGNEDはFREEにする
     // →allowedを満たしているか全スロットを確認し、満たしてないRowに警告アイコンをだす）
-    private fun recomputeAvailability() {
+    fun recomputeAvailability() {
 
-        val result =
-            AvailabilityEngine.recompute(
-                originalSlots = _slots.value,
-                requirements = _householdRequirements.value
-            )
+        val date = _currentDate.value
 
-        /* 下記はAvailabilityEngine内で行う
-        if (slots.value.isEmpty()) return
+        viewModelScope.launch{
 
-        // requirementsが無い日はそのまま表示
-        if (householdRequirements.isEmpty()) {
-            _evaluations.value = emptyList()
-            return
+            val rules =
+                repository.getByDate(date)
+
+            val requirements =
+                rules.map { it.toRequirement() }
+
+            val result =
+                AvailabilityEngine.recompute(
+                    originalSlots = _slots.value,
+                    requirements = requirements
+                )
+
+            _slots.value = result.slots
+            //_evaluations.value = result.evaluations　←Engineの中身を精査した後に必要性を判断
         }
-
-        val workingSlots = _slots.value.toMutableList()
-
-        assignHouseholdTasks(
-            slots = workingSlots,
-            requirements = householdRequirements
-        )
-
-        val evaluations = evaluateAvailability(
-            slots = workingSlots,
-            requirements = householdRequirements
-        )
-
-         */
-
-        _slots.value = result.slots
-        _evaluations.value = result.evaluations
     }
-
-    //fun onTemplateHeaderClick(person: Person) {
-    //    editingTemplateFor = person
-    //}
 
     fun dismissTemplateSheet() {
         editingTemplateFor = null

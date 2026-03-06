@@ -55,11 +55,7 @@ fun TimelineScreen(
     viewModel: TimelineViewModel,
     persons: List<Person> =
         listOf(Person.FATHER, Person.MOTHER)
-    //viewModel_toBeRemoved: MainViewModel
 ) {
-
-    //val persons = listOf(Person.FATHER, Person.MOTHER)
-
     val currentDate by viewModel.currentDate.collectAsState()
     val dailyStates by viewModel.dailyStates.collectAsState()
     val slots by viewModel.slots.collectAsState()
@@ -68,7 +64,7 @@ fun TimelineScreen(
 
     LaunchedEffect(currentDate) {
         Log.d("TimelineScreen", "reload triggered")
-        viewModel.loadForDate(currentDate)
+        viewModel.loadForDate(currentDate)  // recomputeが走る
     }
 
     LaunchedEffect(slots){

@@ -9,10 +9,14 @@ class TimelineViewModelFactory(
     private val repository: HouseholdRequirementRepository
 ) : ViewModelProvider.Factory {
 
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+    override fun <T : ViewModel> create(
+        modelClass: Class<T>
+    ): T {
+
         if (modelClass.isAssignableFrom(TimelineViewModel::class.java)) {
             return TimelineViewModel(repository) as T
         }
+
         throw IllegalArgumentException("Unknown ViewModel class")
     }
 }

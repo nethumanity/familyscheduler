@@ -9,8 +9,7 @@ interface HouseholdRequirementRepository {
         date: LocalDate
     ): List<HouseholdRequirementRule>
 
-    suspend fun saveForDate(
-        date: LocalDate,
-        requirements: List<HouseholdRequirementRule>
+    suspend fun add(
+        rule: HouseholdRequirementRule
     )
 }

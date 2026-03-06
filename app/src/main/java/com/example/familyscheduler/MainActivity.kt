@@ -81,9 +81,10 @@ fun MainScreen() {
 
         bottomBar = {
             FooterBar(
+                // 今後ここに追加していく（route = calender, children, today）
                 onAddClick = {
                     navController.navigate("add")
-                },    //編集中
+                },
                 onSettingsClick = {
                     navController.navigate("settings")
                 }
@@ -103,6 +104,8 @@ fun MainScreen() {
                 )
             }
 
+            //composable() 今後ここに追加していく
+
             composable("add") {
 
                 val oneTimeViewModel: OneTimeAppointmentViewModel =
@@ -116,6 +119,7 @@ fun MainScreen() {
                         navController.popBackStack("timeline", false)
                              },
                     onSaved ={
+                        timelineViewModel.recomputeAvailability()
                         navController.popBackStack("timeline", false)
                     }
                 )
@@ -135,6 +139,7 @@ fun MainScreen() {
             composable("schedule_input") {
                 ScheduleInputScreen(
                     onSaved = {
+                        //timelineViewModel.recomputeAvailability()   ←将来的にここで走らせるかも
                         navController.popBackStack("timeline", false)
                     },
                     onBack = {

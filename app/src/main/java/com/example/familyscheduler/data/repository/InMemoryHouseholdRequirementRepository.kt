@@ -8,18 +8,15 @@ class InMemoryHouseholdRequirementRepository :
     HouseholdRequirementRepository {
 
     private val storage =
-        mutableMapOf<LocalDate, MutableList<HouseholdRequirementRule>>()
+        mutableListOf<HouseholdRequirementRule>()
 
     override suspend fun getByDate(
         date: LocalDate
     ): List<HouseholdRequirementRule> {
-        return storage[date]?.toList() ?: emptyList()
+        return storage.filter { it.isActiveOn(date) }
     }
 
-    override suspend fun saveForDate(
-        date: LocalDate,
-        requirements: List<HouseholdRequirementRule>
-    ) {
-        storage[date] = requirements.toMutableList()
+    override suspend fun add(rule: HouseholdRequirementRule) {
+        storage.add(rule)
     }
 }
