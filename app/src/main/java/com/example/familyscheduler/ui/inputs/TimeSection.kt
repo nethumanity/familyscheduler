@@ -7,37 +7,43 @@ import androidx.compose.runtime.Composable
 import com.example.familyscheduler.domain.time.DurationDropdown
 import com.example.familyscheduler.domain.time.FlexDropdown
 import com.example.familyscheduler.domain.time.TimeDropdownPicker
-import com.example.familyscheduler.viewmodel.OneTimeAppointmentViewModel
+import java.time.LocalTime
 
 @Composable
 fun TimeSection(
-    state: OneTimeAppointmentViewModel.OneTimeAppointmentInput,
-    viewModel: OneTimeAppointmentViewModel
+    startTime: LocalTime?,
+    durationMinutes: Int,
+    isFlexible: Boolean,
+    flexMinutes: Int,
+    onStartTimeChange: (LocalTime?) -> Unit,
+    onDurationMinutesChange: (Int) -> Unit,
+    onIsFlexibleChange: (Boolean) -> Unit,
+    onFlexMinutesChange: (Int) -> Unit
 ) {
 
     TimeDropdownPicker(
         label = "開始",
-        selectedTime = state.startTime,
-        onTimeSelected = { viewModel.updateStartTime(it) }
+        selectedTime = startTime,
+        onTimeSelected = { onStartTimeChange(it) }
     )
 
     DurationDropdown(
-        selectedMinutes = state.durationMinutes,
-        onSelect = { viewModel.updateDuration(it) }
+        selectedMinutes = durationMinutes,
+        onSelect = { onDurationMinutesChange(it) }
     )
 
     Row {
         Checkbox(
-            checked = state.isFlexible,
-            onCheckedChange = { viewModel.updateFlexible(it) }
+            checked = isFlexible,
+            onCheckedChange = { onIsFlexibleChange(it) }
         )
         Text("時間をずらせる予定")
     }
 
-    if (state.isFlexible) {
+    if (isFlexible) {
         FlexDropdown(
-            selectedMinutes = state.flexMinutes,
-            onSelect = { viewModel.updateFlex(it) }
+            selectedMinutes = flexMinutes,
+            onSelect = { onFlexMinutesChange(it) }
         )
     }
 }

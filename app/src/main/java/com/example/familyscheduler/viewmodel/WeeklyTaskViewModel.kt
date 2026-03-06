@@ -16,21 +16,18 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.time.LocalDate
+import java.time.DayOfWeek
 import java.time.LocalTime
 
-class OneTimeAppointmentViewModel(
+class WeeklyTaskViewModel(
     private val repository: HouseholdRequirementRepository
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(OneTimeAppointmentInput())
+    private val _uiState = MutableStateFlow(WeeklyTaskInput())
     val uiState = _uiState.asStateFlow()
 
     private val _saveCompleted = MutableSharedFlow<Unit>()
     val saveCompleted = _saveCompleted.asSharedFlow()
-
-    fun updateDate(date: LocalDate) =
-        _uiState.update { it.copy(date = date) }
 
     fun updateTaskName(name: String) =
         _uiState.update { it.copy(taskName = name) }
@@ -56,22 +53,53 @@ class OneTimeAppointmentViewModel(
     fun updateFlex(minutes: Int) =
         _uiState.update { it.copy(flexMinutes = minutes) }
 
+    fun toggleEveryDay(value: Boolean) {
+
+        _uiState.update {
+
+            it.copy(
+                everyDay = value,
+                daysOfWeek =
+                    if (value)
+                        DayOfWeek.values().toSet()
+                    else
+                        emptySet()
+            )
+        }
+    }
+
+    fun toggleDay(day: DayOfWeek) {
+
+        _uiState.update { state ->
+
+            val newDays =
+                if (day in state.daysOfWeek)
+                    state.daysOfWeek - day
+                else
+                    state.daysOfWeek + day
+
+            state.copy(
+                daysOfWeek = newDays,
+                everyDay = newDays.size == 7
+            )
+        }
+    }
+
     fun onSave() {
         val input = _uiState.value
         val rule = convertToRule(input)
 
-        //val date = rule.date ?: return
-
         viewModelScope.launch {
+
             repository.add(rule)
 
-            Log.d("OneTimeSave", "Saved rule: $rule")
+            Log.d("WeeklySave", "Saved rule: $rule")
 
             _saveCompleted.emit(Unit)
         }
     }
 
-    private fun convertToRule(input: OneTimeAppointmentInput): HouseholdRequirementRule {
+    fun convertToRule(input: WeeklyTaskInput): HouseholdRequirementRule {
 
         val start = input.startTime ?: error("StartTime required")
 
@@ -111,8 +139,12 @@ class OneTimeAppointmentViewModel(
             requiredCount = requiredCount,
             allowedPersons = allowedPersons,
             flexWindowSlots = flexSlots,
-            date = input.date,
-            daysOfWeek = null,
+            date = null,
+            daysOfWeek =
+                if (input.everyDay)
+                    DayOfWeek.values().toSet()
+                else
+                    input.daysOfWeek,
             timeRange = TimeRange(
                 start = start,
                 end = endTime
@@ -120,11 +152,13 @@ class OneTimeAppointmentViewModel(
         )
     }
 
-    data class OneTimeAppointmentInput(
-        val date: LocalDate = LocalDate.now(),
+    data class WeeklyTaskInput(
 
         val taskName: String = "",
         val targetState: SlotState = SlotState.LIFE,
+
+        val everyDay: Boolean = false,
+        val daysOfWeek: Set<DayOfWeek> = emptySet(),
 
         val isTwoPersonTask: Boolean = false,
         val allowedPersonOption: AllowedPersonOption = AllowedPersonOption.EITHER,
@@ -136,3 +170,4 @@ class OneTimeAppointmentViewModel(
         val flexMinutes: Int = 0
     )
 }
+

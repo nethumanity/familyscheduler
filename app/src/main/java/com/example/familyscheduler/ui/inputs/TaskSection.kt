@@ -6,30 +6,31 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import com.example.familyscheduler.domain.slot.SlotState
-import com.example.familyscheduler.viewmodel.OneTimeAppointmentViewModel
 
 @Composable
 fun TaskSection(
-    state: OneTimeAppointmentViewModel.OneTimeAppointmentInput,
-    viewModel: OneTimeAppointmentViewModel
+    taskName: String,
+    targetState: SlotState,
+    onTaskNameChange: (String) -> Unit,
+    onTargetStateChange: (SlotState) -> Unit
 ) {
 
     OutlinedTextField(
-        value = state.taskName,
-        onValueChange = { viewModel.updateTaskName(it) },
+        value = taskName,
+        onValueChange = onTaskNameChange,
         label = { Text("予定名") }
     )
 
     Row {
         RadioButton(
-            selected = state.targetState == SlotState.LIFE,
-            onClick = { viewModel.updateTargetState(SlotState.LIFE) }
+            selected = targetState == SlotState.LIFE,
+            onClick = { onTargetStateChange(SlotState.LIFE) }
         )
         Text("家事・用事・食事")
 
         RadioButton(
-            selected = state.targetState == SlotState.CHILDCARE,
-            onClick = { viewModel.updateTargetState(SlotState.CHILDCARE) }
+            selected = targetState == SlotState.CHILDCARE,
+            onClick = { onTargetStateChange(SlotState.CHILDCARE) }
         )
         Text("育児")
     }

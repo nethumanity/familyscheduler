@@ -12,43 +12,43 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.example.familyscheduler.viewmodel.OneTimeAppointmentViewModel
+import com.example.familyscheduler.domain.requirement.AllowedPersonOption
 
 @Composable
 fun PersonSection(
-    state: OneTimeAppointmentViewModel.OneTimeAppointmentInput,
-    viewModel: OneTimeAppointmentViewModel
+    isTwoPersonTask: Boolean,
+    allowedPersonOption: AllowedPersonOption,
+    onIsTwoPersonTaskChange: (Boolean) -> Unit,
+    onAllowedPersonOptionChange: (AllowedPersonOption) -> Unit
 ) {
 
     Row {
         Checkbox(
-            checked = state.isTwoPersonTask,
-            onCheckedChange = { viewModel.updateTwoPerson(it) }
+            checked = isTwoPersonTask,
+            onCheckedChange = { onIsTwoPersonTaskChange(it) }
         )
         Text("2人で対応する予定")
     }
 
-    if (!state.isTwoPersonTask) {
+    if (!isTwoPersonTask) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            OneTimeAppointmentViewModel.AllowedPersonOption.values().forEach { option ->
+            AllowedPersonOption.values().forEach { option ->
 
                 Row(
                     modifier = Modifier
                         .selectable(
-                            selected = state.allowedPersonOption == option,
-                            onClick = {
-                                viewModel.updateAllowedPerson(option)
-                            }
+                            selected = allowedPersonOption == option,
+                            onClick = { onAllowedPersonOptionChange(option) }
                         )
                         .padding(horizontal = 4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     RadioButton(
-                        selected = state.allowedPersonOption == option,
+                        selected = allowedPersonOption == option,
                         onClick = null
                     )
 

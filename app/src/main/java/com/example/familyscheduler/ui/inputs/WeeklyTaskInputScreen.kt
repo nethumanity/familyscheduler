@@ -17,39 +17,34 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.familyscheduler.viewmodel.OneTimeAppointmentViewModel
+import com.example.familyscheduler.viewmodel.WeeklyTaskViewModel
 
 @Composable
-fun OneTimeAppointmentInputScreen(
-    viewModel: OneTimeAppointmentViewModel,
-    onBack: () -> Unit,
-    onSaved: () -> Unit
+fun WeeklyTaskInputScreen(
+    viewModel: WeeklyTaskViewModel,
+    onSaved: () -> Unit,
+    onBack: () -> Unit
 ) {
     val state by viewModel.uiState.collectAsState()
 
-    LazyColumn(
+    LazyColumn (
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-
         item {
             Text(
-                text = "日付指定で予定を追加",
+                text = "毎週（毎日）の予定を追加",
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold
             )
         }
-
         item {
             Button(onClick = onBack) {
                 Text("戻る")
             }
         }
-
-        item { DateSection(state, viewModel) }
-
         item {
             TaskSection(
                 taskName = state.taskName,
@@ -58,16 +53,26 @@ fun OneTimeAppointmentInputScreen(
                 onTargetStateChange = { viewModel.updateTargetState(it) }
             )
         }
-
+        item {
+            DaysOfWeekSection(
+                everyDay = state.everyDay,
+                selectedDays = state.daysOfWeek,
+                onToggleEveryDay = {
+                    viewModel.toggleEveryDay(it)
+                },
+                onToggleDay = {
+                    viewModel.toggleDay(it)
+                }
+            )
+        }
         item {
             PersonSection(
                 isTwoPersonTask = state.isTwoPersonTask,
                 allowedPersonOption = state.allowedPersonOption,
-                onIsTwoPersonTaskChange = { viewModel.updateTwoPerson(it) },
-                onAllowedPersonOptionChange = {viewModel.updateAllowedPerson(it) }
+                onIsTwoPersonTaskChange = { viewModel.updateTwoPerson(it)},
+                onAllowedPersonOptionChange = {viewModel.updateAllowedPerson(it)}
             )
         }
-
         item {
             TimeSection(
                 startTime = state.startTime,
@@ -80,7 +85,6 @@ fun OneTimeAppointmentInputScreen(
                 onFlexMinutesChange = { viewModel.updateFlex(it) }
             )
         }
-
         item {
             Spacer(Modifier.height(8.dp))
 
