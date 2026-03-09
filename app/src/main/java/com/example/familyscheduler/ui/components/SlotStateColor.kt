@@ -11,5 +11,5 @@ fun slotStateColor(state: SlotState): Color =
         SlotState.UNASSIGNED -> Color.LightGray
         SlotState.FREE -> Color(0xFFFFF9C4)       // 黄
         SlotState.REST -> Color(0xFFC8E6C9)        // 緑
-        SlotState.LIFE -> Color(0xFFC8E6C9)        // 緑
+        SlotState.LIFE -> Color(0xFFE1BEE7)        // 紫
     }

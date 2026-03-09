@@ -18,7 +18,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.familyscheduler.data.repository.InMemoryHouseholdRequirementRepository
 import com.example.familyscheduler.ui.components.SettingsScreen
-import com.example.familyscheduler.ui.inputs.OneTimeTaskInputScreen
+import com.example.familyscheduler.ui.inputs.AddTaskScreen
 import com.example.familyscheduler.ui.inputs.ScheduleInputScreen
 import com.example.familyscheduler.ui.theme.FamilySchedulerTheme
 import com.example.familyscheduler.ui.timeline.FooterBar
@@ -26,8 +26,10 @@ import com.example.familyscheduler.ui.timeline.HeaderBar
 import com.example.familyscheduler.ui.timeline.TimelineScreen
 import com.example.familyscheduler.viewmodel.Factory.OneTimeTaskViewModelFactory
 import com.example.familyscheduler.viewmodel.Factory.TimelineViewModelFactory
+import com.example.familyscheduler.viewmodel.Factory.WeeklyTaskViewModelFactory
 import com.example.familyscheduler.viewmodel.OneTimeTaskViewModel
 import com.example.familyscheduler.viewmodel.TimelineViewModel
+import com.example.familyscheduler.viewmodel.WeeklyTaskViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -83,7 +85,7 @@ fun MainScreen() {
             FooterBar(
                 // 今後ここに追加していく（route = calender, children, today）
                 onAddClick = {
-                    navController.navigate("add")
+                    navController.navigate("add_task")
                 },
                 onSettingsClick = {
                     navController.navigate("settings")
@@ -106,18 +108,24 @@ fun MainScreen() {
 
             //composable() 今後ここに追加していく
 
-            composable("add") {
+            composable("add_task") {
 
                 val oneTimeViewModel: OneTimeTaskViewModel =
                     viewModel(
                         factory = OneTimeTaskViewModelFactory(repository)
                     )
 
-                OneTimeTaskInputScreen(
-                    viewModel = oneTimeViewModel,
+                val weeklyViewModel: WeeklyTaskViewModel =
+                    viewModel(
+                        factory = WeeklyTaskViewModelFactory(repository)
+                    )
+
+                AddTaskScreen(
+                    oneTimeViewModel = oneTimeViewModel,
+                    weeklyViewModel = weeklyViewModel,
                     onBack = {
                         navController.popBackStack("timeline", false)
-                             },
+                    },
                     onSaved ={
                         timelineViewModel.recomputeAvailability()
                         navController.popBackStack("timeline", false)

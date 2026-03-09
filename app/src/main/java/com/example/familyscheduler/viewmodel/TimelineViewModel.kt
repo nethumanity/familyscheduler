@@ -203,6 +203,11 @@ class TimelineViewModel(
             val rules =
                 repository.getByDate(date)
 
+            Log.d("TimelineVM", "rules size = ${rules.size}")
+            rules.forEach {
+                Log.d("TimelineVM", "rule = $it")
+            }
+
             val requirements =
                 rules.map { it.toRequirement() }
 
