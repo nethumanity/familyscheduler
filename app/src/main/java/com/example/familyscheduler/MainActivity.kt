@@ -16,7 +16,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.familyscheduler.data.repository.InMemoryChildRoutineRepository
 import com.example.familyscheduler.data.repository.InMemoryHouseholdRequirementRepository
+import com.example.familyscheduler.ui.components.ChildScreen
 import com.example.familyscheduler.ui.components.SettingsScreen
 import com.example.familyscheduler.ui.inputs.AddTaskScreen
 import com.example.familyscheduler.ui.inputs.ScheduleInputScreen
@@ -24,12 +26,15 @@ import com.example.familyscheduler.ui.theme.FamilySchedulerTheme
 import com.example.familyscheduler.ui.timeline.FooterBar
 import com.example.familyscheduler.ui.timeline.HeaderBar
 import com.example.familyscheduler.ui.timeline.TimelineScreen
+import com.example.familyscheduler.viewmodel.ChildRoutineViewModel
+import com.example.familyscheduler.viewmodel.Factory.ChildRoutineViewModelFactory
 import com.example.familyscheduler.viewmodel.Factory.OneTimeTaskViewModelFactory
 import com.example.familyscheduler.viewmodel.Factory.TimelineViewModelFactory
 import com.example.familyscheduler.viewmodel.Factory.WeeklyTaskViewModelFactory
 import com.example.familyscheduler.viewmodel.OneTimeTaskViewModel
 import com.example.familyscheduler.viewmodel.TimelineViewModel
 import com.example.familyscheduler.viewmodel.WeeklyTaskViewModel
+import java.time.LocalDate
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -83,10 +88,14 @@ fun MainScreen() {
 
         bottomBar = {
             FooterBar(
-                // 今後ここに追加していく（route = calender, today）
+                // 今後ここに追加していく（route = calender）
 
                 onChildClick = {
                     navController.navigate("child")
+                },
+                onTodayClick = {
+                    timelineViewModel.changeDate(LocalDate.now())
+                    navController.popBackStack("timeline", false)
                 },
                 onAddClick = {
                     navController.navigate("add_task")
@@ -115,11 +124,21 @@ fun MainScreen() {
             }
 
             composable("child") {
-                // ここに実装
-            }
 
-            composable("today") {
+                val childRepository = remember { InMemoryChildRoutineRepository() }
 
+                val childRoutineViewModel: ChildRoutineViewModel =
+                    viewModel(factory = ChildRoutineViewModelFactory(childRepository))
+
+                ChildScreen(
+                    viewModel = childRoutineViewModel,
+                    onBack = {
+                        navController.popBackStack("timeline", false)
+                    },
+                    onSaved = {
+                        navController.popBackStack("timeline", false)
+                    }
+                )
             }
 
             composable("add_task") {
@@ -138,7 +157,7 @@ fun MainScreen() {
                     oneTimeViewModel = oneTimeViewModel,
                     weeklyViewModel = weeklyViewModel,
                     onBack = {
-                        navController.popBackStack("timeline", false)
+                        navController.popBackStack()
                     },
                     onSaved ={
                         timelineViewModel.recomputeAvailability()

@@ -15,6 +15,7 @@ import com.example.familyscheduler.R
 @Composable
 fun FooterBar(
     onChildClick: () -> Unit,
+    onTodayClick: () -> Unit,
     onAddClick: () -> Unit,
     onSettingsClick: () -> Unit
 ) {
@@ -50,7 +51,7 @@ fun FooterBar(
 
         NavigationBarItem(
             selected = false,
-            onClick = {},
+            onClick = onTodayClick,
             icon = {
                 Icon(
                     painter = painterResource(R.drawable.ic_today),
