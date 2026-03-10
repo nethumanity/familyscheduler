@@ -33,7 +33,7 @@ fun FooterBar(
             label = { Text("カレンダー") }
         )
 
-        NavigationBarItem(
+        NavigationBarItem(  //ここ
             selected = false,
             onClick = {},
             icon = {
@@ -61,7 +61,7 @@ fun FooterBar(
             label = { Text("今日") }
         )
 
-        NavigationBarItem(      // ここをタップして呼ぶ
+        NavigationBarItem(
             selected = false,
             onClick = onAddClick,
             icon = {

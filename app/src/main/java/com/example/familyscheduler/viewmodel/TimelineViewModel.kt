@@ -190,6 +190,23 @@ class TimelineViewModel(
             .getTemplatesForPerson(person)
     }
 
+    // fun buildRoutineToRules() {
+    //        次のステップ（ChildRoutineInput→ChildCareBlocks）
+    //        val routines = routineRepository.getAll()
+    //
+    //        val blocks =
+    //            ChildRoutineInput.buildChildCareBlocks(routines)
+    //
+    //        val rules =
+    //            ChildCareBlock.convertToRules(
+    //                blocks = blocks,
+    //                allowedPersons = Person.values().toSet(),
+    //                capacityCalculator = CareCapacityCalculator,
+    //                stepMinutes = TimeAxis.stepMinutes
+    //            )
+    //
+    // }
+
     // 割り当て + 評価
     // UNASSIGNEDを探しChildCareSamples.allowedのSlotStateにする
     // →余ったUNASSIGNEDはFREEにする

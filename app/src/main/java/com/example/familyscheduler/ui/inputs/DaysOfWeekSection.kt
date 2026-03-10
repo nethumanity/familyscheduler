@@ -34,7 +34,7 @@ fun DaysOfWeekSection(
 
     Column {
 
-        Text("曜日")
+        Text("曜日")  // 引数にしたい
 
         Row(
             verticalAlignment = Alignment.CenterVertically
@@ -45,7 +45,7 @@ fun DaysOfWeekSection(
                 onCheckedChange = onToggleEveryDay
             )
 
-            Text("毎日の予定")
+            Text("毎日の予定")   // 引数にしたい
         }
 
         if (!everyDay) {
