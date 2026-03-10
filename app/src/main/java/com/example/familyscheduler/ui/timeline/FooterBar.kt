@@ -14,6 +14,7 @@ import com.example.familyscheduler.R
 
 @Composable
 fun FooterBar(
+    onChildClick: () -> Unit,
     onAddClick: () -> Unit,
     onSettingsClick: () -> Unit
 ) {
@@ -33,9 +34,9 @@ fun FooterBar(
             label = { Text("カレンダー") }
         )
 
-        NavigationBarItem(  //ここ
+        NavigationBarItem(
             selected = false,
-            onClick = {},
+            onClick = onChildClick,
             icon = {
                 Icon(
                     painter = painterResource(R.drawable.ic_child),

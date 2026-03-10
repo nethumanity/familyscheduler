@@ -67,10 +67,10 @@ fun MainScreen() {
                     HeaderBar(
                         date = timelineViewModel.currentDate.collectAsState().value,
                         onPreviousDay = {
-                            timelineViewModel.moveToPreviousDay()
+                            timelineViewModel.moveToPreviousDay()   // changeDate(currentDate.minusDays(1))
                         },
                         onNextDay = {
-                            timelineViewModel.moveToNextDay()
+                            timelineViewModel.moveToNextDay()   // changeDate(currentDate.plusDays(1))
                         }
                     )
                 }
@@ -83,7 +83,11 @@ fun MainScreen() {
 
         bottomBar = {
             FooterBar(
-                // 今後ここに追加していく（route = calender, children, today）
+                // 今後ここに追加していく（route = calender, today）
+
+                onChildClick = {
+                    navController.navigate("child")
+                },
                 onAddClick = {
                     navController.navigate("add_task")
                 },
@@ -106,7 +110,17 @@ fun MainScreen() {
                 )
             }
 
-            //composable() 今後ここに追加していく
+            composable("calender") {
+
+            }
+
+            composable("child") {
+                // ここに実装
+            }
+
+            composable("today") {
+
+            }
 
             composable("add_task") {
 

@@ -78,7 +78,9 @@ class TimelineViewModel(
 
         viewModelScope.launch {
 
-            _currentDate.value = date
+            if (_currentDate.value != date) {
+                _currentDate.value = date
+            }
 
             var states =
                 InMemoryDailyStateRepository.get(date)
@@ -144,6 +146,11 @@ class TimelineViewModel(
         loadForDate(
             _currentDate.value.plusDays(1)
         )
+    }
+
+    // 将来用
+    fun changeDate(date: LocalDate) {
+        loadForDate(date)
     }
 
     // Template表示・選択 → DailyState生成

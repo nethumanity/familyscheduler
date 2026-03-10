@@ -62,11 +62,6 @@ fun TimelineScreen(
     val evaluations by viewModel.evaluations.collectAsState()
     val templates by viewModel.templates.collectAsState()
 
-    LaunchedEffect(currentDate) {
-        Log.d("TimelineScreen", "reload triggered")
-        viewModel.loadForDate(currentDate)  // recomputeが走る
-    }
-
     LaunchedEffect(slots){
         Log.d("TimelineScreen", "slots received = ${slots.size}")
     }
