@@ -139,13 +139,13 @@ fun ChildRoutineInputScreen(
                 )
 
                 TimeDropdownPicker(
-                    label = "最早時刻",
+                    label = "最早時刻（任意）",
                     selectedTime = state.nurseryStartEarliest,
                     onTimeSelected = viewModel::updateNurseryStartEarliest
                 )
 
                 TimeDropdownPicker(
-                    label = "最遅時刻",
+                    label = "最遅時刻（任意）",
                     selectedTime = state.nurseryStartLatest,
                     onTimeSelected = viewModel::updateNurseryStartLatest
                 )
@@ -161,13 +161,13 @@ fun ChildRoutineInputScreen(
                 )
 
                 TimeDropdownPicker(
-                    label = "最早時刻",
+                    label = "最早時刻（任意）",
                     selectedTime = state.nurseryEndEarliest,
                     onTimeSelected = viewModel::updateNurseryEndEarliest
                 )
 
                 TimeDropdownPicker(
-                    label = "最遅時刻",
+                    label = "最遅時刻（任意）",
                     selectedTime = state.nurseryEndLatest,
                     onTimeSelected = viewModel::updateNurseryEndLatest
                 )

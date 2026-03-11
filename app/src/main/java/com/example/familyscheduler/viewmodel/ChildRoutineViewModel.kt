@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.familyscheduler.domain.requirement.ChildRoutineInput
 import com.example.familyscheduler.domain.requirement.ChildTodayRoutine
+import com.example.familyscheduler.domain.requirement.repository.ChildOverrideRepository
 import com.example.familyscheduler.domain.requirement.repository.ChildRoutineRepository
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,7 +18,8 @@ import java.time.LocalDate
 import java.time.LocalTime
 
 class ChildRoutineViewModel(
-    private val repository: ChildRoutineRepository
+    private val repository: ChildRoutineRepository,
+    private val overrideRepository: ChildOverrideRepository
 ) : ViewModel() {
 
     private val _children = MutableStateFlow<List<ChildRoutineInput>>(emptyList())
@@ -216,8 +218,8 @@ class ChildRoutineViewModel(
 
         val name: String = "",
 
-        val wakeUpTime: LocalTime? = null,
-        val sleepTime: LocalTime? = null,
+        val wakeUpTime: LocalTime = LocalTime.of(7, 0), //? = null,
+        val sleepTime: LocalTime = LocalTime.of(21, 0), //? = null,
 
         val hasNursery: Boolean = true,
 
@@ -230,15 +232,16 @@ class ChildRoutineViewModel(
                 DayOfWeek.FRIDAY
             ),
 
-        val nurseryStart: LocalTime? = null,
+        val nurseryStart: LocalTime = LocalTime.of(8, 0), //? = null,
         val nurseryStartEarliest: LocalTime? = null,
         val nurseryStartLatest: LocalTime? = null,
 
-        val nurseryEnd: LocalTime? = null,
+        val nurseryEnd: LocalTime = LocalTime.of(17, 0), //? = null,
         val nurseryEndEarliest: LocalTime? = null,
         val nurseryEndLatest: LocalTime? = null
     )
 
+    /* 旧バージョン
     fun toggleTodayRoutine(childName: String) {
 
         viewModelScope.launch {
@@ -266,33 +269,36 @@ class ChildRoutineViewModel(
             _children.value = repository.getAll()
         }
     }
+     */
 
-    /* override版
-    fun toggleTodayRoutine(childId: String) {
+    fun toggleTodayRoutine(
+        child: ChildRoutineInput,
+        date: LocalDate
+    ) {
 
-        val current = repository.getTodayRoutine(childId)
+        val current = resolveTodayRoutine(child, date)
 
         val next = current.next()
 
-        repository.saveOverride(
-            ChildTodayOverride(
-                childId = childId,
-                date = currentDate,
-                routine = next
-            )
+        Log.d("override", "current=$current next=$next")
+
+        overrideRepository.saveOverride(
+            child.name,
+            date,
+            next
         )
+        _children.value = _children.value.toList()
     }
-    */
 
     fun resolveTodayRoutine(
         child: ChildRoutineInput,
         date: LocalDate,
-        //override: ChildTodayOverride?
     ): ChildTodayRoutine {
 
-        //if (override != null) {
-        //    return override.routine
-        //}
+        overrideRepository.getOverride(child.name, date)?.let {
+            Log.d("override", "override found $it")
+            return it
+        }
 
         val day = date.dayOfWeek
 

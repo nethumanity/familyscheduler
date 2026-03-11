@@ -75,7 +75,7 @@ fun ChildListSheet(
                     child = child,
                     routine = routine,
                     onToggle = {
-                        viewModel.toggleTodayRoutine(child.name)
+                        viewModel.toggleTodayRoutine(child, currentDate)
                     }
                 )
             }

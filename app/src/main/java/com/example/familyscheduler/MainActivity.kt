@@ -23,6 +23,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.familyscheduler.data.repository.InMemoryChildOverrideRepository
 import com.example.familyscheduler.data.repository.InMemoryChildRoutineRepository
 import com.example.familyscheduler.data.repository.InMemoryHouseholdRequirementRepository
 import com.example.familyscheduler.ui.components.ChildScreen
@@ -65,11 +66,12 @@ fun MainScreen() {
 
     val householdRepository = remember { InMemoryHouseholdRequirementRepository() }
     val childRepository = remember { InMemoryChildRoutineRepository() }
+    val overrideRepository = remember { InMemoryChildOverrideRepository() }
 
     val timelineViewModel: TimelineViewModel =
         viewModel(factory = TimelineViewModelFactory(householdRepository))
     val childRoutineViewModel: ChildRoutineViewModel =
-        viewModel(factory = ChildRoutineViewModelFactory(childRepository))
+        viewModel(factory = ChildRoutineViewModelFactory(childRepository, overrideRepository))
 
     var sheet by remember { mutableStateOf<MainSheet?>(null) }
     val sheetState = rememberModalBottomSheetState(
@@ -106,7 +108,6 @@ fun MainScreen() {
 
                 onChildClick = {
                     sheet = MainSheet.CHILD
-                    //navController.navigate("child")
                 },
                 onTodayClick = {
                     timelineViewModel.changeDate(LocalDate.now())
