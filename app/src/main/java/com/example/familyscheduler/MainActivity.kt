@@ -1,15 +1,22 @@
+@file: OptIn(ExperimentalMaterial3Api::class)
 package com.example.familyscheduler
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
@@ -22,6 +29,7 @@ import com.example.familyscheduler.ui.components.ChildScreen
 import com.example.familyscheduler.ui.components.SettingsScreen
 import com.example.familyscheduler.ui.inputs.AddTaskScreen
 import com.example.familyscheduler.ui.inputs.ScheduleInputScreen
+import com.example.familyscheduler.ui.manager.MainSheet
 import com.example.familyscheduler.ui.theme.FamilySchedulerTheme
 import com.example.familyscheduler.ui.timeline.FooterBar
 import com.example.familyscheduler.ui.timeline.HeaderBar
@@ -55,12 +63,18 @@ fun MainScreen() {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
 
-    val repository = remember{ InMemoryHouseholdRequirementRepository() }
+    val householdRepository = remember { InMemoryHouseholdRequirementRepository() }
+    val childRepository = remember { InMemoryChildRoutineRepository() }
 
     val timelineViewModel: TimelineViewModel =
-        viewModel(factory = TimelineViewModelFactory(repository))
+        viewModel(factory = TimelineViewModelFactory(householdRepository))
+    val childRoutineViewModel: ChildRoutineViewModel =
+        viewModel(factory = ChildRoutineViewModelFactory(childRepository))
 
-
+    var sheet by remember { mutableStateOf<MainSheet?>(null) }
+    val sheetState = rememberModalBottomSheetState(
+        skipPartiallyExpanded = true
+    )
 
     Scaffold(
         topBar = {
@@ -91,7 +105,8 @@ fun MainScreen() {
                 // 今後ここに追加していく（route = calender）
 
                 onChildClick = {
-                    navController.navigate("child")
+                    sheet = MainSheet.CHILD
+                    //navController.navigate("child")
                 },
                 onTodayClick = {
                     timelineViewModel.changeDate(LocalDate.now())
@@ -107,86 +122,92 @@ fun MainScreen() {
         }
     ) { padding ->
 
-        NavHost(
-            navController = navController,
-            startDestination = "timeline",
-            modifier = Modifier.padding(padding)
-        ) {
+        Box(Modifier.padding(padding)) {
 
-            composable("timeline") {
-                TimelineScreen(
-                    viewModel = timelineViewModel
-                )
-            }
+            NavHost(
+                navController = navController,
+                startDestination = "timeline",
+            ) {
 
-            composable("calender") {
+                composable("timeline") {
 
-            }
-
-            composable("child") {
-
-                val childRepository = remember { InMemoryChildRoutineRepository() }
-
-                val childRoutineViewModel: ChildRoutineViewModel =
-                    viewModel(factory = ChildRoutineViewModelFactory(childRepository))
-
-                ChildScreen(
-                    viewModel = childRoutineViewModel,
-                    onBack = {
-                        navController.popBackStack("timeline", false)
-                    },
-                    onSaved = {
-                        navController.popBackStack("timeline", false)
-                    }
-                )
-            }
-
-            composable("add_task") {
-
-                val oneTimeViewModel: OneTimeTaskViewModel =
-                    viewModel(
-                        factory = OneTimeTaskViewModelFactory(repository)
+                    TimelineScreen(
+                        viewModel = timelineViewModel
                     )
+                }
 
-                val weeklyViewModel: WeeklyTaskViewModel =
-                    viewModel(
-                        factory = WeeklyTaskViewModelFactory(repository)
+                composable("calender") {
+
+                }
+
+                composable("add_task") {
+
+                    val oneTimeViewModel: OneTimeTaskViewModel =
+                        viewModel(
+                            factory = OneTimeTaskViewModelFactory(householdRepository)
+                        )
+
+                    val weeklyViewModel: WeeklyTaskViewModel =
+                        viewModel(
+                            factory = WeeklyTaskViewModelFactory(householdRepository)
+                        )
+
+                    AddTaskScreen(
+                        oneTimeViewModel = oneTimeViewModel,
+                        weeklyViewModel = weeklyViewModel,
+                        onBack = {
+                            navController.popBackStack()
+                        },
+                        onSaved = {
+                            timelineViewModel.recomputeAvailability()
+                            navController.popBackStack("timeline", false)
+                        }
                     )
+                }
 
-                AddTaskScreen(
-                    oneTimeViewModel = oneTimeViewModel,
-                    weeklyViewModel = weeklyViewModel,
-                    onBack = {
-                        navController.popBackStack()
-                    },
-                    onSaved ={
-                        timelineViewModel.recomputeAvailability()
-                        navController.popBackStack("timeline", false)
-                    }
-                )
+                composable("settings") {
+                    SettingsScreen(
+                        onOpenScheduleInput = {
+                            navController.navigate("schedule_input")
+                        },
+                        onBack = {
+                            navController.popBackStack()
+                        }
+                    )
+                }
+
+                composable("schedule_input") {
+                    ScheduleInputScreen(
+                        onSaved = {
+                            //timelineViewModel.recomputeAvailability()   ←将来的にここで走らせるかも
+                            navController.popBackStack("timeline", false)
+                        },
+                        onBack = {
+                            navController.popBackStack()
+                        }
+                    )
+                }
             }
 
-            composable("settings") {
-                SettingsScreen(
-                    onOpenScheduleInput = {
-                        navController.navigate("schedule_input")
-                    },
-                    onBack = {
-                        navController.popBackStack()
-                    }
-                )
-            }
+            sheet?.let {
 
-            composable("schedule_input") {
-                ScheduleInputScreen(
-                    onSaved = {
-                        //timelineViewModel.recomputeAvailability()   ←将来的にここで走らせるかも
-                        navController.popBackStack("timeline", false)
-                    },
-                    onBack = {
-                        navController.popBackStack()
+                ModalBottomSheet(
+                    sheetState = sheetState,
+                    onDismissRequest = { sheet = null }
+                ) {
+
+                    when (it) {
+
+                        MainSheet.CHILD -> {
+
+                            ChildScreen(
+                                viewModel = childRoutineViewModel,
+                                currentDate = timelineViewModel.currentDate.collectAsState().value,
+                                onClose = { sheet = null }
+                            )
+                        }
                     }
-                )
+                }
             }
         }
     }

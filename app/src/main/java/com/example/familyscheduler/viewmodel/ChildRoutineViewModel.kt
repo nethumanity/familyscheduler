@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.familyscheduler.domain.requirement.ChildRoutineInput
+import com.example.familyscheduler.domain.requirement.ChildTodayRoutine
 import com.example.familyscheduler.domain.requirement.repository.ChildRoutineRepository
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -12,11 +13,21 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
+import java.time.LocalDate
 import java.time.LocalTime
 
 class ChildRoutineViewModel(
     private val repository: ChildRoutineRepository
 ) : ViewModel() {
+
+    private val _children = MutableStateFlow<List<ChildRoutineInput>>(emptyList())
+    val children = _children.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            _children.value = repository.getAll()
+        }
+    }
 
     private val _uiState = MutableStateFlow(ChildRoutineUiState())
     val uiState = _uiState.asStateFlow()
@@ -42,6 +53,25 @@ class ChildRoutineViewModel(
         }
 
     fun updateNurseryStart(time: LocalTime) {
+        _uiState.update { state ->
+            state.copy(
+                nurseryStart = time,
+                nurseryStartEarliest =
+                    if (state.nurseryStartEarliest == state.nurseryStart)
+                        time
+                    else
+                        state.nurseryStartEarliest,
+                nurseryStartLatest =
+                    if (state.nurseryStartLatest == state.nurseryStart)
+                        time
+                    else
+                        state.nurseryStartLatest
+            )
+        }
+    }
+
+    /* 旧バージョン（どっちがいい？）
+    fun updateNurseryStart(time: LocalTime) {
 
         _uiState.update {
 
@@ -54,6 +84,7 @@ class ChildRoutineViewModel(
             )
         }
     }
+     */
 
     fun updateNurseryStartEarliest(time: LocalTime) =
         _uiState.update { it.copy(nurseryStartEarliest = time) }
@@ -61,6 +92,25 @@ class ChildRoutineViewModel(
     fun updateNurseryStartLatest(time: LocalTime) =
         _uiState.update { it.copy(nurseryStartLatest = time) }
 
+    fun updateNurseryEnd(time: LocalTime) {
+        _uiState.update { state ->
+            state.copy(
+                nurseryEnd = time,
+                nurseryEndEarliest =
+                    if (state.nurseryEndEarliest == state.nurseryEnd)
+                        time
+                    else
+                        state.nurseryEndEarliest,
+                nurseryEndLatest =
+                    if (state.nurseryEndLatest == state.nurseryEnd)
+                        time
+                    else
+                        state.nurseryEndLatest
+            )
+        }
+    }
+
+    /* 旧バージョン（どっちがいい？）
     fun updateNurseryEnd(time: LocalTime) {
 
         _uiState.update {
@@ -74,6 +124,7 @@ class ChildRoutineViewModel(
             )
         }
     }
+     */
 
     fun updateNurseryEndEarliest(time: LocalTime) =
         _uiState.update { it.copy(nurseryEndEarliest = time) }
@@ -105,56 +156,43 @@ class ChildRoutineViewModel(
 
             Log.d("RoutineSave", "Saved routine: $routine")
 
+            _children.value = repository.getAll()   //_children.update {it + routine}どっちがいい？
+
             _saveCompleted.emit(Unit)
         }
     }
 
-    fun convertToChildRoutine(state: ChildRoutineUiState
+    fun convertToChildRoutine(
+        state: ChildRoutineUiState
     ): ChildRoutineInput {
 
         val wakeUp = requireNotNull(state.wakeUpTime)
         val sleep = requireNotNull(state.sleepTime)
 
-        // いらない？
-        val nurseryDay: Set<DayOfWeek> =
-            if (state.hasNursery) {
-                state.daysOfWeek
-            } else {
-                emptySet()
-            }
+        val start = state.nurseryStart ?: LocalTime.NOON
+        val end = state.nurseryEnd ?: start
 
-        val DUMMY_TIME = LocalTime.NOON
-
-        val start =
-            if (state.hasNursery) {
-                requireNotNull(state.nurseryStart)
-            } else DUMMY_TIME
         val startEarliest =
-            if (state.hasNursery) {
-                requireNotNull(state.nurseryStartEarliest)
-            } else DUMMY_TIME
+            (state.nurseryStartEarliest ?: start)
+                .coerceAtMost(start)
+
         val startLatest =
-            if (state.hasNursery) {
-                requireNotNull(state.nurseryStartLatest)
-            } else DUMMY_TIME
-        val end =
-            if (state.hasNursery) {
-                requireNotNull(state.nurseryEnd)
-            } else DUMMY_TIME
+            (state.nurseryStartLatest ?: start)
+                .coerceAtLeast(start)
+
         val endEarliest =
-            if (state.hasNursery) {
-                requireNotNull(state.nurseryEndEarliest)
-            } else DUMMY_TIME
+            (state.nurseryEndEarliest ?: end)
+                .coerceAtMost(end)
+
         val endLatest =
-            if (state.hasNursery) {
-                requireNotNull(state.nurseryEndLatest)
-            } else DUMMY_TIME
+            (state.nurseryEndLatest ?: end)
+                .coerceAtLeast(end)
 
         return ChildRoutineInput(
             name = state.name,
             wakeUpTime = wakeUp,
             sleepTime = sleep,
-            daysOfWeek = nurseryDay,
+            daysOfWeek = if (state.hasNursery) state.daysOfWeek else emptySet(),
             nurseryStart = start,
             nurseryStartEarliest = startEarliest,
             nurseryStartLatest = startLatest,
@@ -200,4 +238,68 @@ class ChildRoutineViewModel(
         val nurseryEndEarliest: LocalTime? = null,
         val nurseryEndLatest: LocalTime? = null
     )
+
+    fun toggleTodayRoutine(childName: String) {
+
+        viewModelScope.launch {
+
+            val list = repository.getAll().toMutableList()
+
+            val index = list.indexOfFirst { it.name == childName }
+
+            if (index == -1) return@launch
+
+            val child = list[index]
+
+            val today = LocalDate.now().dayOfWeek
+
+            val newDays =
+                if (today in child.daysOfWeek)
+                    child.daysOfWeek - today
+                else
+                    child.daysOfWeek + today
+
+            val updated = child.copy(daysOfWeek = newDays)
+
+            repository.add(updated)
+
+            _children.value = repository.getAll()
+        }
+    }
+
+    /* override版
+    fun toggleTodayRoutine(childId: String) {
+
+        val current = repository.getTodayRoutine(childId)
+
+        val next = current.next()
+
+        repository.saveOverride(
+            ChildTodayOverride(
+                childId = childId,
+                date = currentDate,
+                routine = next
+            )
+        )
+    }
+    */
+
+    fun resolveTodayRoutine(
+        child: ChildRoutineInput,
+        date: LocalDate,
+        //override: ChildTodayOverride?
+    ): ChildTodayRoutine {
+
+        //if (override != null) {
+        //    return override.routine
+        //}
+
+        val day = date.dayOfWeek
+
+        return if (day in child.daysOfWeek) {
+            ChildTodayRoutine.NURSERY
+        } else {
+            ChildTodayRoutine.HOME
+        }
+    }
 }
