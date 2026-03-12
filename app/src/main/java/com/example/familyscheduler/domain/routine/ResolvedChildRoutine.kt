@@ -1,4 +1,4 @@
-package com.example.familyscheduler.domain.requirement
+package com.example.familyscheduler.domain.routine
 
 import java.time.LocalTime
 

@@ -1,6 +1,7 @@
-package com.example.familyscheduler.domain.requirement
+package com.example.familyscheduler.domain.routine
 
 import com.example.familyscheduler.domain.person.Person
+import com.example.familyscheduler.domain.requirement.HouseholdRequirementRule
 import com.example.familyscheduler.domain.slot.FlexWindowParameters
 import com.example.familyscheduler.domain.slot.SlotState
 import com.example.familyscheduler.domain.time.TimeAxis

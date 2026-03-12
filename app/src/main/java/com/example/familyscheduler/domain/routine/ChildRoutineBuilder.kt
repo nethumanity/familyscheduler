@@ -1,4 +1,4 @@
-package com.example.familyscheduler.domain.requirement
+package com.example.familyscheduler.domain.routine
 
 import com.example.familyscheduler.domain.time.TimeAxis
 import com.example.familyscheduler.domain.time.TimeAxis.stepMinutes

@@ -1,6 +1,6 @@
-package com.example.familyscheduler.domain.requirement.repository
+package com.example.familyscheduler.domain.routine.repository
 
-import com.example.familyscheduler.domain.requirement.ChildTodayRoutine
+import com.example.familyscheduler.domain.routine.ChildTodayRoutine
 import java.time.LocalDate
 
 interface ChildOverrideRepository {

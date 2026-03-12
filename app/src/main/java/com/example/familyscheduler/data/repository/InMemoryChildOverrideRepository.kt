@@ -1,7 +1,7 @@
 package com.example.familyscheduler.data.repository
 
-import com.example.familyscheduler.domain.requirement.ChildTodayRoutine
-import com.example.familyscheduler.domain.requirement.repository.ChildOverrideRepository
+import com.example.familyscheduler.domain.routine.ChildTodayRoutine
+import com.example.familyscheduler.domain.routine.repository.ChildOverrideRepository
 import java.time.LocalDate
 
 class InMemoryChildOverrideRepository: ChildOverrideRepository {

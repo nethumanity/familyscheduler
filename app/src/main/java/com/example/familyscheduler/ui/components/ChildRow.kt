@@ -12,8 +12,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.familyscheduler.domain.requirement.ChildRoutineInput
-import com.example.familyscheduler.domain.requirement.ChildTodayRoutine
+import com.example.familyscheduler.domain.routine.ChildRoutineInput
+import com.example.familyscheduler.domain.routine.ChildTodayRoutine
 
 @Composable
 fun ChildRow(

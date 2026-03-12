@@ -3,10 +3,10 @@ package com.example.familyscheduler.viewmodel
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.familyscheduler.domain.requirement.ChildRoutineInput
-import com.example.familyscheduler.domain.requirement.ChildTodayRoutine
-import com.example.familyscheduler.domain.requirement.repository.ChildOverrideRepository
-import com.example.familyscheduler.domain.requirement.repository.ChildRoutineRepository
+import com.example.familyscheduler.domain.routine.ChildRoutineInput
+import com.example.familyscheduler.domain.routine.ChildTodayRoutine
+import com.example.familyscheduler.domain.routine.repository.ChildOverrideRepository
+import com.example.familyscheduler.domain.routine.repository.ChildRoutineRepository
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow

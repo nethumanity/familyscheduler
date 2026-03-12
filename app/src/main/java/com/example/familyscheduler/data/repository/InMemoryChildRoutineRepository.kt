@@ -1,7 +1,7 @@
 package com.example.familyscheduler.data.repository
 
-import com.example.familyscheduler.domain.requirement.ChildRoutineInput
-import com.example.familyscheduler.domain.requirement.repository.ChildRoutineRepository
+import com.example.familyscheduler.domain.routine.ChildRoutineInput
+import com.example.familyscheduler.domain.routine.repository.ChildRoutineRepository
 
 class InMemoryChildRoutineRepository :
     ChildRoutineRepository {

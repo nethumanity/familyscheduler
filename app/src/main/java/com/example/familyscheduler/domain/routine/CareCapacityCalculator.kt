@@ -1,4 +1,4 @@
-package com.example.familyscheduler.domain.requirement
+package com.example.familyscheduler.domain.routine
 
 class CareCapacityCalculator(
     private val maxChildrenPerAdult: Int = 2

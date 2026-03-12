@@ -1,4 +1,4 @@
-package com.example.familyscheduler.domain.requirement
+package com.example.familyscheduler.domain.routine
 
 enum class ChildCareLabel {
     NURSERY_DROP_OFF,

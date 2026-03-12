@@ -1,6 +1,6 @@
-package com.example.familyscheduler.domain.requirement.repository
+package com.example.familyscheduler.domain.routine.repository
 
-import com.example.familyscheduler.domain.requirement.ChildRoutineInput
+import com.example.familyscheduler.domain.routine.ChildRoutineInput
 
 interface ChildRoutineRepository {
 
