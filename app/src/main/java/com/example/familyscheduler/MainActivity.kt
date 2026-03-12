@@ -26,6 +26,11 @@ import androidx.navigation.compose.rememberNavController
 import com.example.familyscheduler.data.repository.InMemoryChildOverrideRepository
 import com.example.familyscheduler.data.repository.InMemoryChildRoutineRepository
 import com.example.familyscheduler.data.repository.InMemoryHouseholdRequirementRepository
+import com.example.familyscheduler.domain.person.Person
+import com.example.familyscheduler.domain.routine.CareCapacityCalculator
+import com.example.familyscheduler.domain.routine.ChildCareRuleConverter
+import com.example.familyscheduler.domain.routine.ChildRoutineBuilder
+import com.example.familyscheduler.domain.routine.RoutineResolver
 import com.example.familyscheduler.ui.components.ChildScreen
 import com.example.familyscheduler.ui.components.SettingsScreen
 import com.example.familyscheduler.ui.inputs.AddTaskScreen
@@ -68,8 +73,21 @@ fun MainScreen() {
     val childRepository = remember { InMemoryChildRoutineRepository() }
     val overrideRepository = remember { InMemoryChildOverrideRepository() }
 
+    val factory = TimelineViewModelFactory(
+        repository = householdRepository,
+        childRoutineRepository = childRepository,
+        routineResolver = RoutineResolver(
+            overrideRepository = overrideRepository
+        ),
+        childRoutineBuilder = ChildRoutineBuilder(),
+        childCareRuleConverter = ChildCareRuleConverter(
+            capacityCalculator = CareCapacityCalculator(),
+            allowedPersons = Person.values().toSet()
+        )
+    )
+
     val timelineViewModel: TimelineViewModel =
-        viewModel(factory = TimelineViewModelFactory(householdRepository))
+        viewModel(factory = factory)
     val childRoutineViewModel: ChildRoutineViewModel =
         viewModel(factory = ChildRoutineViewModelFactory(childRepository, overrideRepository))
 
@@ -160,7 +178,7 @@ fun MainScreen() {
                             navController.popBackStack()
                         },
                         onSaved = {
-                            timelineViewModel.recomputeAvailability()
+                            timelineViewModel.refreshAvailability()
                             navController.popBackStack("timeline", false)
                         }
                     )
@@ -180,7 +198,7 @@ fun MainScreen() {
                 composable("schedule_input") {
                     ScheduleInputScreen(
                         onSaved = {
-                            //timelineViewModel.recomputeAvailability()   ←将来的にここで走らせるかも
+                            //timelineViewModel.refreshAvailability()   ←将来的にここで走らせるかも
                             navController.popBackStack("timeline", false)
                         },
                         onBack = {

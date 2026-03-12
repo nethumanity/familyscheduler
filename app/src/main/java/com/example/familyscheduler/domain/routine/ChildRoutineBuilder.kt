@@ -7,19 +7,7 @@ import java.time.LocalTime
 
 class ChildRoutineBuilder {
 
-    fun build(routines: List<ResolvedChildRoutine>
-    ): List<ChildCareBlock> {
-
-        val blocks = mutableListOf<ChildCareBlock>()
-
-        DayOfWeek.entries.forEach { day ->
-            blocks += buildDayBlocks(day, routines)
-        }
-
-        return mergeSameBlocks(blocks)
-    }
-
-    private fun buildDayBlocks(
+    fun build(
         day: DayOfWeek,
         routines: List<ResolvedChildRoutine>
     ): List<ChildCareBlock> {
@@ -51,6 +39,10 @@ class ChildRoutineBuilder {
             val end = start.plusMinutes(stepMinutes.toLong())
 
             val activeChildren = routines.count { child ->
+
+                if (child.todayRoutine == ChildTodayRoutine.NONE) {
+                    return@count false
+                }
 
                 val needsCare =
                     start >= child.wakeUpTime &&
@@ -143,30 +135,6 @@ class ChildRoutineBuilder {
                 flexLatest = event?.flexLatest,
                 activeChildrenCount = unit.activeChildrenCount
             )
-
-            /*
-            if (event != null) {
-                ChildCareBlock(
-                    daysOfWeek = emptySet(), // ← compress時に設定
-                    startTime = unit.start,
-                    endTime = unit.end,
-                    label = event.label,
-                    flexEarliest = event.flexEarliest,
-                    flexLatest = event.flexLatest,
-                    activeChildrenCount = unit.activeChildrenCount
-                )
-            } else {
-                ChildCareBlock(
-                    daysOfWeek = emptySet(),
-                    startTime = unit.start,
-                    endTime = unit.end,
-                    label = null,
-                    flexEarliest = null,
-                    flexLatest = null,
-                    activeChildrenCount = unit.activeChildrenCount
-                )
-            }
-             */
         }
     }
 
@@ -201,38 +169,5 @@ class ChildRoutineBuilder {
         result += current.copy(daysOfWeek = setOf(day))
 
         return result
-    }
-
-    data class BlockKey(
-        val start: LocalTime,
-        val end: LocalTime,
-        val label: ChildCareLabel?,
-        val count: Int,
-        val earliest: LocalTime?,
-        val latest: LocalTime?
-    )
-
-    private fun mergeSameBlocks(
-        blocks: List<ChildCareBlock>
-    ): List<ChildCareBlock> {
-
-        return blocks
-            .groupBy {
-                BlockKey(
-                    start = it.startTime,
-                    end = it.endTime,
-                    label = it.label,
-                    count = it.activeChildrenCount,
-                    earliest = it.flexEarliest,
-                    latest = it.flexLatest
-                )
-            }
-            .map { (_, group) ->
-
-                group.first().copy(
-                    daysOfWeek = group.flatMap { it.daysOfWeek }
-                        .toSet()
-                )
-            }
     }
 }

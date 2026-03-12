@@ -12,4 +12,10 @@ interface HouseholdRequirementRepository {
     suspend fun add(
         rule: HouseholdRequirementRule
     )
+
+    suspend fun saveAll(
+        rules: List<HouseholdRequirementRule>
+    )
+
+    suspend fun clearChildRoutineRules()
 }

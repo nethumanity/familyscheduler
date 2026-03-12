@@ -2,6 +2,7 @@ package com.example.familyscheduler.domain.routine
 
 import com.example.familyscheduler.domain.person.Person
 import com.example.familyscheduler.domain.requirement.HouseholdRequirementRule
+import com.example.familyscheduler.domain.requirement.RequirementSource
 import com.example.familyscheduler.domain.slot.FlexWindowParameters
 import com.example.familyscheduler.domain.slot.SlotState
 import com.example.familyscheduler.domain.time.TimeAxis
@@ -32,6 +33,7 @@ class ChildCareRuleConverter(
             )
 
         return HouseholdRequirementRule(
+            source = RequirementSource.CHILD_ROUTINE,
             taskName = taskNameOf(block.label),
             targetState = SlotState.CHILDCARE, // 固定
             requiredCount = requiredCount,

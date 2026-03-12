@@ -11,6 +11,7 @@ import java.util.UUID
 
 data class HouseholdRequirementRule(
     val id: UUID = UUID.randomUUID(),
+    val source: RequirementSource = RequirementSource.USER,
     val taskName: String,
     val targetState: SlotState,
     val requiredCount: Int,
