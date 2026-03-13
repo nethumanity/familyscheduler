@@ -28,7 +28,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.familyscheduler.domain.person.Person
 import com.example.familyscheduler.domain.schedule.DailyTemplate
 import com.example.familyscheduler.domain.schedule.RepeatRule
@@ -39,7 +38,7 @@ import java.time.DayOfWeek
 
 @Composable
 fun ScheduleInputScreen(
-    viewModel: TemplateEditViewModel = viewModel(),
+    viewModel: TemplateEditViewModel,
     onSaved: () -> Unit,
     onBack: () -> Unit,
     paddingValues: PaddingValues = PaddingValues()

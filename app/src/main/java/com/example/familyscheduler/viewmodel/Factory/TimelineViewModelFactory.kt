@@ -7,10 +7,14 @@ import com.example.familyscheduler.domain.routine.ChildCareRuleConverter
 import com.example.familyscheduler.domain.routine.ChildRoutineBuilder
 import com.example.familyscheduler.domain.routine.RoutineResolver
 import com.example.familyscheduler.domain.routine.repository.ChildRoutineRepository
+import com.example.familyscheduler.domain.schedule.repository.DailyStateRepository
+import com.example.familyscheduler.domain.schedule.repository.TemplateRepository
 import com.example.familyscheduler.viewmodel.TimelineViewModel
 
 class TimelineViewModelFactory(
-    private val repository: HouseholdRequirementRepository,
+    private val templateRepository: TemplateRepository,
+    private val dailyStateRepository: DailyStateRepository,
+    private val householdRequirementRepository: HouseholdRequirementRepository,
     private val childRoutineRepository: ChildRoutineRepository,
     private val routineResolver: RoutineResolver,
     private val childRoutineBuilder: ChildRoutineBuilder,
@@ -24,7 +28,9 @@ class TimelineViewModelFactory(
         if (modelClass.isAssignableFrom(TimelineViewModel::class.java)) {
 
             return TimelineViewModel(
-                repository = repository,
+                templateRepository = templateRepository,
+                dailyStateRepository = dailyStateRepository,
+                householdRequirementRepository = householdRequirementRepository,
                 childRoutineRepository = childRoutineRepository,
                 routineResolver = routineResolver,
                 childRoutineBuilder = childRoutineBuilder,

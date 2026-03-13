@@ -25,7 +25,9 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.familyscheduler.data.repository.InMemoryChildOverrideRepository
 import com.example.familyscheduler.data.repository.InMemoryChildRoutineRepository
+import com.example.familyscheduler.data.repository.InMemoryDailyStateRepository
 import com.example.familyscheduler.data.repository.InMemoryHouseholdRequirementRepository
+import com.example.familyscheduler.data.repository.InMemoryTemplateRepository
 import com.example.familyscheduler.domain.person.Person
 import com.example.familyscheduler.domain.routine.CareCapacityCalculator
 import com.example.familyscheduler.domain.routine.ChildCareRuleConverter
@@ -43,9 +45,11 @@ import com.example.familyscheduler.ui.timeline.TimelineScreen
 import com.example.familyscheduler.viewmodel.ChildRoutineViewModel
 import com.example.familyscheduler.viewmodel.Factory.ChildRoutineViewModelFactory
 import com.example.familyscheduler.viewmodel.Factory.OneTimeTaskViewModelFactory
+import com.example.familyscheduler.viewmodel.Factory.TemplateEditViewModelFactory
 import com.example.familyscheduler.viewmodel.Factory.TimelineViewModelFactory
 import com.example.familyscheduler.viewmodel.Factory.WeeklyTaskViewModelFactory
 import com.example.familyscheduler.viewmodel.OneTimeTaskViewModel
+import com.example.familyscheduler.viewmodel.TemplateEditViewModel
 import com.example.familyscheduler.viewmodel.TimelineViewModel
 import com.example.familyscheduler.viewmodel.WeeklyTaskViewModel
 import java.time.LocalDate
@@ -69,12 +73,16 @@ fun MainScreen() {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
 
-    val householdRepository = remember { InMemoryHouseholdRequirementRepository() }
+    val templateRepository = remember { InMemoryTemplateRepository() }
+    val dailyStateRepository = remember { InMemoryDailyStateRepository() }
+    val householdRequirementRepository = remember { InMemoryHouseholdRequirementRepository() }
     val childRepository = remember { InMemoryChildRoutineRepository() }
     val overrideRepository = remember { InMemoryChildOverrideRepository() }
 
-    val factory = TimelineViewModelFactory(
-        repository = householdRepository,
+    val factory = TimelineViewModelFactory( // 要修正
+        templateRepository = templateRepository,
+        dailyStateRepository = dailyStateRepository,
+        householdRequirementRepository = householdRequirementRepository,
         childRoutineRepository = childRepository,
         routineResolver = RoutineResolver(
             overrideRepository = overrideRepository
@@ -163,12 +171,12 @@ fun MainScreen() {
 
                     val oneTimeViewModel: OneTimeTaskViewModel =
                         viewModel(
-                            factory = OneTimeTaskViewModelFactory(householdRepository)
+                            factory = OneTimeTaskViewModelFactory(householdRequirementRepository)
                         )
 
                     val weeklyViewModel: WeeklyTaskViewModel =
                         viewModel(
-                            factory = WeeklyTaskViewModelFactory(householdRepository)
+                            factory = WeeklyTaskViewModelFactory(householdRequirementRepository)
                         )
 
                     AddTaskScreen(
@@ -196,9 +204,16 @@ fun MainScreen() {
                 }
 
                 composable("schedule_input") {
+
+                    val templateEditViewModel: TemplateEditViewModel =
+                        viewModel(
+                            factory = TemplateEditViewModelFactory(templateRepository)
+                        )
+
                     ScheduleInputScreen(
+                        viewModel = templateEditViewModel,
                         onSaved = {
-                            //timelineViewModel.refreshAvailability()   ←将来的にここで走らせるかも
+                            //timelineViewModel.refreshAvailability()   ←将来的にここでloadForDate走らせるかも
                             navController.popBackStack("timeline", false)
                         },
                         onBack = {

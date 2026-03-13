@@ -3,17 +3,19 @@ package com.example.familyscheduler.viewmodel
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.familyscheduler.data.repository.InMemoryTemplateRepository
 import com.example.familyscheduler.domain.schedule.DailyTemplate
+import com.example.familyscheduler.domain.schedule.repository.TemplateRepository
 import kotlinx.coroutines.launch
 
-class TemplateEditViewModel : ViewModel() {
+class TemplateEditViewModel(
+    private val templateRepository: TemplateRepository
+) : ViewModel() {
 
     fun saveTemplate(template: DailyTemplate) {
 
         viewModelScope.launch {
 
-            InMemoryTemplateRepository
+            templateRepository
                 .saveTemplate(template)
 
             Log.d(
@@ -26,7 +28,7 @@ class TemplateEditViewModel : ViewModel() {
     fun debugPrintTemplates() {
         viewModelScope.launch {
             val templates =
-                InMemoryTemplateRepository.getTemplates()
+                templateRepository.getTemplates()
             templates.forEach {
                 Log.d("TemplateDebug", it.toString())
             }

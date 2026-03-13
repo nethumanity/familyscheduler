@@ -15,10 +15,10 @@ data class DailyTemplate(   //1つのDailyTemplateは複数のScheduleTemplate�
     val schedules: List<ScheduleTemplate>,
     val repeatRule: RepeatRule
 ) {
-    fun expandToSlots(date: LocalDate): List<TimeSlot> {
+    fun expandToSlots(/*date: LocalDate*/): List<TimeSlot> {
 
-        if (!repeatRule.appliesTo(date))
-            return emptyList()
+        //if (!repeatRule.appliesTo(date))    // RepeatRuleのフィルター
+        //    return emptyList()
 
         val baseSlots =
             TimeAxis.indices.map { index ->

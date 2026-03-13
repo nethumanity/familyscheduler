@@ -6,8 +6,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.familyscheduler.data.repository.InMemoryDailyStateRepository
-import com.example.familyscheduler.data.repository.InMemoryTemplateRepository
 import com.example.familyscheduler.domain.evaluation.AvailabilityEngine
 import com.example.familyscheduler.domain.evaluation.AvailabilityEvaluation
 import com.example.familyscheduler.domain.person.Person
@@ -19,6 +17,8 @@ import com.example.familyscheduler.domain.routine.RoutineResolver
 import com.example.familyscheduler.domain.routine.repository.ChildRoutineRepository
 import com.example.familyscheduler.domain.schedule.DailyState
 import com.example.familyscheduler.domain.schedule.DailyTemplate
+import com.example.familyscheduler.domain.schedule.repository.DailyStateRepository
+import com.example.familyscheduler.domain.schedule.repository.TemplateRepository
 import com.example.familyscheduler.domain.slot.FlexWindowParameters
 import com.example.familyscheduler.domain.slot.SlotState
 import com.example.familyscheduler.domain.slot.TimeSlot
@@ -28,7 +28,9 @@ import kotlinx.coroutines.launch
 import java.time.LocalDate
 
 class TimelineViewModel(
-    private val repository: HouseholdRequirementRepository,
+    private val templateRepository: TemplateRepository,
+    private val dailyStateRepository: DailyStateRepository,
+    private val householdRequirementRepository: HouseholdRequirementRepository,
     private val childRoutineRepository: ChildRoutineRepository,
     private val routineResolver: RoutineResolver,
     private val childRoutineBuilder: ChildRoutineBuilder,
@@ -91,12 +93,12 @@ class TimelineViewModel(
             }
 
             var states =
-                InMemoryDailyStateRepository.get(date)
+                dailyStateRepository.get(date)
 
             if (states.isEmpty()) {
 
                 val templates =
-                    InMemoryTemplateRepository.getTemplates()
+                    templateRepository.getTemplates()
 
                 val generated =
                     generateDailyStatesFromTemplates(   //RepeatRuleのフィルター
@@ -105,11 +107,11 @@ class TimelineViewModel(
                     )
 
                 generated.forEach {
-                    InMemoryDailyStateRepository.save(it)
+                    dailyStateRepository.save(it)
                 }
 
                 states =
-                    InMemoryDailyStateRepository.get(date)
+                    dailyStateRepository.get(date)
 
                 Log.d("TimelineVM", "templates size = ${templates.size}")
                 Log.d("TimelineVM", "states size = ${states.size}")
@@ -171,9 +173,13 @@ class TimelineViewModel(
 
     // Template表示・選択 → DailyState生成
     fun showTemplateSheet(person: Person) {
+
         editingTemplateFor = person
-        _templates.value =
-            InMemoryTemplateRepository.getTemplatesForPerson(person)
+
+        viewModelScope.launch {
+            _templates.value =
+                templateRepository.getTemplatesForPerson(person)
+        }
     }
 
     private fun generateDailyStatesFromTemplates(
@@ -186,7 +192,7 @@ class TimelineViewModel(
             .map { template ->
 
                 val slots =
-                    template.expandToSlots(date)
+                    template.expandToSlots()//date)        // ここでもRepeatRuleのフィルターかかる！
 
                 DailyState(
                     person = template.person,
@@ -195,22 +201,6 @@ class TimelineViewModel(
                     slots = slots
                 )
             }
-    }
-
-    // UI用　（いらない？）
-    fun slotsAt(index: Int): List<TimeSlot> {
-
-        return _slots.value.filter {
-            it.index == index
-        }
-    }
-
-    fun templatesForPerson(
-        person: Person
-    ): List<DailyTemplate> {
-
-        return InMemoryTemplateRepository
-            .getTemplatesForPerson(person)
     }
 
     private suspend fun buildChildRoutineRules(date: LocalDate) {
@@ -227,9 +217,9 @@ class TimelineViewModel(
         val rules =
             childCareRuleConverter.convert(blocks)
 
-        repository.clearChildRoutineRules()
+        householdRequirementRepository.clearChildRoutineRules()
 
-        repository.saveAll(rules)
+        householdRequirementRepository.saveAll(rules)
     }
 
     // 割り当て + 評価
@@ -241,10 +231,12 @@ class TimelineViewModel(
         val date = _currentDate.value
 
         val rules =
-            repository.getByDate(date)
+            householdRequirementRepository.getByDate(date)
 
-        // 追加
-        val original = _slots.value
+        // 追加→やっぱやめる？？
+        //val original = _slots.value
+        // あるいは
+        //val original = _dailyStates.value.flatMap { it.slots }
 
         Log.d("TimelineVM", "rules size = ${rules.size}")
         rules.forEach {
@@ -254,13 +246,15 @@ class TimelineViewModel(
         val requirements =
             rules.map { it.toRequirement() }
 
+        _householdRequirements.value = requirements
+
         val result =
             AvailabilityEngine.recompute(
-                originalSlots = original, //_slots.value,
+                originalSlots = _slots.value, //original,
                 requirements = requirements
             )
 
-        _slots.value = result.slots
+        _slots.value = result.slots.toList()    //.toList()を追加（検証中）
         //_evaluations.value = result.evaluations　←Engineの中身を精査した後に必要性を判断
     }
 
@@ -269,9 +263,10 @@ class TimelineViewModel(
     }
 
     fun applyTemplate(person: Person, template: DailyTemplate) {
+
         viewModelScope.launch {
 
-            val slots = template.expandToSlots(currentDate.value)
+            val slots = template.expandToSlots()//currentDate.value) //RepeatRuleのフィルター
 
             val state = DailyState(
                 date = currentDate.value,
@@ -280,10 +275,10 @@ class TimelineViewModel(
                 slots = slots
             )
 
-            InMemoryDailyStateRepository.save(state)
+            dailyStateRepository.save(state)
 
-            loadForDate(currentDate.value)  //RepeatRuleのフィルター
-            dismissTemplateSheet()
+            loadForDate(currentDate.value)
+            //dismissTemplateSheet()
         }
     }
 }
