@@ -44,6 +44,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.familyscheduler.R
+import com.example.familyscheduler.domain.evaluation.AvailabilityState
 import com.example.familyscheduler.domain.person.Person
 import com.example.familyscheduler.domain.time.TimeAxis
 import com.example.familyscheduler.ui.components.SlotStateSelectionSheet
@@ -141,8 +142,8 @@ fun TimelineScreen(
 
                     //★編集中
                     val evaluation = evaluations.getOrNull(index)
-                    if (evaluation?.missing ?: 0 > 0) {
-                    //if (availabilityState.shouldWarn) {
+                    //if (evaluation?.missing ?: 0 > 0) {
+                    if (evaluation?.state == AvailabilityState.WARN) {
                         Spacer(modifier = Modifier.height(2.dp))
                         Icon(
                             painter = painterResource(R.drawable.ic_warning),

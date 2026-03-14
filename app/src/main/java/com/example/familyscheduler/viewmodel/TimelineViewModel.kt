@@ -118,10 +118,12 @@ class TimelineViewModel(
                 Log.d("TimelineVM", "slots size = ${states.flatMap { it.slots }.size}")
             }
 
+            // 分離するなら、private fun updateSlots(states: List<DailyState>) {
             _dailyStates.value = states
 
             _slots.value =
                 states.flatMap { it.slots }
+            // ここまで
 
             buildChildRoutineRules(date)
 
@@ -135,6 +137,7 @@ class TimelineViewModel(
         person: Person,
         newState: SlotState
     ) {
+        /* 旧バージョン
         _slots.value = _slots.value.map { slot ->
             if (slot.index == index && slot.person == person) {
                 slot.copy(state = newState, flexWindow = FlexWindowParameters(0, 0), taskName = null)
@@ -144,6 +147,38 @@ class TimelineViewModel(
         }
 
         refreshAvailability()
+         */
+
+        viewModelScope.launch {
+
+            // 現状では_dailyStatesのスロットと_slotsのスロットは一致しないことに留意
+            // proposalの実行処理の仕様によってはバグるかも
+            val states = _dailyStates.value.map { state ->
+
+                if (state.person != person) return@map state
+
+                val newSlots = state.slots.map { slot ->
+                    if (slot.index == index) {
+                        slot.copy(
+                            state = newState,
+                            flexWindow = FlexWindowParameters(0,0),
+                            taskName = null
+                        )
+                    } else slot
+                }
+
+                state.copy(slots = newSlots)
+            }
+
+            states.forEach {
+                dailyStateRepository.save(it)
+            }
+
+            reloadCurrentDate()
+            // 下記は私案
+            //updateSlots(states)
+            //recomputeAvailability()
+        }
     }
 
     fun refreshAvailability() {
@@ -221,6 +256,8 @@ class TimelineViewModel(
 
     private suspend fun buildChildRoutineRules(date: LocalDate) {
 
+        // 私案は引数なしにして、val date = _currentDate.value
+
         val routines =
             childRoutineRepository.getAll()
 
@@ -249,10 +286,8 @@ class TimelineViewModel(
         val rules =
             householdRequirementRepository.getByDate(date)
 
-        // 追加→やっぱやめる？？
-        //val original = _slots.value
-        // あるいは
-        //val original = _dailyStates.value.flatMap { it.slots }
+        // 理想はoriginalSlots = DailyState.slots
+        val originalSlots = _dailyStates.value.flatMap { it.slots }
 
         Log.d("TimelineVM", "rules size = ${rules.size}")
         rules.forEach {
@@ -266,12 +301,12 @@ class TimelineViewModel(
 
         val result =
             AvailabilityEngine.recompute(
-                originalSlots = _slots.value, //original,
+                originalSlots = originalSlots, //_slots.value,
                 requirements = requirements
             )
 
         _slots.value = result.slots.toList()
-        //_evaluations.value = result.evaluations　←Engineの中身を精査した後に必要性を判断
+        _evaluations.value = result.evaluations //←Engineの中身を精査した後に必要性を判断
     }
 
     fun dismissTemplateSheet() {
@@ -294,7 +329,7 @@ class TimelineViewModel(
             dailyStateRepository.save(state)
 
             loadForDate(currentDate.value)
-            //dismissTemplateSheet()
+            dismissTemplateSheet()
         }
     }
 }

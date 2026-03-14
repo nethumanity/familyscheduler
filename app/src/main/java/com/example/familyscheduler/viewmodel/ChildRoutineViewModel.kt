@@ -257,7 +257,7 @@ class ChildRoutineViewModel(
 
             val current = resolveTodayRoutine(child, date, _overrides.value)
 
-            val next = current.next()
+            val next = current.next(child)
 
             Log.d("override", "current=$current next=$next")
 
@@ -268,7 +268,6 @@ class ChildRoutineViewModel(
             )
 
             _overrides.value = overrideRepository.getAll()
-            //_children.value = repository.getAll()
         }
     }
 

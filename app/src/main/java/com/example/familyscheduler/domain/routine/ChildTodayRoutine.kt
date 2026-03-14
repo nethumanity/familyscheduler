@@ -5,11 +5,19 @@ enum class ChildTodayRoutine {
     HOME,        // 在宅
     NONE;        // 保育なし
 
-    fun next(): ChildTodayRoutine {
-        return when (this) {
-            NURSERY -> HOME
-            HOME -> NONE
-            NONE -> NURSERY
+    fun next(input: ChildRoutineInput): ChildTodayRoutine {
+        return if (input.daysOfWeek.isNotEmpty()) {
+            when (this) {
+                NURSERY -> HOME
+                HOME -> NONE
+                NONE -> NURSERY
+            }
+        } else {
+            when (this) {
+                HOME -> NONE
+                NONE -> HOME
+                NURSERY -> HOME
+            }
         }
     }
 }
