@@ -15,4 +15,6 @@ interface ChildOverrideRepository {
         date: LocalDate,
         routine: ChildTodayRoutine
     )
+
+    fun getAll(): Map<Pair<String, LocalDate>, ChildTodayRoutine>
 }

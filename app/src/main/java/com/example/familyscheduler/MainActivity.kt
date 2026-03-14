@@ -79,7 +79,7 @@ fun MainScreen() {
     val childRepository = remember { InMemoryChildRoutineRepository() }
     val overrideRepository = remember { InMemoryChildOverrideRepository() }
 
-    val factory = TimelineViewModelFactory( // 要修正
+    val factory = TimelineViewModelFactory(
         templateRepository = templateRepository,
         dailyStateRepository = dailyStateRepository,
         householdRequirementRepository = householdRequirementRepository,
@@ -213,7 +213,7 @@ fun MainScreen() {
                     ScheduleInputScreen(
                         viewModel = templateEditViewModel,
                         onSaved = {
-                            //timelineViewModel.refreshAvailability()   ←将来的にここでloadForDate走らせるかも
+                            timelineViewModel.reloadCurrentDate()
                             navController.popBackStack("timeline", false)
                         },
                         onBack = {
@@ -237,7 +237,11 @@ fun MainScreen() {
                             ChildScreen(
                                 viewModel = childRoutineViewModel,
                                 currentDate = timelineViewModel.currentDate.collectAsState().value,
-                                onClose = { sheet = null }
+                                onClose = {
+                                    timelineViewModel.onChildRoutineChanged()
+                                    sheet = null
+                                },
+                                onToggle = { timelineViewModel.onChildRoutineChanged() }
                             )
                         }
                     }

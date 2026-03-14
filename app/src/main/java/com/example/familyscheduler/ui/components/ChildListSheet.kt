@@ -26,19 +26,12 @@ import java.time.LocalDate
 fun ChildListSheet(
     viewModel: ChildRoutineViewModel,
     currentDate: LocalDate,
-    onAddClick: () -> Unit
+    onAddClick: () -> Unit,
+    onToggle: () -> Unit
 ) {
 
     val children by viewModel.children.collectAsState()
-
-    /* override版の追加分
-    val routine = resolveTodayRoutine(
-        child,
-        today,
-        override
-    )
-     */
-
+    val overrides by viewModel.overrides.collectAsState()
 
     Column(
         modifier = Modifier
@@ -69,13 +62,17 @@ fun ChildListSheet(
 
             items(children) { child ->
 
-                val routine = viewModel.resolveTodayRoutine(child, currentDate)
+                val routine = viewModel.resolveTodayRoutine(
+                    child,
+                    currentDate,
+                    overrides)
 
                 ChildRow(
                     child = child,
                     routine = routine,
                     onToggle = {
                         viewModel.toggleTodayRoutine(child, currentDate)
+                        onToggle()
                     }
                 )
             }

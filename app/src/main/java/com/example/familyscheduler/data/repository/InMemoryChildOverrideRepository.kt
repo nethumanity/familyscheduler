@@ -23,4 +23,8 @@ class InMemoryChildOverrideRepository: ChildOverrideRepository {
     ) {
         overrides[childName to date] = routine
     }
+
+    override fun getAll(): Map<Pair<String, LocalDate>, ChildTodayRoutine> {
+        return overrides.toMap()
+    }
 }

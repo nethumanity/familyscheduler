@@ -101,7 +101,7 @@ class TimelineViewModel(
                     templateRepository.getTemplates()
 
                 val generated =
-                    generateDailyStatesFromTemplates(   //RepeatRuleのフィルター
+                    generateDailyStatesFromTemplates(
                         templates,
                         date
                     )
@@ -152,6 +152,18 @@ class TimelineViewModel(
         }
     }
 
+    fun onChildRoutineChanged() {
+
+        viewModelScope.launch {
+
+            val date = _currentDate.value
+
+            buildChildRoutineRules(date)
+
+            recomputeAvailability()
+        }
+    }
+
     // 前日
     fun moveToPreviousDay() {
         loadForDate(
@@ -171,6 +183,10 @@ class TimelineViewModel(
         loadForDate(date)
     }
 
+    fun reloadCurrentDate() {
+        loadForDate(_currentDate.value)
+    }
+
     // Template表示・選択 → DailyState生成
     fun showTemplateSheet(person: Person) {
 
@@ -188,11 +204,11 @@ class TimelineViewModel(
     ): List<DailyState> {
 
         return templates
-            .filter { it.repeatRule.appliesTo(date) }   // ここでRepeatRuleのフィルターかかる
+            .filter { it.repeatRule.appliesTo(date) }
             .map { template ->
 
                 val slots =
-                    template.expandToSlots()//date)        // ここでもRepeatRuleのフィルターかかる！
+                    template.expandToSlots()
 
                 DailyState(
                     person = template.person,
@@ -254,7 +270,7 @@ class TimelineViewModel(
                 requirements = requirements
             )
 
-        _slots.value = result.slots.toList()    //.toList()を追加（検証中）
+        _slots.value = result.slots.toList()
         //_evaluations.value = result.evaluations　←Engineの中身を精査した後に必要性を判断
     }
 
@@ -266,7 +282,7 @@ class TimelineViewModel(
 
         viewModelScope.launch {
 
-            val slots = template.expandToSlots()//currentDate.value) //RepeatRuleのフィルター
+            val slots = template.expandToSlots()
 
             val state = DailyState(
                 date = currentDate.value,

@@ -60,6 +60,7 @@ fun TimelineScreen(
     val dailyStates by viewModel.dailyStates.collectAsState()
     val slots by viewModel.slots.collectAsState()
     val evaluations by viewModel.evaluations.collectAsState()
+    val householdRequirements by viewModel.householdRequirements.collectAsState()
     val templates by viewModel.templates.collectAsState()
 
     LaunchedEffect(slots){
@@ -90,7 +91,7 @@ fun TimelineScreen(
             val index = TimeAxis.displayStartIndex + offset
 
             val time = TimeAxis.all[index]
-            val rowSlots = slots.filter { it.index == index }   //あるいは、viewModel.slotsAt(index)
+            val rowSlots = slots.filter { it.index == index }
 
             Log.d(
                 "TimelineScreen",
@@ -125,7 +126,6 @@ fun TimelineScreen(
                         }
                     )
                 }
-
                  */
             ) {
 
@@ -330,7 +330,5 @@ fun TimelineScreen(
             }
         )
     }
-
      */
-
 }

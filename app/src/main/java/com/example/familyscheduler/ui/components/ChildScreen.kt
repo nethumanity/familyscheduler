@@ -16,7 +16,8 @@ import java.time.LocalDate
 fun ChildScreen(
     viewModel: ChildRoutineViewModel,
     currentDate: LocalDate,
-    onClose: () -> Unit
+    onClose: () -> Unit,
+    onToggle: () -> Unit
 ) {
 
     var page by remember { mutableStateOf(ChildPage.LIST) }
@@ -29,7 +30,8 @@ fun ChildScreen(
                 currentDate = currentDate,
                 onAddClick = {
                     page = ChildPage.INPUT
-                }
+                },
+                onToggle = onToggle
             )
         }
 
