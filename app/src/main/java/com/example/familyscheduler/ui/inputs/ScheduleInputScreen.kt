@@ -1,10 +1,10 @@
 package com.example.familyscheduler.ui.inputs
 
-import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -18,21 +18,16 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.familyscheduler.domain.person.Person
-import com.example.familyscheduler.domain.schedule.DailyTemplate
-import com.example.familyscheduler.domain.schedule.RepeatRule
-import com.example.familyscheduler.domain.schedule.ScheduleTemplate
-import com.example.familyscheduler.ui.components.TemplateNormalizer
+import com.example.familyscheduler.domain.time.TimeDropdownPicker
 import com.example.familyscheduler.viewmodel.TemplateEditViewModel
 import java.time.DayOfWeek
 
@@ -44,36 +39,8 @@ fun ScheduleInputScreen(
     paddingValues: PaddingValues = PaddingValues()
 ) {
 
-    // ===== 対象者 =====
-    var selectedPerson by remember {
-        mutableStateOf(Person.FATHER)
-    }
+    val state by viewModel.uiState.collectAsState()
 
-    // ===== スケジュール名 =====
-    var templateName by remember {
-        mutableStateOf("")
-    }
-
-    // ===== RepeatRule =====
-    var useWeeklyRule by remember {
-        mutableStateOf(false)
-    }
-
-    var selectedDays by remember {
-        mutableStateOf(setOf<DayOfWeek>())
-    }
-
-    // ===== 固定スケジュール =====
-    val fixedSchedules = remember {
-        mutableStateListOf<ScheduleTemplate>()
-    }
-
-    // ===== 追加スケジュール =====
-    val additionalSchedules = remember {
-        mutableStateListOf<ScheduleTemplate>()
-    }
-
-    // ===== メインレイアウト =====
     LazyColumn(
 
         modifier = Modifier
@@ -112,7 +79,7 @@ fun ScheduleInputScreen(
 
             Column {
 
-                Text("対象者")
+                Text(text = "対象者", fontWeight = FontWeight.Bold)
 
                 Row {
 
@@ -123,8 +90,8 @@ fun ScheduleInputScreen(
                         ) {
 
                             RadioButton(
-                                selected = selectedPerson == person,
-                                onClick = { selectedPerson = person }
+                                selected = state.person == person,
+                                onClick = { viewModel.updatePerson(person) }
                             )
 
                             Text(person.label)
@@ -139,9 +106,10 @@ fun ScheduleInputScreen(
         item {
 
             OutlinedTextField(
-                value = templateName,
-                onValueChange = { templateName = it },
+                value = state.templateName,
+                onValueChange = { viewModel.updateTemplateName(it) },
                 label = { Text("スケジュール名") },
+                placeholder = { Text("例：出勤 / 在宅 / 休暇") },
                 modifier = Modifier.fillMaxWidth()
             )
         }
@@ -157,16 +125,16 @@ fun ScheduleInputScreen(
                 ) {
 
                     Checkbox(
-                        checked = useWeeklyRule,
+                        checked = state.noWeeklyRule,
                         onCheckedChange = {
-                            useWeeklyRule = it
+                            viewModel.updateNoWeeklyRule(it)
                         }
                     )
 
-                    Text("曜日を指定する")
+                    Text("曜日を指定しない")
                 }
 
-                if (useWeeklyRule) {
+                if (!state.noWeeklyRule) {
 
                     LazyVerticalGrid(
 
@@ -191,15 +159,8 @@ fun ScheduleInputScreen(
                             ) {
 
                                 Checkbox(
-                                    checked = selectedDays.contains(day),
-                                    onCheckedChange = {
-
-                                        selectedDays =
-                                            if (selectedDays.contains(day))
-                                                selectedDays - day
-                                            else
-                                                selectedDays + day
-                                    }
+                                    checked = state.selectedDays.contains(day),
+                                    onCheckedChange = { viewModel.toggleDay(day) }
                                 )
 
                                 Text(day.name.take(3))
@@ -214,10 +175,120 @@ fun ScheduleInputScreen(
 
         item {
 
-            FixedScheduleSection(
-                //person = selectedPerson,
-                schedules = fixedSchedules
-            )
+            Text(text = "仕事", fontWeight = FontWeight.Bold)
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Checkbox(
+                    checked = state.noWork,
+                    onCheckedChange = { viewModel.updateNoWork(it) }
+                )
+
+                Text("なし")
+            }
+
+            if (!state.noWork) {
+
+                TimeDropdownPicker(
+                    label = "開始",
+                    selectedTime = state.workStart
+                ) {
+                    viewModel.updateWorkStart(it)
+                }
+
+                TimeDropdownPicker(
+                    label = "終了",
+                    selectedTime = state.workEnd
+                ) {
+                    viewModel.updateWorkEnd(it)
+                }
+            }
+        }
+
+        item {
+
+            Text(text = "往路通勤", fontWeight = FontWeight.Bold)
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Checkbox(
+                    checked = state.noGoCommute,
+                    onCheckedChange = { viewModel.updateNoGoCommute(it) }
+                )
+
+                Text("なし")
+            }
+
+            if (!state.noGoCommute) {
+
+                TimeDropdownPicker(
+                    label = "開始",
+                    selectedTime = state.goCommuteStart
+                ) {
+                    viewModel.updateGoCommuteStart(it)
+                }
+
+                TimeDropdownPicker(
+                    label = "終了",
+                    selectedTime = state.goCommuteEnd
+                ) {
+                    viewModel.updateGoCommuteEnd(it)
+                }
+            }
+        }
+
+        item {
+
+            Text(text = "復路通勤", fontWeight = FontWeight.Bold)
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Checkbox(
+                    checked = state.noBackCommute,
+                    onCheckedChange = { viewModel.updateNoBackCommute(it) }
+                )
+
+                Text("なし")
+            }
+
+            if (!state.noBackCommute) {
+
+                TimeDropdownPicker(
+                    label = "開始",
+                    selectedTime = state.backCommuteStart
+                ) {
+                    viewModel.updateBackCommuteStart(it)
+                }
+
+                TimeDropdownPicker(
+                    label = "終了",
+                    selectedTime = state.backCommuteEnd
+                ) {
+                    viewModel.updateBackCommuteEnd(it)
+                }
+            }
+        }
+
+        item {
+
+            Text(text = "睡眠", fontWeight = FontWeight.Bold)
+
+            TimeDropdownPicker(
+                label = "開始",
+                selectedTime = state.sleepStart
+            ) {
+                viewModel.updateSleepStart(it)
+            }
+
+            TimeDropdownPicker(
+                label = "終了",
+                selectedTime = state.sleepEnd
+            ) {
+                viewModel.updateSleepEnd(it)
+            }
         }
 
         // ===== 追加スケジュール =====
@@ -225,163 +296,38 @@ fun ScheduleInputScreen(
         item {
 
             AdditionalScheduleSection(
-                //person = selectedPerson,
-                schedules = additionalSchedules
+                state = state,
+                viewModel = viewModel
             )
         }
 
         // ===== 保存 =====
 
         item {
+            Spacer(Modifier.height(8.dp))
+
+            val isValid =
+                state.templateName.isNotBlank() &&
+                        state.workStart != state.workEnd &&
+                        state.goCommuteStart != state.goCommuteEnd &&
+                        state.backCommuteStart != state.backCommuteEnd &&
+                        state.sleepStart != state.sleepEnd
 
             Button(
 
                 modifier = Modifier.fillMaxWidth(),
-
-                onClick = {
-
-                    val repeatRule =
-                        if (useWeeklyRule)
-                            RepeatRule.Weekly(selectedDays)
-                        else
-                            RepeatRule.Daily
-
-                    val rawList = fixedSchedules + additionalSchedules
-
-                    println("--- Debug: 保存直前のリスト内容 ---")
-                    rawList.forEach {
-                        println("Title: ${it.type.title}, Category: ${it.type.category}, Time: ${it.timeRange}")
-                    }
-
-                    val schedules =
-                        TemplateNormalizer.normalize(rawList)
-
-                    schedules.forEach { schedule ->
-                        Log.d("DebugSave",
-                            "Title: ${schedule.type.title}, Category: ${schedule.type.category}," +
-                                    " Start: ${schedule.timeRange.start}, End: ${schedule.timeRange.end}")
-                    }
-
-                    val template = DailyTemplate(
-                        person = selectedPerson,
-                        name = templateName,
-                        schedules = schedules,
-                        repeatRule = repeatRule
-                    )
-
-                    viewModel.saveTemplate(template)
-
-                    onSaved()
-
-                    viewModel.debugPrintTemplates()
-                }
+                enabled = isValid,
+                onClick = { viewModel.saveTemplate() }
 
             ) {
                 Text("保存")
             }
         }
     }
-}
 
-/* 旧バージョンを念のため保管
-@Composable
-fun ScheduleInputScreen(
-    viewModel: TemplateEditViewModel = viewModel(),
-    onSaved: () -> Unit,
-    onBack: () -> Unit
-) {
-    var title by remember { mutableStateOf("") }
-    var selectedCategory by remember {
-        mutableStateOf(StateCategory.WORK)
-    }
-    var startTime by remember {
-        mutableStateOf(LocalTime.of(9, 0))
-    }
-    var endTime by remember {
-        mutableStateOf(LocalTime.of(17, 0))
-    }
-    var selectedDays by remember {
-        mutableStateOf(setOf<DayOfWeek>())
-    }
-    Column(
-        modifier = Modifier.padding(16.dp)
-    ) {
-        // 戻るボタン
-        Button(onClick = onBack) {
-            Text("戻る")
-        }
-        Spacer(modifier = Modifier.height(16.dp))
-        // タイトル入力
-        Text("タイトル")
-        TextField(
-            value = title,
-            onValueChange = { title = it },
-            placeholder = { Text("例：仕事、通勤、睡眠") }
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        // カテゴリ選択
-        Text("カテゴリ")
-        StateCategory.values().forEach { category ->
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                RadioButton(
-                    selected = selectedCategory == category,
-                    onClick = {
-                        selectedCategory = category
-                    }
-                )
-                Text(category.name)
-            }
-        }
-        Spacer(modifier = Modifier.height(16.dp))
-        // 曜日選択
-        Text("曜日")
-        DayOfWeek.values().forEach { day ->
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Checkbox(
-                    checked = selectedDays.contains(day),
-                    onCheckedChange = {
-                        selectedDays =
-                            if (it)
-                                selectedDays + day
-                            else
-                                selectedDays - day
-                    }
-                )
-                Text(day.name)
-            }
-        }
-        Spacer(modifier = Modifier.height(16.dp))
-        // 保存ボタン
-        Button(
-            onClick = {
-                val type = ScheduleType(
-                    title = title,
-                    category = selectedCategory
-                )
-                val schedule = ScheduleTemplate(
-                    type = type,
-                    timeRange = TimeRange(
-                        start = startTime,
-                        end = endTime
-                    )
-                )
-
-                Log.d("DebugSave",
-                    "Title: ${schedule.type.title}, Category: ${schedule.type.category}")
-
-                val template = DailyTemplate(
-                    id = UUID.randomUUID(),
-                    person = Person.FATHER,
-                    name = title,
-                    schedules = listOf(schedule),
-                    repeatRule = RepeatRule.Weekly(selectedDays)
-                )
-                viewModel.saveTemplate(template)
-                onSaved()
-            }
-        ) {
-            Text("保存")
+    LaunchedEffect(Unit) {
+        viewModel.saveCompleted.collect {
+            onSaved()
         }
     }
 }
- */

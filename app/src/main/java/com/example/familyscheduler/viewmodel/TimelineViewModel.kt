@@ -22,6 +22,7 @@ import com.example.familyscheduler.domain.schedule.repository.TemplateRepository
 import com.example.familyscheduler.domain.slot.FlexWindowParameters
 import com.example.familyscheduler.domain.slot.SlotState
 import com.example.familyscheduler.domain.slot.TimeSlot
+import com.example.familyscheduler.seeder.SampleDataSeeder
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -78,9 +79,26 @@ class TimelineViewModel(
 
     val templates: StateFlow<List<DailyTemplate>> = _templates
 
+    private val ENABLE_SAMPLE_DATA = false   // falseでサンプル注入なし
+
     // 初期化
     init {
-        loadForDate(LocalDate.now())
+        viewModelScope.launch {
+
+            if (ENABLE_SAMPLE_DATA &&
+                templateRepository.getTemplates().isEmpty() &&
+                householdRequirementRepository.getByDate(_currentDate.value).isEmpty() &&
+                childRoutineRepository.getAll().isEmpty()) {
+
+                SampleDataSeeder.seed(
+                    templateRepository,
+                    householdRequirementRepository,
+                    childRoutineRepository
+                )
+            }
+
+            loadForDate(LocalDate.now())    // 二重のlaunch
+        }
     }
 
     // 日付ロード（中核）

@@ -1,22 +1,22 @@
 package com.example.familyscheduler.domain.schedule
 
-import com.example.familyscheduler.domain.slot.SlotState
-
-data class ScheduleType(    //SloStateへの変換責任
-    val title: String,    //ユーザーの認識のためだが、基本は「仕事」「睡眠」「往路通勤（準備や途中の用事を含む）」「復路通勤（片付けや途中の用事を含む）」だけにする
+data class ScheduleType(
+    val title: String,
     val category: StateCategory,
-    val flexWindow: Int = 3
-) {
-    fun toSlotState(): SlotState =
-        when (category) {
-            StateCategory.WORK -> SlotState.WORK
-            StateCategory.REST -> SlotState.REST
-            StateCategory.BLOCKED -> SlotState.UNAVAILABLE
-        }
-}
+    val flexWindow: Int
+)
 
-enum class StateCategory {
-    WORK,
-    REST,
-    BLOCKED // UNAVAILABLE系
+object ScheduleTypes {
+
+    val WORK = ScheduleType("仕事", StateCategory.WORK, 3)
+    val COMMUTE_GO = ScheduleType("往路通勤", StateCategory.BLOCKED, 3)
+    val COMMUTE_BACK = ScheduleType("復路通勤", StateCategory.BLOCKED, 3)
+    val SLEEP = ScheduleType("睡眠", StateCategory.REST, 3)
+
+    val core = listOf(
+        WORK,
+        COMMUTE_GO,
+        COMMUTE_BACK,
+        SLEEP
+    )
 }

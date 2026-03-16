@@ -6,10 +6,8 @@ import com.example.familyscheduler.domain.slot.TimeSlot
 import com.example.familyscheduler.domain.time.TimeAxis
 import com.example.familyscheduler.domain.time.TimeRange
 import java.time.LocalTime
-import java.util.UUID
 
-data class ScheduleTemplate(            //1つのScheduleTemplateは1つのDailyTemplateに紐づくのがわかりやすい
-    val id: UUID = UUID.randomUUID(),   //DailyTemplateとの紐づけのため？
+data class ScheduleTemplate(
     val type: ScheduleType,
     val timeRange: TimeRange
 ) {
@@ -32,7 +30,7 @@ data class ScheduleTemplate(            //1つのScheduleTemplateは1つのDaily
             TimeSlot(
                 index = index,
                 person = person,
-                state = type.toSlotState(),
+                state = type.category.toSlotState(),
                 flexWindow = FlexWindowParameters(type.flexWindow, type.flexWindow),
                 taskName = null
             )

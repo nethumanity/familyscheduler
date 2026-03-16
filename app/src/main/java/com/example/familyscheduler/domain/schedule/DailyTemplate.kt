@@ -5,7 +5,6 @@ import com.example.familyscheduler.domain.slot.FlexWindowParameters
 import com.example.familyscheduler.domain.slot.SlotState
 import com.example.familyscheduler.domain.slot.TimeSlot
 import com.example.familyscheduler.domain.time.TimeAxis
-import java.time.LocalDate
 import java.util.UUID
 
 data class DailyTemplate(   //1つのDailyTemplateは複数のScheduleTemplateからなる
@@ -16,9 +15,6 @@ data class DailyTemplate(   //1つのDailyTemplateは複数のScheduleTemplate�
     val repeatRule: RepeatRule
 ) {
     fun expandToSlots(/*date: LocalDate*/): List<TimeSlot> {
-
-        //if (!repeatRule.appliesTo(date))    // RepeatRuleのフィルター
-        //    return emptyList()
 
         val baseSlots =
             TimeAxis.indices.map { index ->
