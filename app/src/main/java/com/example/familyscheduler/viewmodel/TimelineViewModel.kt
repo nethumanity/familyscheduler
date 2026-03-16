@@ -153,6 +153,7 @@ class TimelineViewModel(
 
             // 現状では_dailyStatesのスロットと_slotsのスロットは一致しないことに留意
             // proposalの実行処理の仕様によってはバグるかも
+            // （代替案）TimeSlotにisUserLocked = falseを追加し、newSlotsはtrueにする
             val states = _dailyStates.value.map { state ->
 
                 if (state.person != person) return@map state

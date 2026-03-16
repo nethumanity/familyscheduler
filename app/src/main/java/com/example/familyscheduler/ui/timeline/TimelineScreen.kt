@@ -10,6 +10,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -39,6 +40,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -50,6 +52,7 @@ import com.example.familyscheduler.domain.time.TimeAxis
 import com.example.familyscheduler.ui.components.SlotStateSelectionSheet
 import com.example.familyscheduler.ui.components.slotStateColor
 import com.example.familyscheduler.viewmodel.TimelineViewModel
+import kotlin.div
 
 @Composable
 fun TimelineScreen(
@@ -106,28 +109,28 @@ fun TimelineScreen(
                     .fillMaxWidth()
                     .height(48.dp)
                     .border(0.5.dp, Color.LightGray)
-                /*.pointerInput(persons, time) {
-                    detectTapGestures(
-                        onTap = {
-                            if (availabilityState.shouldWarn) {
-                                viewModel.onAvailabilityWarningClick(indexOf(time))
-                            }
-                        },
-                        onLongPress = { offset ->
-                            val columnWidth =
-                                (size.width - 64.dp.toPx()) / persons.size
+                    .pointerInput(persons, time) {
 
-                            val index =
-                                ((offset.x - 64.dp.toPx()) / columnWidth).toInt()
+                        detectTapGestures(
+                            //onTap = {
+                            //    if (availabilityState.shouldWarn) {
+                            //        viewModel.onAvailabilityWarningClick(indexOf(time))
+                            //    }
+                            //},
+                            onLongPress = { offset ->
+                                val columnWidth =
+                                    (size.width - 64.dp.toPx()) / persons.size
 
-                            val person = persons.getOrNull(index)
-                            if (person != null) {
-                                editingSlot = time to person
+                                val columnIndex =
+                                    ((offset.x - 64.dp.toPx()) / columnWidth).toInt()
+
+                                val person = persons.getOrNull(columnIndex)
+                                if (person != null) {
+                                    editingSlot = index to person
+                                }
                             }
-                        }
-                    )
-                }
-                 */
+                        )
+                    }
             ) {
 
                 // 時刻表示
