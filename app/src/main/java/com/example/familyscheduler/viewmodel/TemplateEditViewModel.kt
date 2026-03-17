@@ -7,7 +7,7 @@ import com.example.familyscheduler.domain.person.Person
 import com.example.familyscheduler.domain.schedule.DailyTemplate
 import com.example.familyscheduler.domain.schedule.RepeatRule
 import com.example.familyscheduler.domain.schedule.ScheduleTemplate
-import com.example.familyscheduler.domain.schedule.ScheduleTypes
+import com.example.familyscheduler.domain.schedule.ScheduleType
 import com.example.familyscheduler.domain.schedule.repository.TemplateRepository
 import com.example.familyscheduler.domain.time.TimeRange
 import com.example.familyscheduler.ui.components.TemplateNormalizer
@@ -57,16 +57,6 @@ class TemplateEditViewModel(
         val sleepEnd: LocalTime = LocalTime.of(6,0),
 
         val additionalSchedules: List<ScheduleTemplate> = emptyList()
-    )
-
-    val dayLabels = mapOf(
-        DayOfWeek.MONDAY to "月",
-        DayOfWeek.TUESDAY to "火",
-        DayOfWeek.WEDNESDAY to "水",
-        DayOfWeek.THURSDAY to "木",
-        DayOfWeek.FRIDAY to "金",
-        DayOfWeek.SATURDAY to "土",
-        DayOfWeek.SUNDAY to "日"
     )
 
     private val _uiState =
@@ -144,14 +134,17 @@ class TemplateEditViewModel(
     fun addAdditionalSchedule() {
 
         val newSchedule = ScheduleTemplate(
-            type = ScheduleTypes.WORK,
+
+            type = ScheduleType.WORK,
+
             timeRange = TimeRange(
-                LocalTime.of(9,0),
-                LocalTime.of(10,0)
+                LocalTime.of(14,0),
+                LocalTime.of(15,0)
             )
         )
 
         _uiState.update {
+
             it.copy(
                 additionalSchedules =
                     it.additionalSchedules + newSchedule
@@ -168,6 +161,23 @@ class TemplateEditViewModel(
                     it.additionalSchedules.toMutableList()
                         .apply { removeAt(index) }
             )
+        }
+    }
+
+    fun updateAdditionalType(
+        index: Int,
+        type: ScheduleType
+    ) {
+
+        _uiState.update {
+
+            val list = it.additionalSchedules.toMutableList()
+
+            val old = list[index]
+
+            list[index] = old.copy(type = type)
+
+            it.copy(additionalSchedules = list)
         }
     }
 
@@ -232,7 +242,7 @@ class TemplateEditViewModel(
             if (!ui.noWork) {
                 add(
                     ScheduleTemplate(
-                        type = ScheduleTypes.WORK,
+                        type = ScheduleType.WORK,
                         timeRange = TimeRange(ui.workStart, ui.workEnd)
                     )
                 )
@@ -241,7 +251,7 @@ class TemplateEditViewModel(
             if (!ui.noGoCommute) {
                 add(
                     ScheduleTemplate(
-                        type = ScheduleTypes.COMMUTE_GO,
+                        type = ScheduleType.COMMUTE_GO,
                         timeRange = TimeRange(ui.goCommuteStart, ui.goCommuteEnd)
                     )
                 )
@@ -250,7 +260,7 @@ class TemplateEditViewModel(
             if (!ui.noBackCommute) {
                 add(
                     ScheduleTemplate(
-                        type = ScheduleTypes.COMMUTE_BACK,
+                        type = ScheduleType.COMMUTE_BACK,
                         timeRange = TimeRange(ui.backCommuteStart, ui.backCommuteEnd)
                     )
                 )
@@ -258,10 +268,12 @@ class TemplateEditViewModel(
 
             add(
                 ScheduleTemplate(
-                    type = ScheduleTypes.SLEEP,
+                    type = ScheduleType.SLEEP,
                     timeRange = TimeRange(ui.sleepStart, ui.sleepEnd)
                 )
             )
+
+            addAll(ui.additionalSchedules)
         }
 
         val schedules =

@@ -1,22 +1,73 @@
 package com.example.familyscheduler.domain.schedule
 
-data class ScheduleType(
+import com.example.familyscheduler.domain.slot.SlotState
+
+enum class ScheduleType(
+
     val title: String,
-    val category: StateCategory,
+
+    val state: SlotState,
+
     val flexWindow: Int
-)
 
-object ScheduleTypes {
+) {
 
-    val WORK = ScheduleType("仕事", StateCategory.WORK, 3)
-    val COMMUTE_GO = ScheduleType("往路通勤", StateCategory.BLOCKED, 3)
-    val COMMUTE_BACK = ScheduleType("復路通勤", StateCategory.BLOCKED, 3)
-    val SLEEP = ScheduleType("睡眠", StateCategory.REST, 3)
+    WORK(
+        "仕事",
+        SlotState.WORK,
+        3
+    ),
 
-    val core = listOf(
-        WORK,
-        COMMUTE_GO,
-        COMMUTE_BACK,
-        SLEEP
-    )
+    COMMUTE_GO(
+        "往路通勤",
+        SlotState.UNAVAILABLE,
+        3
+    ),
+
+    COMMUTE_BACK(
+        "復路通勤",
+        SlotState.UNAVAILABLE,
+        3
+    ),
+
+    SLEEP(
+        "睡眠",
+        SlotState.REST,
+        3
+    ),
+
+    RESTRAINT(
+        "その他拘束",
+        SlotState.UNAVAILABLE,
+        3
+    ),
+
+    REST(
+        "睡眠・休息",
+        SlotState.REST,
+        3
+    ),
+
+    FREE(
+        "趣味・自由",
+        SlotState.FREE,
+        3
+    );
+
+    companion object {
+
+        val core = listOf(
+            WORK,
+            COMMUTE_GO,
+            COMMUTE_BACK,
+            SLEEP
+        )
+
+        val additionalAllowedTypes = listOf(
+            WORK,
+            REST,
+            FREE,
+            RESTRAINT
+        )
+    }
 }

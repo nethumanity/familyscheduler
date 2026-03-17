@@ -5,8 +5,6 @@ import com.example.familyscheduler.domain.schedule.DailyTemplate
 import com.example.familyscheduler.domain.schedule.RepeatRule
 import com.example.familyscheduler.domain.schedule.ScheduleTemplate
 import com.example.familyscheduler.domain.schedule.ScheduleType
-import com.example.familyscheduler.domain.schedule.ScheduleTypes
-import com.example.familyscheduler.domain.schedule.StateCategory
 import com.example.familyscheduler.domain.time.TimeRange
 import java.time.DayOfWeek
 import java.time.LocalTime
@@ -29,7 +27,7 @@ object TemplateSamples {
                 schedules = listOf(
 
                     ScheduleTemplate(
-                        type = ScheduleTypes.SLEEP,
+                        type = ScheduleType.SLEEP,
                         timeRange = TimeRange(
                             LocalTime.of(0, 0),
                             LocalTime.of(6, 0)
@@ -37,7 +35,7 @@ object TemplateSamples {
                     ),
 
                     ScheduleTemplate(
-                        type = ScheduleTypes.COMMUTE_GO,
+                        type = ScheduleType.COMMUTE_GO,
                         timeRange = TimeRange(
                             LocalTime.of(6,30),
                             LocalTime.of(9,0)
@@ -45,7 +43,7 @@ object TemplateSamples {
                     ),
 
                     ScheduleTemplate(
-                        type = ScheduleTypes.WORK,
+                        type = ScheduleType.WORK,
                         timeRange = TimeRange(
                             LocalTime.of(9,0),
                             LocalTime.of(17,30)
@@ -53,7 +51,7 @@ object TemplateSamples {
                     ),
 
                     ScheduleTemplate(
-                        type = ScheduleTypes.COMMUTE_BACK,
+                        type = ScheduleType.COMMUTE_BACK,
                         timeRange = TimeRange(
                             LocalTime.of(17,30),
                             LocalTime.of(20,0)
@@ -61,7 +59,7 @@ object TemplateSamples {
                     ),
 
                     ScheduleTemplate(
-                        type = ScheduleTypes.SLEEP,
+                        type = ScheduleType.SLEEP,
                         timeRange = TimeRange(
                             LocalTime.of(22,0),
                             LocalTime.of(0,0)
@@ -89,7 +87,7 @@ object TemplateSamples {
                 schedules = listOf(
 
                     ScheduleTemplate(
-                        type = ScheduleTypes.SLEEP,
+                        type = ScheduleType.SLEEP,
                         timeRange = TimeRange(
                             LocalTime.of(0,0),
                             LocalTime.of(5,30)
@@ -97,7 +95,7 @@ object TemplateSamples {
                     ),
 
                     ScheduleTemplate(
-                        type = ScheduleTypes.COMMUTE_GO,
+                        type = ScheduleType.COMMUTE_GO,
                         timeRange = TimeRange(
                             LocalTime.of(7,30),
                             LocalTime.of(9,0)
@@ -105,7 +103,7 @@ object TemplateSamples {
                     ),
 
                     ScheduleTemplate(
-                        type = ScheduleTypes.WORK,
+                        type = ScheduleType.WORK,
                         timeRange = TimeRange(
                             LocalTime.of(9,0),
                             LocalTime.of(18,0)
@@ -113,7 +111,7 @@ object TemplateSamples {
                     ),
 
                     ScheduleTemplate(
-                        type = ScheduleTypes.COMMUTE_BACK,
+                        type = ScheduleType.COMMUTE_BACK,
                         timeRange = TimeRange(
                             LocalTime.of(18,0),
                             LocalTime.of(19,0)
@@ -121,7 +119,7 @@ object TemplateSamples {
                     ),
 
                     ScheduleTemplate(
-                        type = ScheduleTypes.SLEEP,
+                        type = ScheduleType.SLEEP,
                         timeRange = TimeRange(
                             LocalTime.of(21,30),
                             LocalTime.of(0,0)
@@ -148,7 +146,7 @@ object TemplateSamples {
                 schedules = listOf(
 
                     ScheduleTemplate(
-                        type = ScheduleTypes.SLEEP,
+                        type = ScheduleType.SLEEP,
                         timeRange = TimeRange(
                             LocalTime.of(0,0),
                             LocalTime.of(6,0)
@@ -156,7 +154,7 @@ object TemplateSamples {
                     ),
 
                     ScheduleTemplate(
-                        type = ScheduleTypes.WORK,
+                        type = ScheduleType.WORK,
                         timeRange = TimeRange(
                             LocalTime.of(8,30),
                             LocalTime.of(17,30)
@@ -164,7 +162,7 @@ object TemplateSamples {
                     ),
 
                     ScheduleTemplate(
-                        type = ScheduleTypes.SLEEP,
+                        type = ScheduleType.SLEEP,
                         timeRange = TimeRange(
                             LocalTime.of(22,0),
                             LocalTime.of(0,0)
@@ -191,7 +189,7 @@ object TemplateSamples {
                 schedules = listOf(
 
                     ScheduleTemplate(
-                        type = ScheduleTypes.SLEEP,
+                        type = ScheduleType.SLEEP,
                         timeRange = TimeRange(
                             LocalTime.of(0,0),
                             LocalTime.of(5,30)
@@ -199,7 +197,7 @@ object TemplateSamples {
                     ),
 
                     ScheduleTemplate(
-                        type = ScheduleTypes.COMMUTE_GO,
+                        type = ScheduleType.COMMUTE_GO,
                         timeRange = TimeRange(
                             LocalTime.of(8,30),
                             LocalTime.of(9,0)
@@ -207,7 +205,7 @@ object TemplateSamples {
                     ),
 
                     ScheduleTemplate(
-                        type = ScheduleTypes.WORK,
+                        type = ScheduleType.WORK,
                         timeRange = TimeRange(
                             LocalTime.of(9,0),
                             LocalTime.of(18,0)
@@ -215,7 +213,7 @@ object TemplateSamples {
                     ),
 
                     ScheduleTemplate(
-                        type = ScheduleTypes.SLEEP,
+                        type = ScheduleType.SLEEP,
                         timeRange = TimeRange(
                             LocalTime.of(21,30),
                             LocalTime.of(0,0)
@@ -241,7 +239,7 @@ object TemplateSamples {
                 schedules = listOf(
 
                     ScheduleTemplate(
-                        type = ScheduleTypes.SLEEP,
+                        type = ScheduleType.SLEEP,
                         timeRange = TimeRange(
                             LocalTime.of(0,0),
                             LocalTime.of(6,0)
@@ -249,7 +247,7 @@ object TemplateSamples {
                     ),
 
                     ScheduleTemplate(
-                        type = ScheduleTypes.COMMUTE_GO,
+                        type = ScheduleType.COMMUTE_GO,
                         timeRange = TimeRange(
                             LocalTime.of(6,30),
                             LocalTime.of(9,0)
@@ -257,7 +255,7 @@ object TemplateSamples {
                     ),
 
                     ScheduleTemplate(
-                        type = ScheduleTypes.WORK,
+                        type = ScheduleType.WORK,
                         timeRange = TimeRange(
                             LocalTime.of(9,0),
                             LocalTime.of(18,30)
@@ -265,7 +263,7 @@ object TemplateSamples {
                     ),
 
                     ScheduleTemplate(
-                        type = ScheduleTypes.COMMUTE_BACK,
+                        type = ScheduleType.COMMUTE_BACK,
                         timeRange = TimeRange(
                             LocalTime.of(18,30),
                             LocalTime.of(21,0)
@@ -273,7 +271,7 @@ object TemplateSamples {
                     ),
 
                     ScheduleTemplate(
-                        type = ScheduleTypes.SLEEP,
+                        type = ScheduleType.SLEEP,
                         timeRange = TimeRange(
                             LocalTime.of(22,0),
                             LocalTime.of(0,0)
@@ -295,7 +293,7 @@ object TemplateSamples {
                 schedules = listOf(
 
                     ScheduleTemplate(
-                        type = ScheduleTypes.SLEEP,
+                        type = ScheduleType.SLEEP,
                         timeRange = TimeRange(
                             LocalTime.of(0,0),
                             LocalTime.of(5,30)
@@ -303,7 +301,7 @@ object TemplateSamples {
                     ),
 
                     ScheduleTemplate(
-                        type = ScheduleTypes.COMMUTE_GO,
+                        type = ScheduleType.COMMUTE_GO,
                         timeRange = TimeRange(
                             LocalTime.of(7,30),
                             LocalTime.of(9,0)
@@ -311,7 +309,7 @@ object TemplateSamples {
                     ),
 
                     ScheduleTemplate(
-                        type = ScheduleTypes.WORK,
+                        type = ScheduleType.WORK,
                         timeRange = TimeRange(
                             LocalTime.of(9,0),
                             LocalTime.of(20,0)
@@ -319,7 +317,7 @@ object TemplateSamples {
                     ),
 
                     ScheduleTemplate(
-                        type = ScheduleTypes.COMMUTE_BACK,
+                        type = ScheduleType.COMMUTE_BACK,
                         timeRange = TimeRange(
                             LocalTime.of(20,0),
                             LocalTime.of(21,0)
@@ -327,7 +325,7 @@ object TemplateSamples {
                     ),
 
                     ScheduleTemplate(
-                        type = ScheduleTypes.SLEEP,
+                        type = ScheduleType.SLEEP,
                         timeRange = TimeRange(
                             LocalTime.of(21,30),
                             LocalTime.of(0,0)
@@ -354,7 +352,7 @@ object TemplateSamples {
                 schedules = listOf(
 
                     ScheduleTemplate(
-                        type = ScheduleTypes.SLEEP,
+                        type = ScheduleType.SLEEP,
                         timeRange = TimeRange(
                             LocalTime.of(0,0),
                             LocalTime.of(6,0)
@@ -362,11 +360,7 @@ object TemplateSamples {
                     ),
 
                     ScheduleTemplate(
-                        type = ScheduleType(
-                            "趣味",
-                            StateCategory.BLOCKED,
-                            3
-                        ),
+                        type = ScheduleType.FREE,
                         timeRange = TimeRange(
                             LocalTime.of(10,0),
                             LocalTime.of(14,0)
@@ -374,11 +368,7 @@ object TemplateSamples {
                     ),
 
                     ScheduleTemplate(
-                        type = ScheduleType(
-                            "趣味",
-                            StateCategory.BLOCKED,
-                            3
-                        ),
+                        type = ScheduleType.FREE,
                         timeRange = TimeRange(
                             LocalTime.of(20,0),
                             LocalTime.of(22,0)
@@ -386,7 +376,7 @@ object TemplateSamples {
                     ),
 
                     ScheduleTemplate(
-                        type = ScheduleTypes.SLEEP,
+                        type = ScheduleType.SLEEP,
                         timeRange = TimeRange(
                             LocalTime.of(22,0),
                             LocalTime.of(0,0)
@@ -413,7 +403,7 @@ object TemplateSamples {
                 schedules = listOf(
 
                     ScheduleTemplate(
-                        type = ScheduleTypes.SLEEP,
+                        type = ScheduleType.SLEEP,
                         timeRange = TimeRange(
                             LocalTime.of(0,0),
                             LocalTime.of(5,30)
@@ -421,11 +411,7 @@ object TemplateSamples {
                     ),
 
                     ScheduleTemplate(
-                        type = ScheduleType(
-                            "家事全般",
-                            StateCategory.BLOCKED,
-                            3
-                        ),
+                        type = ScheduleType.RESTRAINT,
                         timeRange = TimeRange(
                             LocalTime.of(13,30),
                             LocalTime.of(15,0)
@@ -433,11 +419,7 @@ object TemplateSamples {
                     ),
 
                     ScheduleTemplate(
-                        type = ScheduleType(
-                            "自由時間",
-                            StateCategory.BLOCKED,
-                            3
-                        ),
+                        type = ScheduleType.FREE,
                         timeRange = TimeRange(
                             LocalTime.of(15,0),
                             LocalTime.of(17,0)
@@ -445,7 +427,7 @@ object TemplateSamples {
                     ),
 
                     ScheduleTemplate(
-                        type = ScheduleTypes.SLEEP,
+                        type = ScheduleType.SLEEP,
                         timeRange = TimeRange(
                             LocalTime.of(21,30),
                             LocalTime.of(0,0)

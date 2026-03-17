@@ -23,7 +23,23 @@ class OneTimeTaskViewModel(
     private val repository: HouseholdRequirementRepository
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(OneTimeAppointmentInput())
+    data class OneTimeTaskUiState(
+        val date: LocalDate = LocalDate.now(),
+
+        val taskName: String = "",
+        val targetState: SlotState = SlotState.LIFE,
+
+        val isTwoPersonTask: Boolean = false,
+        val allowedPersonOption: AllowedPersonOption = AllowedPersonOption.EITHER,
+
+        val startTime: LocalTime? = null,
+        val durationMinutes: Int = 30,
+
+        val isFlexible: Boolean = false,
+        val flexMinutes: Int = 0
+    )
+
+    private val _uiState = MutableStateFlow(OneTimeTaskUiState())
     val uiState = _uiState.asStateFlow()
 
     private val _saveCompleted = MutableSharedFlow<Unit>()
@@ -60,8 +76,6 @@ class OneTimeTaskViewModel(
         val input = _uiState.value
         val rule = convertToRule(input)
 
-        //val date = rule.date ?: return
-
         viewModelScope.launch {
             repository.add(rule)
 
@@ -71,7 +85,7 @@ class OneTimeTaskViewModel(
         }
     }
 
-    private fun convertToRule(input: OneTimeAppointmentInput): HouseholdRequirementRule {
+    private fun convertToRule(input: OneTimeTaskUiState): HouseholdRequirementRule {
 
         val start = input.startTime ?: error("StartTime required")
 
@@ -119,20 +133,4 @@ class OneTimeTaskViewModel(
             )
         )
     }
-
-    data class OneTimeAppointmentInput(
-        val date: LocalDate = LocalDate.now(),
-
-        val taskName: String = "",
-        val targetState: SlotState = SlotState.LIFE,
-
-        val isTwoPersonTask: Boolean = false,
-        val allowedPersonOption: AllowedPersonOption = AllowedPersonOption.EITHER,
-
-        val startTime: LocalTime? = null,
-        val durationMinutes: Int = 30,
-
-        val isFlexible: Boolean = false,
-        val flexMinutes: Int = 0
-    )
 }

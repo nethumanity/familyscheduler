@@ -136,12 +136,7 @@ class TimelineViewModel(
                 Log.d("TimelineVM", "slots size = ${states.flatMap { it.slots }.size}")
             }
 
-            // 分離するなら、private fun updateSlots(states: List<DailyState>) {
-            _dailyStates.value = states
-
-            _slots.value =
-                states.flatMap { it.slots }
-            // ここまで
+            updateSlots(states)
 
             buildChildRoutineRules(date)
 
@@ -155,17 +150,6 @@ class TimelineViewModel(
         person: Person,
         newState: SlotState
     ) {
-        /* 旧バージョン
-        _slots.value = _slots.value.map { slot ->
-            if (slot.index == index && slot.person == person) {
-                slot.copy(state = newState, flexWindow = FlexWindowParameters(0, 0), taskName = null)
-            } else {
-                slot
-            }
-        }
-
-        refreshAvailability()
-         */
 
         viewModelScope.launch {
 
@@ -193,11 +177,14 @@ class TimelineViewModel(
                 dailyStateRepository.save(it)
             }
 
-            reloadCurrentDate()
-            // 下記は私案
-            //updateSlots(states)
-            //recomputeAvailability()
+            updateSlots(states)
+            recomputeAvailability()
         }
+    }
+
+    private fun updateSlots(states: List<DailyState>) {
+        _dailyStates.value = states
+        _slots.value = states.flatMap { it.slots }
     }
 
     fun refreshAvailability() {

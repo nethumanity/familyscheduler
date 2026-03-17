@@ -30,7 +30,7 @@ data class ScheduleTemplate(
             TimeSlot(
                 index = index,
                 person = person,
-                state = type.category.toSlotState(),
+                state = type.state,
                 flexWindow = FlexWindowParameters(type.flexWindow, type.flexWindow),
                 taskName = null
             )

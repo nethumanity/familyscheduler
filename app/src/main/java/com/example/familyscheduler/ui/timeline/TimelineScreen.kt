@@ -52,7 +52,6 @@ import com.example.familyscheduler.domain.time.TimeAxis
 import com.example.familyscheduler.ui.components.SlotStateSelectionSheet
 import com.example.familyscheduler.ui.components.slotStateColor
 import com.example.familyscheduler.viewmodel.TimelineViewModel
-import kotlin.div
 
 @Composable
 fun TimelineScreen(
@@ -143,9 +142,8 @@ fun TimelineScreen(
                         fontSize = 12.sp
                     )
 
-                    //★編集中
                     val evaluation = evaluations.getOrNull(index)
-                    //if (evaluation?.missing ?: 0 > 0) {
+
                     if (evaluation?.state == AvailabilityState.WARN) {
                         Spacer(modifier = Modifier.height(2.dp))
                         Icon(
@@ -253,7 +251,7 @@ fun TimelineScreen(
     }
 
     // ============================
-    // ③　警告ダイアログ　消された！！！
+    // 警告ダイアログ　（復活させる）
     // ============================
     /*
     val dialogIndex = viewModel.warningDialogIndex

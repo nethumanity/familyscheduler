@@ -23,7 +23,25 @@ class WeeklyTaskViewModel(
     private val repository: HouseholdRequirementRepository
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(WeeklyTaskInput())
+    data class WeeklyTaskUiState(
+
+        val taskName: String = "",
+        val targetState: SlotState = SlotState.LIFE,
+
+        val everyDay: Boolean = false,
+        val daysOfWeek: Set<DayOfWeek> = emptySet(),
+
+        val isTwoPersonTask: Boolean = false,
+        val allowedPersonOption: AllowedPersonOption = AllowedPersonOption.EITHER,
+
+        val startTime: LocalTime? = null,
+        val durationMinutes: Int = 30,
+
+        val isFlexible: Boolean = false,
+        val flexMinutes: Int = 0
+    )
+
+    private val _uiState = MutableStateFlow(WeeklyTaskUiState())
     val uiState = _uiState.asStateFlow()
 
     private val _saveCompleted = MutableSharedFlow<Unit>()
@@ -99,7 +117,7 @@ class WeeklyTaskViewModel(
         }
     }
 
-    fun convertToRule(input: WeeklyTaskInput): HouseholdRequirementRule {
+    fun convertToRule(input: WeeklyTaskUiState): HouseholdRequirementRule {
 
         val start = input.startTime ?: error("StartTime required")
 
@@ -151,23 +169,5 @@ class WeeklyTaskViewModel(
             )
         )
     }
-
-    data class WeeklyTaskInput(
-
-        val taskName: String = "",
-        val targetState: SlotState = SlotState.LIFE,
-
-        val everyDay: Boolean = false,
-        val daysOfWeek: Set<DayOfWeek> = emptySet(),
-
-        val isTwoPersonTask: Boolean = false,
-        val allowedPersonOption: AllowedPersonOption = AllowedPersonOption.EITHER,
-
-        val startTime: LocalTime? = null,
-        val durationMinutes: Int = 30,
-
-        val isFlexible: Boolean = false,
-        val flexMinutes: Int = 0
-    )
 }
 
