@@ -1,8 +1,7 @@
-package com.example.familyscheduler.ui.components
+package com.example.familyscheduler.domain.schedule
 
-import com.example.familyscheduler.domain.schedule.ScheduleTemplate
-import com.example.familyscheduler.domain.time.TimeRange
 import com.example.familyscheduler.domain.time.TimeAxis
+import com.example.familyscheduler.domain.time.TimeRange
 import java.time.LocalTime
 
 object TemplateNormalizer {

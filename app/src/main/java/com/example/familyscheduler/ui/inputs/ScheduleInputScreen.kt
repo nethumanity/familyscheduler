@@ -30,7 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.familyscheduler.domain.person.Person
 import com.example.familyscheduler.domain.time.TimeDropdownPicker
-import com.example.familyscheduler.ui.components.DayOfWeekUtilities
+import com.example.familyscheduler.ui.utilities.DayOfWeekUtilities
 import com.example.familyscheduler.viewmodel.TemplateEditViewModel
 import java.time.DayOfWeek
 
@@ -306,7 +306,10 @@ fun ScheduleInputScreen(
                         state.workStart != state.workEnd &&
                         state.goCommuteStart != state.goCommuteEnd &&
                         state.backCommuteStart != state.backCommuteEnd &&
-                        state.sleepStart != state.sleepEnd
+                        state.sleepStart != state.sleepEnd &&
+                        state.additionalSchedules.all {
+                            it.timeRange.start != it.timeRange.end
+                        }
 
             Button(
 

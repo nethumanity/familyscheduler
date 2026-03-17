@@ -8,7 +8,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.familyscheduler.domain.evaluation.AvailabilityEngine
 import com.example.familyscheduler.domain.evaluation.AvailabilityEvaluation
+import com.example.familyscheduler.domain.evaluation.AvailabilityState
 import com.example.familyscheduler.domain.person.Person
+import com.example.familyscheduler.domain.evaluation.FlexResolveProposal
 import com.example.familyscheduler.domain.requirement.HouseholdRequirement
 import com.example.familyscheduler.domain.requirement.repository.HouseholdRequirementRepository
 import com.example.familyscheduler.domain.routine.ChildCareRuleConverter
@@ -38,48 +40,49 @@ class TimelineViewModel(
     private val childCareRuleConverter: ChildCareRuleConverter
 ) : ViewModel() {
 
-    // 現在日付
+    data class WarningDialogState(
+        val index: Int,
+        val proposals: List<FlexResolveProposal>
+    )
+
     private val _currentDate =
         MutableStateFlow(LocalDate.now())
-
     val currentDate: StateFlow<LocalDate> =
         _currentDate
 
-    // DailyState一覧（父・母）
+    private val _templates =
+        MutableStateFlow<List<DailyTemplate>>(emptyList())
+    val templates: StateFlow<List<DailyTemplate>> = _templates
+
     private val _dailyStates =
         MutableStateFlow<List<DailyState>>(emptyList())
-
     val dailyStates: StateFlow<List<DailyState>> =
         _dailyStates
 
-    // Timeline表示用slots
     private val _slots =
         MutableStateFlow<List<TimeSlot>>(emptyList())
-
     val slots: StateFlow<List<TimeSlot>> =
         _slots
 
+    private val _householdRequirements =
+        MutableStateFlow<List<HouseholdRequirement>>(emptyList())
+    val householdRequirements: StateFlow<List<HouseholdRequirement>> =
+        _householdRequirements
+
     private val _evaluations =
         MutableStateFlow<List<AvailabilityEvaluation>>(emptyList())
-
     val evaluations: StateFlow<List<AvailabilityEvaluation>> =
         _evaluations
 
-    private val _householdRequirements =
-        MutableStateFlow<List<HouseholdRequirement>>(emptyList())
-
-    val householdRequirements: StateFlow<List<HouseholdRequirement>> =
-        _householdRequirements
+    private val _warningDialogState =
+        MutableStateFlow<WarningDialogState?>(null)
+    val warningDialogState: StateFlow<WarningDialogState?> =
+        _warningDialogState
 
     var editingTemplateFor by mutableStateOf<Person?>(null)
         private set
 
-    private val _templates =
-        MutableStateFlow<List<DailyTemplate>>(emptyList())
-
-    val templates: StateFlow<List<DailyTemplate>> = _templates
-
-    private val ENABLE_SAMPLE_DATA = false   // falseでサンプル注入なし
+    private val ENABLE_SAMPLE_DATA = true   // falseでサンプル注入なし
 
     // 初期化
     init {
@@ -144,7 +147,7 @@ class TimelineViewModel(
         }
     }
 
-    //編集（状態変更）★仮置き
+    //編集（状態変更）
     fun changeSlotState(
         index: Int,
         person: Person,
@@ -219,7 +222,7 @@ class TimelineViewModel(
         )
     }
 
-    // 将来用
+    // 将来用（今後はこれを使う）
     fun changeDate(date: LocalDate) {
         loadForDate(date)
     }
@@ -307,16 +310,74 @@ class TimelineViewModel(
 
         val result =
             AvailabilityEngine.recompute(
-                originalSlots = originalSlots, //_slots.value,
+                originalSlots = originalSlots,
                 requirements = requirements
             )
 
         _slots.value = result.slots.toList()
-        _evaluations.value = result.evaluations //←Engineの中身を精査した後に必要性を判断
+        _evaluations.value = result.evaluations
+    }
+
+    // 警告機能
+
+    fun onAvailabilityWarningClick(index: Int) {
+
+        val evaluation = _evaluations.value.getOrNull(index)
+            ?: return
+
+        if (evaluation.state != AvailabilityState.WARN) return
+
+        _warningDialogState.value =
+            WarningDialogState(index, evaluation.flexProposals)
+    }
+
+    fun dismissWarningDialog() {
+        _warningDialogState.value = null
     }
 
     fun dismissTemplateSheet() {
         editingTemplateFor = null
+    }
+
+    fun applyFlexResolveProposal(proposal: FlexResolveProposal) {
+
+        viewModelScope.launch {
+
+            // 現状では_dailyStatesのスロットと_slotsのスロットは一致しないことに留意
+            // proposalの実行処理の仕様によってはバグるかも
+            // （代替案）TimeSlotにisUserLocked = falseを追加し、newSlotsはtrueにする
+            val states = _dailyStates.value.map { state ->
+
+                if (state.person != proposal.person) return@map state
+
+                val newSlots = state.slots.map { slot ->
+                    when {
+
+                        slot.index == proposal.candidateIndex &&
+                                slot.person == proposal.person ->
+                            slot.copy(state = proposal.targetState)
+
+
+                        slot.index == proposal.initialIndex &&
+                                slot.person == proposal.person ->
+                            slot.copy(state = SlotState.UNASSIGNED)
+
+                        else -> slot
+                    }
+                }
+
+                state.copy(slots = newSlots)
+            }
+
+            states.forEach {
+                dailyStateRepository.save(it)
+            }
+
+            updateSlots(states)
+            recomputeAvailability()
+
+            dismissWarningDialog()
+        }
     }
 
     fun applyTemplate(person: Person, template: DailyTemplate) {

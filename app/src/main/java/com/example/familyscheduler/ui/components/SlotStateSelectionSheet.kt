@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.familyscheduler.domain.person.Person
 import com.example.familyscheduler.domain.slot.SlotState
+import com.example.familyscheduler.ui.utilities.slotStateLabel
 import java.time.LocalTime
 
 @Composable

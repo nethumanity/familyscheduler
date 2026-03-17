@@ -15,7 +15,7 @@ import java.time.format.DateTimeFormatter
 
 @Composable
 fun DateSection(
-    state: OneTimeTaskViewModel.OneTimeAppointmentInput,
+    state: OneTimeTaskViewModel.OneTimeTaskUiState,
     viewModel: OneTimeTaskViewModel
 ) {
     var showDialog by remember { mutableStateOf(false) }

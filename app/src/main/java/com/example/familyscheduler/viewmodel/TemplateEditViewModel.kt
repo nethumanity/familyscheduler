@@ -10,7 +10,7 @@ import com.example.familyscheduler.domain.schedule.ScheduleTemplate
 import com.example.familyscheduler.domain.schedule.ScheduleType
 import com.example.familyscheduler.domain.schedule.repository.TemplateRepository
 import com.example.familyscheduler.domain.time.TimeRange
-import com.example.familyscheduler.ui.components.TemplateNormalizer
+import com.example.familyscheduler.domain.schedule.TemplateNormalizer
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

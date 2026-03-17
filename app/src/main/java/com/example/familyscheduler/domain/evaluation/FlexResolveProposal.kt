@@ -1,4 +1,4 @@
-package com.example.familyscheduler.domain.proposal
+package com.example.familyscheduler.domain.evaluation
 
 import com.example.familyscheduler.domain.person.Person
 import com.example.familyscheduler.domain.slot.SlotState

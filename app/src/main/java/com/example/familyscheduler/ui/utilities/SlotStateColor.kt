@@ -1,4 +1,4 @@
-package com.example.familyscheduler.ui.components
+package com.example.familyscheduler.ui.utilities
 
 import androidx.compose.ui.graphics.Color
 import com.example.familyscheduler.domain.slot.SlotState

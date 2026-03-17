@@ -1,7 +1,5 @@
 package com.example.familyscheduler.domain.evaluation
 
-import com.example.familyscheduler.domain.proposal.FlexResolveProposal
-
 data class AvailabilityEvaluation(
     val index: Int,
     val requiredCount: Int,

@@ -20,6 +20,10 @@ class InMemoryHouseholdRequirementRepository :
         }
     }
 
+    override suspend fun getAll(): List<HouseholdRequirementRule> {
+        return storage.toList()
+    }
+
     override suspend fun add(
         rule: HouseholdRequirementRule
     ) {

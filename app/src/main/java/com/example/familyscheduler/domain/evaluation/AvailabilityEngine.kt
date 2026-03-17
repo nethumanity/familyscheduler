@@ -1,7 +1,7 @@
 package com.example.familyscheduler.domain.evaluation
 
 import com.example.familyscheduler.domain.person.Person
-import com.example.familyscheduler.domain.proposal.FlexResolveProposal
+import com.example.familyscheduler.domain.evaluation.FlexResolveProposal
 import com.example.familyscheduler.domain.requirement.HouseholdRequirement
 import com.example.familyscheduler.domain.slot.FlexWindowParameters
 import com.example.familyscheduler.domain.slot.SlotState
@@ -171,8 +171,7 @@ object AvailabilityEngine {
                 flexResolveProposalsAt(
                     index = index,
                     slots = slots,
-                    requirements = requirements,
-                    reasons = reasons
+                    requirements = requirements
                 )
 
             AvailabilityEvaluation(
@@ -207,30 +206,55 @@ object AvailabilityEngine {
         )
     }
 
-    private fun flexResolveProposalsAt(
+    fun flexResolveProposalsAt(
         index: Int,
         slots: List<TimeSlot>,
-        requirements: List<HouseholdRequirement>,
-        reasons: List<MissingReason>
+        requirements: List<HouseholdRequirement>
     ): List<FlexResolveProposal> {
 
-        val hasFlexRequirement =
-            requirements.any {
-                (it.flexWindowSlots.backward != 0 || it.flexWindowSlots.forward != 0) &&
-                        it.isRequiredAt(index)
+        val slotsAtIndex = slots.filter { it.index == index }
+
+        val activeReqs = requirements.filter { it.isRequiredAt(index) }
+
+        val reasons = mutableListOf<MissingReason>()
+
+        activeReqs.forEach { req ->
+
+            val assigned = slotsAtIndex.count {
+                it.person in req.allowedPersons &&
+                        it.state == req.targetState
             }
 
-        if (!hasFlexRequirement)
-            return emptyList()
+            val missing = req.requiredCount - assigned
+
+            if (missing > 0) {
+                reasons.add(
+                    MissingReason.NotEnoughPeople(
+                        requirementName = req.name,
+                        requiredCount = req.requiredCount,
+                        assignedCount = assigned,
+                        blockingPersons = emptyList()
+                    )
+                )
+            }
+        }
+
+        val hasFlexRequirement =
+            activeReqs.any {
+                it.flexWindowSlots.backward != 0 ||
+                        it.flexWindowSlots.forward != 0
+            }
+
+        if (!hasFlexRequirement) return emptyList()
 
         return reasons
             .filterIsInstance<MissingReason.NotEnoughPeople>()
             .flatMap { reason ->
                 generateFlexResolveProposalsForReason(
-                    index,
-                    slots,
-                    requirements,
-                    reason
+                    index = index,
+                    slots = slots,
+                    requirements = requirements,
+                    reason = reason
                 )
             }
             .sortedBy { it.score(slots) }

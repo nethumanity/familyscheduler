@@ -1,4 +1,4 @@
-package com.example.familyscheduler.ui.components
+package com.example.familyscheduler.ui.utilities
 
 import java.time.DayOfWeek
 

@@ -9,6 +9,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.example.familyscheduler.ui.inputs.ChildRoutineInputScreen
+import com.example.familyscheduler.ui.manager.ChildPage
 import com.example.familyscheduler.viewmodel.ChildRoutineViewModel
 import java.time.LocalDate
 
