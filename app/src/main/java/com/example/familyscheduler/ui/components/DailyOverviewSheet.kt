@@ -4,7 +4,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -24,9 +23,9 @@ import com.example.familyscheduler.domain.evaluation.MissingReason
 import com.example.familyscheduler.domain.person.Person
 import com.example.familyscheduler.domain.requirement.HouseholdRequirement
 import com.example.familyscheduler.domain.requirement.TimeRangeHouseholdRequirement
-import com.example.familyscheduler.domain.slot.TimeSlot
 import com.example.familyscheduler.domain.time.TimeAxis
 import java.time.LocalDate
+import java.util.UUID
 
 @Composable
 fun DailyOverviewSheet(
@@ -34,7 +33,7 @@ fun DailyOverviewSheet(
     //slots: List<TimeSlot>,
     requirements: List<HouseholdRequirement>,
     evaluations: List<AvailabilityEvaluation>,
-    onDeleteSlot: (TimeSlot) -> Unit,
+    //onDisableRule: (ruleId: UUID) -> Unit,    //override生成関数発火
     onWarningClick: (Int) -> Unit
 ) {
     fun indexToTime(index: Int): String {
@@ -128,7 +127,8 @@ fun DailyOverviewSheet(
                     "削除",
                     color = Color.Red,
                     modifier = Modifier.clickable {
-                        // 👉 この場合は全員分削除 or 個別削除設計必要
+                        //onDisableRule(rule.id)
+                        // 👉 ruleベース設計必要
                     }
                 )
             }

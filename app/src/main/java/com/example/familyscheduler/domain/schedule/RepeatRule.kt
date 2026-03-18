@@ -6,7 +6,7 @@ import java.time.LocalDate
 sealed class RepeatRule {
 
 
-    object None : RepeatRule()  // 追加
+    object None : RepeatRule()
     object Daily : RepeatRule()
 
     data class Weekly(
@@ -15,8 +15,14 @@ sealed class RepeatRule {
 
     fun appliesTo(date: LocalDate): Boolean =
         when (this) {
-            None -> false   //　追加
+            None -> false
             Daily -> true
             is Weekly -> date.dayOfWeek in days
         }
+
+    fun specificity(): Int = when (this) {
+        None -> 0
+        Daily -> 1
+        is Weekly -> 10 + (7 - this.days.size)
+    }
 }

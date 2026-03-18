@@ -49,16 +49,17 @@ sealed class MissingReason {
         fun renderMissingReasonSummary(reason: MissingReason): String {
 
             return when (reason) {
-                is NotEnoughPeople -> "${reason.requirementName}：割り当て不可"    //変数を使って精緻化したい
-                is NoAssignablePerson -> "未設定"
-                is StateConflict -> "未設定"
+                is NotEnoughPeople ->
+                    "${reason.requirementName}：${reason.assignedCount}/${reason.requiredCount}"
+                is NoAssignablePerson -> "状態不一致（未設定）"
+                is StateConflict -> "担当不可（未設定）"
             }
         }
     }
 }
 
 data class BlockInfo(
-    val person: List<Person>,           //なぜリスト？
-    val currentState: List<SlotState>,  //なぜリスト？
+    val person: List<Person>,
+    val currentState: List<SlotState>,
     val taskName: String?
 )

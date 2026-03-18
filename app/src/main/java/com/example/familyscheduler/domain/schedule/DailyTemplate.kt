@@ -8,11 +8,12 @@ import com.example.familyscheduler.domain.time.TimeAxis
 import java.util.UUID
 
 data class DailyTemplate(   //1つのDailyTemplateは複数のScheduleTemplateからなる
-    val id: UUID = UUID.randomUUID(),
+    val id: String = UUID.randomUUID().toString(),
     val person: Person,
     val name: String,
     val schedules: List<ScheduleTemplate>,
-    val repeatRule: RepeatRule
+    val repeatRule: RepeatRule,
+    val createdAt: Long = System.currentTimeMillis()
 ) {
     fun expandToSlots(): List<TimeSlot> {
 

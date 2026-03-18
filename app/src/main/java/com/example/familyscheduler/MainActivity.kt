@@ -254,7 +254,7 @@ fun MainScreen() {
                                 //slots = timelineViewModel.slots.collectAsState().value,
                                 requirements = timelineViewModel.householdRequirements.collectAsState().value,
                                 evaluations = timelineViewModel.evaluations.collectAsState().value,
-                                onDeleteSlot = { timelineViewModel.deleteSlot(it) },
+                                //onDisableRule = {},   // VMで関数定義が必要
                                 onWarningClick = { timelineViewModel.onAvailabilityWarningClick(it) }
                             )
                         }

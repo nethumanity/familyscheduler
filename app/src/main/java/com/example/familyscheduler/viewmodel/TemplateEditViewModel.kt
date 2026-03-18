@@ -230,7 +230,7 @@ class TemplateEditViewModel(
                 !ui.noWeeklyRule && ui.selectedDays.size == 7 ->
                     RepeatRule.Daily
 
-                !ui.noWeeklyRule ->
+                !ui.noWeeklyRule && ui.selectedDays.isNotEmpty() ->
                     RepeatRule.Weekly(ui.selectedDays)
 
                 else ->

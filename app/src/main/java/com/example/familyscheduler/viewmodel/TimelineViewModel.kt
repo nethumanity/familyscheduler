@@ -12,6 +12,8 @@ import com.example.familyscheduler.domain.evaluation.AvailabilityState
 import com.example.familyscheduler.domain.person.Person
 import com.example.familyscheduler.domain.evaluation.FlexResolveProposal
 import com.example.familyscheduler.domain.requirement.HouseholdRequirement
+import com.example.familyscheduler.domain.requirement.HouseholdRequirementRule
+import com.example.familyscheduler.domain.requirement.RequirementOverride
 import com.example.familyscheduler.domain.requirement.repository.HouseholdRequirementRepository
 import com.example.familyscheduler.domain.routine.ChildCareRuleConverter
 import com.example.familyscheduler.domain.routine.ChildRoutineBuilder
@@ -19,6 +21,7 @@ import com.example.familyscheduler.domain.routine.RoutineResolver
 import com.example.familyscheduler.domain.routine.repository.ChildRoutineRepository
 import com.example.familyscheduler.domain.schedule.DailyState
 import com.example.familyscheduler.domain.schedule.DailyTemplate
+import com.example.familyscheduler.domain.schedule.RepeatRule
 import com.example.familyscheduler.domain.schedule.repository.DailyStateRepository
 import com.example.familyscheduler.domain.schedule.repository.TemplateRepository
 import com.example.familyscheduler.domain.slot.FlexWindowParameters
@@ -248,19 +251,39 @@ class TimelineViewModel(
     ): List<DailyState> {
 
         return templates
-            .filter { it.repeatRule.appliesTo(date) }
-            .map { template ->
+            .groupBy { it.person }
+            .flatMap { (person, personTemplates) ->
 
-                val slots =
-                    template.expandToSlots()
+                val resolved = personTemplates.resolveFor(date)
 
-                DailyState(
-                    person = template.person,
-                    date = date,
-                    templateName = template.name,
-                    slots = slots
-                )
+                // 👉 ここが設計ポイント
+                val selected = resolved.take(1) // まずは1つだけ採用（完全上書き）
+
+                selected.map { template ->
+
+                    val slots = template.expandToSlots()
+
+                    DailyState(
+                        person = person,
+                        date = date,
+                        templateName = template.name,
+                        slots = slots
+                    )
+                }
             }
+    }
+
+    fun List<DailyTemplate>.resolveFor(date: LocalDate): List<DailyTemplate> {
+
+        return this
+            .asSequence()
+            .filter { it.repeatRule.appliesTo(date) }
+            .sortedWith(
+                compareByDescending<DailyTemplate> { it.repeatRule.specificity() }
+                    .thenByDescending { it.repeatRule is RepeatRule.Weekly }
+                    .thenByDescending { it.createdAt }
+            )
+            .toList()
     }
 
     private suspend fun buildChildRoutineRules(date: LocalDate) {
@@ -295,6 +318,9 @@ class TimelineViewModel(
         val rules =
             householdRequirementRepository.getByDate(date)
 
+        val overrides = emptyList<RequirementOverride>()    //今はスタブ
+            //requirementOverrideRepository.getByDate(date)
+
         // 理想はoriginalSlots = DailyState.slots
         val originalSlots = _dailyStates.value.flatMap { it.slots }
 
@@ -303,8 +329,11 @@ class TimelineViewModel(
             Log.d("TimelineVM", "rule = $it")
         }
 
+        val activeRules =
+            applyOverrides(rules, overrides)
+
         val requirements =
-            rules.map { it.toRequirement() }
+            activeRules.map { it.toRequirement() }
 
         _householdRequirements.value = requirements
 
@@ -316,6 +345,19 @@ class TimelineViewModel(
 
         _slots.value = result.slots.toList()
         _evaluations.value = result.evaluations
+    }
+
+    fun applyOverrides(
+        rules: List<HouseholdRequirementRule>,
+        overrides: List<RequirementOverride>,
+    ): List<HouseholdRequirementRule> {
+
+        val disabledIds = overrides
+            .filter { it.disabled }
+            .map { it.ruleId }
+            .toSet()
+
+        return rules.filterNot { it.id in disabledIds }
     }
 
     // 警告機能

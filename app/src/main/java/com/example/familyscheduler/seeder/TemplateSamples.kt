@@ -21,7 +21,7 @@ object TemplateSamples {
             // ===============================
 
             DailyTemplate(
-                id = UUID.randomUUID(),
+                id = UUID.randomUUID().toString(),
                 person = Person.FATHER,
                 name = "OFFICE",
                 schedules = listOf(
@@ -81,7 +81,7 @@ object TemplateSamples {
             // ===============================
 
             DailyTemplate(
-                id = UUID.randomUUID(),
+                id = UUID.randomUUID().toString(),
                 person = Person.MOTHER,
                 name = "OFFICE",
                 schedules = listOf(
@@ -140,7 +140,7 @@ object TemplateSamples {
             // ===============================
 
             DailyTemplate(
-                id = UUID.randomUUID(),
+                id = UUID.randomUUID().toString(),
                 person = Person.FATHER,
                 name = "REMOTE",
                 schedules = listOf(
@@ -183,7 +183,7 @@ object TemplateSamples {
             // ===============================
 
             DailyTemplate(
-                id = UUID.randomUUID(),
+                id = UUID.randomUUID().toString(),
                 person = Person.MOTHER,
                 name = "REMOTE",
                 schedules = listOf(
@@ -233,7 +233,7 @@ object TemplateSamples {
             // ===============================
 
             DailyTemplate(
-                id = UUID.randomUUID(),
+                id = UUID.randomUUID().toString(),
                 person = Person.FATHER,
                 name = "OVERWORK",
                 schedules = listOf(
@@ -287,7 +287,7 @@ object TemplateSamples {
             // ===============================
 
             DailyTemplate(
-                id = UUID.randomUUID(),
+                id = UUID.randomUUID().toString(),
                 person = Person.MOTHER,
                 name = "OVERWORK",
                 schedules = listOf(
@@ -346,7 +346,7 @@ object TemplateSamples {
             // ===============================
 
             DailyTemplate(
-                id = UUID.randomUUID(),
+                id = UUID.randomUUID().toString(),
                 person = Person.FATHER,
                 name = "HOLIDAY",
                 schedules = listOf(
@@ -397,7 +397,7 @@ object TemplateSamples {
             // ===============================
 
             DailyTemplate(
-                id = UUID.randomUUID(),
+                id = UUID.randomUUID().toString(),
                 person = Person.MOTHER,
                 name = "HOLIDAY",
                 schedules = listOf(

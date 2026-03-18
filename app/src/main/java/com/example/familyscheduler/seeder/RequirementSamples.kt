@@ -16,7 +16,7 @@ object RequirementSamples {
     fun defaultRequirements(): List<HouseholdRequirementRule> = listOf(
 
         HouseholdRequirementRule(
-            id = UUID.randomUUID(),
+            id = UUID.randomUUID().toString(),
             source = RequirementSource.USER,
             taskName = "朝食",
             targetState = SlotState.LIFE,
@@ -32,7 +32,7 @@ object RequirementSamples {
         ),
 
         HouseholdRequirementRule(
-            id = UUID.randomUUID(),
+            id = UUID.randomUUID().toString(),
             source = RequirementSource.USER,
             taskName = "朝食",
             targetState = SlotState.CHILDCARE,
@@ -48,7 +48,7 @@ object RequirementSamples {
         ),
 
         HouseholdRequirementRule(
-            id = UUID.randomUUID(),
+            id = UUID.randomUUID().toString(),
             source = RequirementSource.USER,
             taskName = "夕食準備",
             targetState = SlotState.LIFE,
@@ -67,7 +67,7 @@ object RequirementSamples {
         ),
 
         HouseholdRequirementRule(
-            id = UUID.randomUUID(),
+            id = UUID.randomUUID().toString(),
             source = RequirementSource.USER,
             taskName = "夕食",
             targetState = SlotState.CHILDCARE,
@@ -86,7 +86,7 @@ object RequirementSamples {
         ),
 
         HouseholdRequirementRule(
-            id = UUID.randomUUID(),
+            id = UUID.randomUUID().toString(),
             source = RequirementSource.USER,
             taskName = "買い物",
             targetState = SlotState.LIFE,
@@ -109,7 +109,7 @@ object RequirementSamples {
         ),
 
         HouseholdRequirementRule(
-            id = UUID.randomUUID(),
+            id = UUID.randomUUID().toString(),
             source = RequirementSource.USER,
             taskName = "通院",
             targetState = SlotState.LIFE,

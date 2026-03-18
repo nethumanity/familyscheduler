@@ -10,7 +10,7 @@ import java.time.LocalDate
 import java.util.UUID
 
 data class HouseholdRequirementRule(
-    val id: UUID = UUID.randomUUID(),
+    val id: String = UUID.randomUUID().toString(),
     val source: RequirementSource = RequirementSource.USER,
     val taskName: String,
     val targetState: SlotState,
