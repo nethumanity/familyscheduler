@@ -251,7 +251,7 @@ fun MainScreen() {
                         MainSheet.DAILY_OVERVIEW -> {
                             DailyOverviewSheet(
                                 date = timelineViewModel.currentDate.collectAsState().value,
-                                slots = timelineViewModel.slots.collectAsState().value,
+                                //slots = timelineViewModel.slots.collectAsState().value,
                                 requirements = timelineViewModel.householdRequirements.collectAsState().value,
                                 evaluations = timelineViewModel.evaluations.collectAsState().value,
                                 onDeleteSlot = { timelineViewModel.deleteSlot(it) },
