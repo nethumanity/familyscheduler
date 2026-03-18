@@ -39,6 +39,7 @@ fun SlotStateSelectionSheet(
             SlotState.CHILDCARE,
             SlotState.LIFE,
             SlotState.WORK,
+            SlotState.UNAVAILABLE,
             SlotState.REST,
             SlotState.FREE
         ).forEach { state ->

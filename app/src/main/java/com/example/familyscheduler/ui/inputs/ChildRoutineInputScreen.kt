@@ -80,7 +80,7 @@ fun ChildRoutineInputScreen(
             )
         }
         item {
-            Text("保育園／幼稚園")
+            Text("保育園／幼稚園", fontWeight = FontWeight.Bold)
 
             Row(verticalAlignment = Alignment.CenterVertically) {
 
@@ -104,7 +104,7 @@ fun ChildRoutineInputScreen(
             // ===== 保育園ありのときのみ =====
             if (state.hasNursery) {
 
-                Text("登園日")
+                Text("登園日", fontWeight = FontWeight.Bold)
 
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -130,7 +130,7 @@ fun ChildRoutineInputScreen(
 
                 Spacer(Modifier.height(24.dp))
 
-                Text("登園")
+                Text("登園", fontWeight = FontWeight.Bold)
 
                 TimeDropdownPicker(
                     label = "希望時刻",
@@ -152,7 +152,7 @@ fun ChildRoutineInputScreen(
 
                 Spacer(Modifier.height(24.dp))
 
-                Text("お迎え")
+                Text("お迎え", fontWeight = FontWeight.Bold)
 
                 TimeDropdownPicker(
                     label = "希望時刻",

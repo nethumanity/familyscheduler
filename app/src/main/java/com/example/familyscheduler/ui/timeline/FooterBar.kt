@@ -27,13 +27,13 @@ fun FooterBar(
             onClick = onOverviewClick,
             icon = {
                 Icon(
-                    painter = painterResource(R.drawable.ic_calendar),
+                    painter = painterResource(R.drawable.ic_summary),  //ic_calendar
                     contentDescription = "Calendar",
                     //tint = Color.Red,
                     modifier = Modifier.size(24.dp)
                 )
             },
-            label = { Text("カレンダー") }
+            label = { Text("サマリー") }    //"カレンダー"
         )
 
         NavigationBarItem(

@@ -7,5 +7,14 @@ enum class SlotState(val weight: Int) {
     REST(2),
     LIFE(3),
     UNAVAILABLE(6),
-    UNASSIGNED(0)
+    UNASSIGNED(0);
+
+    companion object {
+
+        val taskInputAllowedState = listOf(
+            CHILDCARE,
+            WORK,
+            LIFE
+        )
+    }
 }

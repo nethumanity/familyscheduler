@@ -22,7 +22,9 @@ fun PersonSection(
     onAllowedPersonOptionChange: (AllowedPersonOption) -> Unit
 ) {
 
-    Row {
+    Row (
+        verticalAlignment = Alignment.CenterVertically
+    ){
         Checkbox(
             checked = isTwoPersonTask,
             onCheckedChange = { onIsTwoPersonTaskChange(it) }

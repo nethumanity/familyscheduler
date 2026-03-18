@@ -1,11 +1,15 @@
 package com.example.familyscheduler.ui.inputs
 
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import com.example.familyscheduler.domain.slot.SlotState
+import com.example.familyscheduler.ui.utilities.labelForInput
 
 @Composable
 fun TaskSection(
@@ -18,9 +22,36 @@ fun TaskSection(
     OutlinedTextField(
         value = taskName,
         onValueChange = onTaskNameChange,
-        label = { Text("予定名") }
+        label = { Text("予定名") },
+        //placeholder = { Text("例：XXX / XXX / XXX") },
+        modifier = Modifier.fillMaxWidth()
     )
 
+    SlotState.taskInputAllowedState
+        .chunked(2)
+        .forEach { rowStates ->
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+
+                rowStates.forEach { state ->
+
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = targetState == state,
+                            onClick = { onTargetStateChange(state) }
+                        )
+
+                        Text(labelForInput(state))
+                    }
+                }
+            }
+        }
+    /*
     Row {
         RadioButton(
             selected = targetState == SlotState.LIFE,
@@ -33,5 +64,6 @@ fun TaskSection(
             onClick = { onTargetStateChange(SlotState.CHILDCARE) }
         )
         Text("育児")
-    }
+
+     */
 }

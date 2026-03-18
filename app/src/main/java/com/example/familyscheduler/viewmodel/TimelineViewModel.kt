@@ -14,6 +14,8 @@ import com.example.familyscheduler.domain.evaluation.FlexResolveProposal
 import com.example.familyscheduler.domain.requirement.HouseholdRequirement
 import com.example.familyscheduler.domain.requirement.HouseholdRequirementRule
 import com.example.familyscheduler.domain.requirement.RequirementOverride
+import com.example.familyscheduler.domain.requirement.RequirementSource
+import com.example.familyscheduler.domain.requirement.TimeRangeHouseholdRequirement
 import com.example.familyscheduler.domain.requirement.repository.HouseholdRequirementRepository
 import com.example.familyscheduler.domain.routine.ChildCareRuleConverter
 import com.example.familyscheduler.domain.routine.ChildRoutineBuilder
@@ -337,6 +339,19 @@ class TimelineViewModel(
 
         _householdRequirements.value = requirements
 
+        /*
+        val sorted = activeRules.sortedWith(       //プロトタイプではRuleでソートする（理想はRequirement）
+            compareByDescending<HouseholdRequirementRule> {
+                it.targetState.weight
+            }
+                .thenBy { it.timeLength() } // ← 短いほど優先
+                .thenByDescending { it.isDateSpecific() }
+                .thenByDescending { it.sourcePriority() }
+                .thenByDescending { it.createdAt() } // 可能なら
+        )
+
+         */
+
         val result =
             AvailabilityEngine.recompute(
                 originalSlots = originalSlots,
@@ -359,6 +374,28 @@ class TimelineViewModel(
 
         return rules.filterNot { it.id in disabledIds }
     }
+
+    fun TimeRangeHouseholdRequirement.timeLength(): Int {
+        return endIndex - startIndex
+    }
+/*
+    fun HouseholdRequirement.isDateSpecific(): Boolean {
+        return when (this) {
+            is TimeRangeHouseholdRequirement -> {
+                // Rule由来ならフラグ持たせるのがベスト
+                this.isDateSpecific
+            }
+            else -> false
+        }
+    }
+
+    fun HouseholdRequirement.sourcePriority(): Int =
+        when (this.source) {
+            RequirementSource.USER -> 1
+            RequirementSource.CHILD_ROUTINE -> 0
+        }
+
+ */
 
     // 警告機能
 
