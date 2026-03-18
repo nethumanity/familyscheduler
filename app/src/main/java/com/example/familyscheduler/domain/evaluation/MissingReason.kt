@@ -2,6 +2,7 @@ package com.example.familyscheduler.domain.evaluation
 
 import com.example.familyscheduler.domain.person.Person
 import com.example.familyscheduler.domain.slot.SlotState
+import com.example.familyscheduler.ui.utilities.slotStateLabel
 
 sealed class MissingReason {
     data class NotEnoughPeople(
@@ -20,10 +21,44 @@ sealed class MissingReason {
         val expected: SlotState,
         val actual: SlotState
     ) : MissingReason()
+
+    companion object {
+        fun renderMissingReason(reason: MissingReason): String =
+            when (reason) {
+
+                is NotEnoughPeople ->
+
+                    reason.blockingPersons.joinToString("\n") { block ->
+
+                        val personsText =
+                            block.person.joinToString("、") { it.label }
+
+                        val statesText =
+                            block.currentState.joinToString("、") { slotStateLabel(it) }
+
+                        "${personsText}に${block.taskName}の予定がありますが、すでに${statesText}が入っています"
+                    }
+
+                is NoAssignablePerson ->
+                    "${reason.requirementName}：割り当て可能な人がいません"
+
+                is StateConflict ->
+                    "${reason.person.label}は ${reason.actual} のため対応できません（必要: ${reason.expected}）"
+            }
+
+        fun renderMissingReasonSummary(reason: MissingReason): String {
+
+            return when (reason) {
+                is NotEnoughPeople -> "${reason.requirementName}：割り当て不可"    //変数を使って精緻化したい
+                is NoAssignablePerson -> "未設定"
+                is StateConflict -> "未設定"
+            }
+        }
+    }
 }
 
 data class BlockInfo(
-    val person: List<Person>,
-    val currentState: List<SlotState>,
+    val person: List<Person>,           //なぜリスト？
+    val currentState: List<SlotState>,  //なぜリスト？
     val taskName: String?
 )

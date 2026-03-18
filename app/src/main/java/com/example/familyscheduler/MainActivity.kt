@@ -34,6 +34,7 @@ import com.example.familyscheduler.domain.routine.ChildCareRuleConverter
 import com.example.familyscheduler.domain.routine.ChildRoutineBuilder
 import com.example.familyscheduler.domain.routine.RoutineResolver
 import com.example.familyscheduler.ui.components.ChildScreen
+import com.example.familyscheduler.ui.components.DailyOverviewSheet
 import com.example.familyscheduler.ui.components.SettingsScreen
 import com.example.familyscheduler.ui.inputs.AddTaskScreen
 import com.example.familyscheduler.ui.inputs.ScheduleInputScreen
@@ -130,7 +131,9 @@ fun MainScreen() {
 
         bottomBar = {
             FooterBar(
-                // 今後ここに追加していく（route = calender）
+                onOverviewClick = {
+                    sheet = MainSheet.DAILY_OVERVIEW
+                },
 
                 onChildClick = {
                     sheet = MainSheet.CHILD
@@ -242,6 +245,17 @@ fun MainScreen() {
                                     sheet = null
                                 },
                                 onToggle = { timelineViewModel.onChildRoutineChanged() }
+                            )
+                        }
+
+                        MainSheet.DAILY_OVERVIEW -> {
+                            DailyOverviewSheet(
+                                date = timelineViewModel.currentDate.collectAsState().value,
+                                slots = timelineViewModel.slots.collectAsState().value,
+                                requirements = timelineViewModel.householdRequirements.collectAsState().value,
+                                evaluations = timelineViewModel.evaluations.collectAsState().value,
+                                onDeleteSlot = { timelineViewModel.deleteSlot(it) },
+                                onWarningClick = { timelineViewModel.onAvailabilityWarningClick(it) }
                             )
                         }
                     }

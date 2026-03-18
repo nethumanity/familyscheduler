@@ -1,5 +1,6 @@
 package com.example.familyscheduler.ui.manager
 
 enum class MainSheet {
-    CHILD
+    CHILD,
+    DAILY_OVERVIEW
 }

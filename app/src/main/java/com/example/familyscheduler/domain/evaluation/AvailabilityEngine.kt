@@ -1,7 +1,6 @@
 package com.example.familyscheduler.domain.evaluation
 
 import com.example.familyscheduler.domain.person.Person
-import com.example.familyscheduler.domain.evaluation.FlexResolveProposal
 import com.example.familyscheduler.domain.requirement.HouseholdRequirement
 import com.example.familyscheduler.domain.slot.FlexWindowParameters
 import com.example.familyscheduler.domain.slot.SlotState

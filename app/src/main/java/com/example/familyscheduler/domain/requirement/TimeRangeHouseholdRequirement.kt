@@ -11,8 +11,8 @@ class TimeRangeHouseholdRequirement(
     override val allowedPersons: Set<Person>,
     //override val type: RequirementType,
     override val flexWindowSlots: FlexWindowParameters, //Int,
-    private val startIndex: Int,
-    private val endIndex: Int
+    val startIndex: Int,
+    val endIndex: Int
 ) : HouseholdRequirement {
 
     override fun isRequiredAt(index: Int): Boolean =

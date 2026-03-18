@@ -399,4 +399,21 @@ class TimelineViewModel(
             dismissTemplateSheet()
         }
     }
+
+    fun deleteSlot(target: TimeSlot) {
+
+        viewModelScope.launch {
+
+            _slots.value = _slots.value.map {
+                if (it == target) {
+                    it.copy(
+                        state = SlotState.UNASSIGNED,
+                        taskName = null
+                    )
+                } else it
+            }
+
+            recomputeAvailability()
+        }
+    }
 }
