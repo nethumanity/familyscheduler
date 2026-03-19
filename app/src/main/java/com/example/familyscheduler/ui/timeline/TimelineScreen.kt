@@ -11,6 +11,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -30,6 +31,7 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -57,7 +59,8 @@ import com.example.familyscheduler.viewmodel.TimelineViewModel
 fun TimelineScreen(
     viewModel: TimelineViewModel,
     persons: List<Person> =
-        listOf(Person.FATHER, Person.MOTHER)
+        listOf(Person.FATHER, Person.MOTHER),
+    onAddClick: (Person) -> Unit
 ) {
     //val currentDate by viewModel.currentDate.collectAsState()
     val dailyStates by viewModel.dailyStates.collectAsState()
@@ -219,11 +222,21 @@ fun TimelineScreen(
             }
         ) {
 
-            Text(
-                text = "${person.label} のテンプレート",
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(16.dp)
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "${person.label} のテンプレート",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(16.dp)
+                )
+
+                TextButton(onClick = { onAddClick(person) }) {
+                    Text("登録")
+                }
+            }
 
             LazyColumn {
 

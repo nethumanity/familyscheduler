@@ -38,6 +38,7 @@ import com.example.familyscheduler.ui.components.DailyOverviewSheet
 import com.example.familyscheduler.ui.components.SettingsScreen
 import com.example.familyscheduler.ui.inputs.AddTaskScreen
 import com.example.familyscheduler.ui.inputs.ScheduleInputScreen
+import com.example.familyscheduler.ui.manager.ChildPage
 import com.example.familyscheduler.ui.manager.MainSheet
 import com.example.familyscheduler.ui.theme.FamilySchedulerTheme
 import com.example.familyscheduler.ui.timeline.FooterBar
@@ -162,7 +163,10 @@ fun MainScreen() {
                 composable("timeline") {
 
                     TimelineScreen(
-                        viewModel = timelineViewModel
+                        viewModel = timelineViewModel,
+                        onAddClick = { person ->
+                            navController.navigate("schedule_input/${person.name}")
+                        }
                     )
                 }
 
@@ -198,7 +202,7 @@ fun MainScreen() {
                 composable("settings") {
                     SettingsScreen(
                         onOpenScheduleInput = {
-                            navController.navigate("schedule_input")
+                            navController.navigate("schedule_input/${Person.FATHER.name}")
                         },
                         onBack = {
                             navController.popBackStack()
@@ -206,16 +210,23 @@ fun MainScreen() {
                     )
                 }
 
-                composable("schedule_input") {
+                composable("schedule_input/{personName}") { backStackEntry ->
+
+                    val personName = backStackEntry.arguments?.getString("personName")
+                    val person = Person.valueOf(personName!!)
 
                     val templateEditViewModel: TemplateEditViewModel =
                         viewModel(
-                            factory = TemplateEditViewModelFactory(templateRepository)
+                            factory = TemplateEditViewModelFactory(
+                                templateRepository,
+                                person
+                            )
                         )
 
                     ScheduleInputScreen(
                         viewModel = templateEditViewModel,
                         onSaved = {
+                            timelineViewModel.dismissTemplateSheet()
                             timelineViewModel.reloadCurrentDate()
                             navController.popBackStack("timeline", false)
                         },

@@ -8,9 +8,9 @@ import com.example.familyscheduler.domain.schedule.DailyTemplate
 import com.example.familyscheduler.domain.schedule.RepeatRule
 import com.example.familyscheduler.domain.schedule.ScheduleTemplate
 import com.example.familyscheduler.domain.schedule.ScheduleType
+import com.example.familyscheduler.domain.schedule.TemplateNormalizer
 import com.example.familyscheduler.domain.schedule.repository.TemplateRepository
 import com.example.familyscheduler.domain.time.TimeRange
-import com.example.familyscheduler.domain.schedule.TemplateNormalizer
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,12 +21,13 @@ import java.time.DayOfWeek
 import java.time.LocalTime
 
 class TemplateEditViewModel(
-    private val templateRepository: TemplateRepository
+    private val templateRepository: TemplateRepository,
+    person: Person
 ) : ViewModel() {
 
     data class TemplateEditUiState(
 
-        val person: Person = Person.FATHER,
+        val person: Person,
 
         val templateName: String = "",
 
@@ -62,7 +63,7 @@ class TemplateEditViewModel(
     )
 
     private val _uiState =
-        MutableStateFlow(TemplateEditUiState())
+        MutableStateFlow(TemplateEditUiState(person = person))
     val uiState: StateFlow<TemplateEditUiState> =
         _uiState
 
