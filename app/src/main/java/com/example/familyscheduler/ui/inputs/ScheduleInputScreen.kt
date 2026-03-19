@@ -296,6 +296,43 @@ fun ScheduleInputScreen(
             )
         }
 
+        // ===== 重複警告 =====
+
+        item {
+            if (state.overlaps.isNotEmpty()) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp)
+                ) {
+                    Text(
+                        text = "⚠ 時間が重複しています",
+                        color = Color.Red,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    state.overlaps.take(3).forEach { (a, b) ->
+                        Text(
+                            text =
+                                "${a.type.title} (${a.timeRange.start}〜${a.timeRange.end}) " +
+                                        "と " +
+                                        "${b.type.title} (${b.timeRange.start}〜${b.timeRange.end})",
+                            fontSize = 12.sp,
+                            color = Color.Red
+                        )
+                    }
+
+                    if (state.overlaps.size > 3) {
+                        Text(
+                            text = "他 ${state.overlaps.size - 3} 件",
+                            fontSize = 12.sp,
+                            color = Color.Gray
+                        )
+                    }
+                }
+            }
+        }
+
         // ===== 保存 =====
 
         item {

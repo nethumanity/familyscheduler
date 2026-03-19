@@ -56,7 +56,9 @@ class TemplateEditViewModel(
         val sleepStart: LocalTime = LocalTime.of(22,0),
         val sleepEnd: LocalTime = LocalTime.of(6,0),
 
-        val additionalSchedules: List<ScheduleTemplate> = emptyList()
+        val additionalSchedules: List<ScheduleTemplate> = emptyList(),
+
+        val overlaps: List<Pair<ScheduleTemplate, ScheduleTemplate>> = emptyList()
     )
 
     private val _uiState =
@@ -94,41 +96,73 @@ class TemplateEditViewModel(
         _uiState.update { it.copy(noWork = value) }
 
     fun updateWorkStart(time: LocalTime) {
-        _uiState.update { it.copy(workStart = time) }
+        _uiState.update { old ->
+            val newState = old.copy(workStart = time)
+            val all = buildAllSchedules(newState)
+            newState.copy(overlaps = all.findOverlaps())
+        }
     }
 
     fun updateWorkEnd(time: LocalTime) {
-        _uiState.update { it.copy(workEnd = time) }
+        _uiState.update { old ->
+            val newState = old.copy(workEnd = time)
+            val all = buildAllSchedules(newState)
+            newState.copy(overlaps = all.findOverlaps())
+        }
     }
 
     fun updateNoGoCommute(value: Boolean) =
         _uiState.update { it.copy(noGoCommute = value) }
 
     fun updateGoCommuteStart(time: LocalTime) {
-        _uiState.update { it.copy(goCommuteStart = time) }
+        _uiState.update { old ->
+            val newState = old.copy(goCommuteStart = time)
+            val all = buildAllSchedules(newState)
+            newState.copy(overlaps = all.findOverlaps())
+        }
     }
 
     fun updateGoCommuteEnd(time: LocalTime) {
-        _uiState.update { it.copy(goCommuteEnd = time) }
+        _uiState.update { old ->
+            val newState = old.copy(goCommuteEnd = time)
+            val all = buildAllSchedules(newState)
+            newState.copy(overlaps = all.findOverlaps())
+        }
     }
 
     fun updateNoBackCommute(value: Boolean) =
         _uiState.update { it.copy(noBackCommute = value) }
 
     fun updateBackCommuteStart(time: LocalTime) {
-        _uiState.update { it.copy(backCommuteStart = time) }
+        _uiState.update { old ->
+            val newState = old.copy(backCommuteStart = time)
+            val all = buildAllSchedules(newState)
+            newState.copy(overlaps = all.findOverlaps())
+        }
     }
 
     fun updateBackCommuteEnd(time: LocalTime) {
-        _uiState.update { it.copy(backCommuteEnd = time) }
+        _uiState.update { old ->
+            val newState = old.copy(backCommuteEnd = time)
+            val all = buildAllSchedules(newState)
+            newState.copy(overlaps = all.findOverlaps())
+        }
     }
 
     fun updateSleepStart(time: LocalTime) {
-        _uiState.update { it.copy(sleepStart = time) }
+        _uiState.update { old ->
+            val newState = old.copy(sleepStart = time)
+            val all = buildAllSchedules(newState)
+            newState.copy(overlaps = all.findOverlaps())
+        }
     }
 
     fun updateSleepEnd(time: LocalTime) {
-        _uiState.update { it.copy(sleepEnd = time) }
+        _uiState.update { old ->
+            val newState = old.copy(sleepEnd = time)
+            val all = buildAllSchedules(newState)
+            newState.copy(overlaps = all.findOverlaps())
+        }
     }
 
     fun addAdditionalSchedule() {
@@ -143,24 +177,34 @@ class TemplateEditViewModel(
             )
         )
 
-        _uiState.update {
+        _uiState.update { old ->
 
-            it.copy(
-                additionalSchedules =
-                    it.additionalSchedules + newSchedule
+            val newState = old.copy(
+                additionalSchedules = old.additionalSchedules + newSchedule
             )
+
+            val all = buildAllSchedules(newState)
+
+            newState.copy(overlaps = all.findOverlaps())
+
         }
     }
 
     fun removeAdditionalSchedule(index: Int) {
 
-        _uiState.update {
+        _uiState.update { old ->
 
-            it.copy(
-                additionalSchedules =
-                    it.additionalSchedules.toMutableList()
-                        .apply { removeAt(index) }
+            val newList = old.additionalSchedules.toMutableList()
+                .apply { removeAt(index) }
+
+            val newState = old.copy(
+                additionalSchedules = newList
             )
+
+            val all = buildAllSchedules(newState)
+
+            newState.copy(overlaps = all.findOverlaps())
+
         }
     }
 
@@ -169,56 +213,109 @@ class TemplateEditViewModel(
         type: ScheduleType
     ) {
 
-        _uiState.update {
+        _uiState.update { old ->
 
-            val list = it.additionalSchedules.toMutableList()
+            val list = old.additionalSchedules.toMutableList()
 
-            val old = list[index]
+            val updated =
+                list[index].copy(type =type)
 
-            list[index] = old.copy(type = type)
+            list[index] = updated
 
-            it.copy(additionalSchedules = list)
+            val newState = old.copy(
+                additionalSchedules = list
+            )
+
+            val all = buildAllSchedules(newState)
+
+            newState.copy(overlaps = all.findOverlaps())
+
         }
     }
 
     fun updateAdditionalStart(index: Int, time: LocalTime) {
 
-        _uiState.update {
+        _uiState.update { old ->
 
-            val list = it.additionalSchedules.toMutableList()
+            val list = old.additionalSchedules.toMutableList()
 
-            val old = list[index]
+            val oldItem = list[index]
 
             list[index] =
-                old.copy(
+                oldItem.copy(
                     timeRange = TimeRange(
                         time,
-                        old.timeRange.end
+                        oldItem.timeRange.end
                     )
                 )
 
-            it.copy(additionalSchedules = list)
+            val newState = old.copy(
+                additionalSchedules = list
+            )
+
+            val all = buildAllSchedules(newState)
+
+            newState.copy(overlaps = all.findOverlaps())
+
         }
     }
 
     fun updateAdditionalEnd(index: Int, time: LocalTime) {
 
-        _uiState.update {
+        _uiState.update { old ->
 
-            val list = it.additionalSchedules.toMutableList()
+            val list = old.additionalSchedules.toMutableList()
 
-            val old = list[index]
+            val oldItem = list[index]
 
             list[index] =
-                old.copy(
+                oldItem.copy(
                     timeRange = TimeRange(
-                        time,
-                        old.timeRange.end
+                        oldItem.timeRange.start,
+                        time
                     )
                 )
 
-            it.copy(additionalSchedules = list)
+            val newState = old.copy(
+                additionalSchedules = list
+            )
+
+            val all = buildAllSchedules(newState)
+
+            newState.copy(overlaps = all.findOverlaps())
         }
+    }
+
+    private fun buildAllSchedules(ui: TemplateEditUiState): List<ScheduleTemplate> {
+        return buildList {
+            if (!ui.noWork) {
+                add(ScheduleTemplate(ScheduleType.WORK, TimeRange(ui.workStart, ui.workEnd)))
+            }
+            if (!ui.noGoCommute) {
+                add(ScheduleTemplate(ScheduleType.COMMUTE_GO, TimeRange(ui.goCommuteStart, ui.goCommuteEnd)))
+            }
+            if (!ui.noBackCommute) {
+                add(ScheduleTemplate(ScheduleType.COMMUTE_BACK, TimeRange(ui.backCommuteStart, ui.backCommuteEnd)))
+            }
+            add(ScheduleTemplate(ScheduleType.SLEEP, TimeRange(ui.sleepStart, ui.sleepEnd)))
+            addAll(ui.additionalSchedules)
+        }
+    }
+
+    fun List<ScheduleTemplate>.findOverlaps(): List<Pair<ScheduleTemplate, ScheduleTemplate>> {
+        val result = mutableListOf<Pair<ScheduleTemplate, ScheduleTemplate>>()
+
+        for (i in indices) {
+            for (j in i + 1 until size) {
+                val a = this[i]
+                val b = this[j]
+
+                if (a.timeRange.overlaps(b.timeRange)) {
+                    result.add(a to b)
+                }
+            }
+        }
+        return result
     }
 
     fun saveTemplate() {

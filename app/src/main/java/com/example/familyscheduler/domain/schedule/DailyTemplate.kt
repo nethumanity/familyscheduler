@@ -28,7 +28,8 @@ data class DailyTemplate(   //1つのDailyTemplateは複数のScheduleTemplate�
                 )
             }.toMutableList()
 
-        schedules.forEach { schedule ->
+        schedules.sortedBy { it.type.priority }.forEach { schedule ->
+
             val expanded = schedule.expandToSlots(person)
 
             expanded.forEach {

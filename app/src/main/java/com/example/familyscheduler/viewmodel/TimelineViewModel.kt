@@ -9,13 +9,11 @@ import androidx.lifecycle.viewModelScope
 import com.example.familyscheduler.domain.evaluation.AvailabilityEngine
 import com.example.familyscheduler.domain.evaluation.AvailabilityEvaluation
 import com.example.familyscheduler.domain.evaluation.AvailabilityState
-import com.example.familyscheduler.domain.person.Person
 import com.example.familyscheduler.domain.evaluation.FlexResolveProposal
+import com.example.familyscheduler.domain.person.Person
 import com.example.familyscheduler.domain.requirement.HouseholdRequirement
 import com.example.familyscheduler.domain.requirement.HouseholdRequirementRule
 import com.example.familyscheduler.domain.requirement.RequirementOverride
-import com.example.familyscheduler.domain.requirement.RequirementSource
-import com.example.familyscheduler.domain.requirement.TimeRangeHouseholdRequirement
 import com.example.familyscheduler.domain.requirement.repository.HouseholdRequirementRepository
 import com.example.familyscheduler.domain.routine.ChildCareRuleConverter
 import com.example.familyscheduler.domain.routine.ChildRoutineBuilder
@@ -109,7 +107,7 @@ class TimelineViewModel(
         }
     }
 
-    // 日付ロード（中核）
+    // 描画機能：日付ロード（中核）
     fun loadForDate(date: LocalDate) {
 
         viewModelScope.launch {
@@ -152,7 +150,122 @@ class TimelineViewModel(
         }
     }
 
-    //編集（状態変更）
+    private fun generateDailyStatesFromTemplates(
+        templates: List<DailyTemplate>,
+        date: LocalDate
+    ): List<DailyState> {
+
+        return templates
+            .groupBy { it.person }
+            .flatMap { (person, personTemplates) ->
+
+                val resolved = personTemplates.resolveFor(date)
+
+                val selected = resolved.take(1)
+
+                selected.map { template ->
+
+                    val slots = template.expandToSlots()
+
+                    DailyState(
+                        person = person,
+                        date = date,
+                        templateName = template.name,
+                        slots = slots
+                    )
+                }
+            }
+    }
+
+    fun List<DailyTemplate>.resolveFor(date: LocalDate): List<DailyTemplate> {
+
+        return this
+            .asSequence()
+            .filter { it.repeatRule.appliesTo(date) }
+            .sortedWith(
+                compareByDescending<DailyTemplate> { it.repeatRule.specificity() }
+                    .thenByDescending { it.repeatRule is RepeatRule.Weekly }
+                    .thenByDescending { it.createdAt }
+            )
+            .toList()
+    }
+
+    private fun updateSlots(states: List<DailyState>) {
+        _dailyStates.value = states
+        _slots.value = states.flatMap { it.slots }
+    }
+
+    private suspend fun buildChildRoutineRules(date: LocalDate) {
+
+        val routines =
+            childRoutineRepository.getAll()
+
+        val resolved =
+            routineResolver.resolve(routines, date)
+
+        val blocks =
+            childRoutineBuilder.build(date.dayOfWeek, resolved)
+
+        val rules =
+            childCareRuleConverter.convert(blocks)
+
+        householdRequirementRepository.clearChildRoutineRules()
+
+        householdRequirementRepository.saveAll(rules)
+    }
+
+    // UNASSIGNEDを探しtargetStateにする（割り当て）
+    // →余ったUNASSIGNEDはFREEにする（補完）
+    // →requiredCountを満たしているか全スロットを確認し、満たしてないRowに警告をだす（評価）
+    private suspend fun recomputeAvailability() {
+
+        val date = _currentDate.value
+
+        val rules =
+            householdRequirementRepository.getByDate(date)
+
+        val overrides = emptyList<RequirementOverride>()    //今はスタブ
+        //requirementOverrideRepository.getByDate(date) //実装予定
+
+        val originalSlots = _dailyStates.value.flatMap { it.slots }
+
+        Log.d("TimelineVM", "rules size = ${rules.size}")
+        rules.forEach {
+            Log.d("TimelineVM", "rule = $it")
+        }
+
+        val activeRules =
+            applyOverrides(rules, overrides)
+
+        val requirements =
+            activeRules.map { it.toRequirement() }
+
+        _householdRequirements.value = requirements
+
+        val result =
+            AvailabilityEngine.recompute(
+                originalSlots = originalSlots,
+                requirements = requirements
+            )
+
+        _slots.value = result.slots.toList()
+        _evaluations.value = result.evaluations
+    }
+
+    fun applyOverrides(
+        rules: List<HouseholdRequirementRule>,
+        overrides: List<RequirementOverride>,
+    ): List<HouseholdRequirementRule> {
+
+        val disabledIds = overrides
+            .filter { it.disabled }
+            .map { it.ruleId }
+            .toSet()
+
+        return rules.filterNot { it.id in disabledIds }
+    }
+
+    //編集機能（状態変更）
     fun changeSlotState(
         index: Int,
         person: Person,
@@ -190,11 +303,41 @@ class TimelineViewModel(
         }
     }
 
-    private fun updateSlots(states: List<DailyState>) {
-        _dailyStates.value = states
-        _slots.value = states.flatMap { it.slots }
+    fun showTemplateSheet(person: Person) {
+
+        editingTemplateFor = person
+
+        viewModelScope.launch {
+            _templates.value =
+                templateRepository.getTemplatesForPerson(person)
+        }
     }
 
+    fun dismissTemplateSheet() {
+        editingTemplateFor = null
+    }
+
+    fun applyTemplate(person: Person, template: DailyTemplate) {
+
+        viewModelScope.launch {
+
+            val slots = template.expandToSlots()
+
+            val state = DailyState(
+                date = currentDate.value,
+                person = person,
+                templateName = template.name,
+                slots = slots
+            )
+
+            dailyStateRepository.save(state)
+
+            loadForDate(currentDate.value)
+            dismissTemplateSheet()
+        }
+    }
+
+    //描画APIシリーズ
     fun refreshAvailability() {
         viewModelScope.launch {
             recomputeAvailability()
@@ -213,14 +356,14 @@ class TimelineViewModel(
         }
     }
 
-    // 前日
+    // 前日（できればなくす）
     fun moveToPreviousDay() {
         loadForDate(
             _currentDate.value.minusDays(1)
         )
     }
 
-    // 翌日
+    // 翌日（できればなくす）
     fun moveToNextDay() {
         loadForDate(
             _currentDate.value.plusDays(1)
@@ -236,169 +379,7 @@ class TimelineViewModel(
         loadForDate(_currentDate.value)
     }
 
-    // Template表示・選択 → DailyState生成
-    fun showTemplateSheet(person: Person) {
-
-        editingTemplateFor = person
-
-        viewModelScope.launch {
-            _templates.value =
-                templateRepository.getTemplatesForPerson(person)
-        }
-    }
-
-    private fun generateDailyStatesFromTemplates(
-        templates: List<DailyTemplate>,
-        date: LocalDate
-    ): List<DailyState> {
-
-        return templates
-            .groupBy { it.person }
-            .flatMap { (person, personTemplates) ->
-
-                val resolved = personTemplates.resolveFor(date)
-
-                // 👉 ここが設計ポイント
-                val selected = resolved.take(1) // まずは1つだけ採用（完全上書き）
-
-                selected.map { template ->
-
-                    val slots = template.expandToSlots()
-
-                    DailyState(
-                        person = person,
-                        date = date,
-                        templateName = template.name,
-                        slots = slots
-                    )
-                }
-            }
-    }
-
-    fun List<DailyTemplate>.resolveFor(date: LocalDate): List<DailyTemplate> {
-
-        return this
-            .asSequence()
-            .filter { it.repeatRule.appliesTo(date) }
-            .sortedWith(
-                compareByDescending<DailyTemplate> { it.repeatRule.specificity() }
-                    .thenByDescending { it.repeatRule is RepeatRule.Weekly }
-                    .thenByDescending { it.createdAt }
-            )
-            .toList()
-    }
-
-    private suspend fun buildChildRoutineRules(date: LocalDate) {
-
-        // 私案は引数なしにして、val date = _currentDate.value
-
-        val routines =
-            childRoutineRepository.getAll()
-
-        val resolved =
-            routineResolver.resolve(routines, date)
-
-        val blocks =
-            childRoutineBuilder.build(date.dayOfWeek, resolved)
-
-        val rules =
-            childCareRuleConverter.convert(blocks)
-
-        householdRequirementRepository.clearChildRoutineRules()
-
-        householdRequirementRepository.saveAll(rules)
-    }
-
-    // 割り当て + 評価
-    // UNASSIGNEDを探しChildCareSamples.allowedのSlotStateにする
-    // →余ったUNASSIGNEDはFREEにする
-    // →allowedを満たしているか全スロットを確認し、満たしてないRowに警告アイコンをだす）
-    private suspend fun recomputeAvailability() {
-
-        val date = _currentDate.value
-
-        val rules =
-            householdRequirementRepository.getByDate(date)
-
-        val overrides = emptyList<RequirementOverride>()    //今はスタブ
-            //requirementOverrideRepository.getByDate(date)
-
-        // 理想はoriginalSlots = DailyState.slots
-        val originalSlots = _dailyStates.value.flatMap { it.slots }
-
-        Log.d("TimelineVM", "rules size = ${rules.size}")
-        rules.forEach {
-            Log.d("TimelineVM", "rule = $it")
-        }
-
-        val activeRules =
-            applyOverrides(rules, overrides)
-
-        val requirements =
-            activeRules.map { it.toRequirement() }
-
-        _householdRequirements.value = requirements
-
-        /*
-        val sorted = activeRules.sortedWith(       //プロトタイプではRuleでソートする（理想はRequirement）
-            compareByDescending<HouseholdRequirementRule> {
-                it.targetState.weight
-            }
-                .thenBy { it.timeLength() } // ← 短いほど優先
-                .thenByDescending { it.isDateSpecific() }
-                .thenByDescending { it.sourcePriority() }
-                .thenByDescending { it.createdAt() } // 可能なら
-        )
-
-         */
-
-        val result =
-            AvailabilityEngine.recompute(
-                originalSlots = originalSlots,
-                requirements = requirements
-            )
-
-        _slots.value = result.slots.toList()
-        _evaluations.value = result.evaluations
-    }
-
-    fun applyOverrides(
-        rules: List<HouseholdRequirementRule>,
-        overrides: List<RequirementOverride>,
-    ): List<HouseholdRequirementRule> {
-
-        val disabledIds = overrides
-            .filter { it.disabled }
-            .map { it.ruleId }
-            .toSet()
-
-        return rules.filterNot { it.id in disabledIds }
-    }
-
-    fun TimeRangeHouseholdRequirement.timeLength(): Int {
-        return endIndex - startIndex
-    }
-/*
-    fun HouseholdRequirement.isDateSpecific(): Boolean {
-        return when (this) {
-            is TimeRangeHouseholdRequirement -> {
-                // Rule由来ならフラグ持たせるのがベスト
-                this.isDateSpecific
-            }
-            else -> false
-        }
-    }
-
-    fun HouseholdRequirement.sourcePriority(): Int =
-        when (this.source) {
-            RequirementSource.USER -> 1
-            RequirementSource.CHILD_ROUTINE -> 0
-        }
-
- */
-
-    // 警告機能
-
+    // 警告→提案→実行：編集機能（今後の強化ポイント）
     fun onAvailabilityWarningClick(index: Int) {
 
         val evaluation = _evaluations.value.getOrNull(index)
@@ -412,10 +393,6 @@ class TimelineViewModel(
 
     fun dismissWarningDialog() {
         _warningDialogState.value = null
-    }
-
-    fun dismissTemplateSheet() {
-        editingTemplateFor = null
     }
 
     fun applyFlexResolveProposal(proposal: FlexResolveProposal) {
@@ -439,7 +416,7 @@ class TimelineViewModel(
 
                         slot.index == proposal.initialIndex &&
                                 slot.person == proposal.person ->
-                            slot.copy(state = SlotState.UNASSIGNED)
+                            slot.copy(state = SlotState.UNASSIGNED)     //initialはそのままでは？
 
                         else -> slot
                     }
@@ -456,43 +433,6 @@ class TimelineViewModel(
             recomputeAvailability()
 
             dismissWarningDialog()
-        }
-    }
-
-    fun applyTemplate(person: Person, template: DailyTemplate) {
-
-        viewModelScope.launch {
-
-            val slots = template.expandToSlots()
-
-            val state = DailyState(
-                date = currentDate.value,
-                person = person,
-                templateName = template.name,
-                slots = slots
-            )
-
-            dailyStateRepository.save(state)
-
-            loadForDate(currentDate.value)
-            dismissTemplateSheet()
-        }
-    }
-
-    fun deleteSlot(target: TimeSlot) {
-
-        viewModelScope.launch {
-
-            _slots.value = _slots.value.map {
-                if (it == target) {
-                    it.copy(
-                        state = SlotState.UNASSIGNED,
-                        taskName = null
-                    )
-                } else it
-            }
-
-            recomputeAvailability()
         }
     }
 }

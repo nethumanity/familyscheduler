@@ -19,7 +19,8 @@ data class HouseholdRequirementRule(
     val flexWindowSlots: FlexWindowParameters,
     val date: LocalDate?,               // 入力系①日付指定パターン用
     val daysOfWeek: Set<DayOfWeek>?,    // 入力系②毎日/曜日指定パターン、③子どもルーティン用
-    val timeRange: TimeRange
+    val timeRange: TimeRange,
+    val createdAt: Long = System.currentTimeMillis()
 ) {
     fun isActiveOn(date: LocalDate): Boolean {
 
@@ -46,7 +47,20 @@ data class HouseholdRequirementRule(
             allowedPersons = allowedPersons,
             flexWindowSlots = flexWindowSlots,
             startIndex = startIndex,
-            endIndex = endIndex
+            endIndex = endIndex,
+            prioritySeed = this.prioritySeed(startIndex, endIndex)
         )
+    }
+
+    fun prioritySeed(startIndex: Int, endIndex: Int): Long {
+        val length = endIndex - startIndex
+        val flex = flexWindowSlots.backward + flexWindowSlots.forward
+
+        return targetState.weight * 1_000_000L +
+                (if (date != null) 100_000 else 0) +
+                (if (source == RequirementSource.USER) 10_000 else 0) +
+                ((1000 - length) * 100L) +
+                ((100 - flex) * 10L) +
+                createdAt
     }
 }
