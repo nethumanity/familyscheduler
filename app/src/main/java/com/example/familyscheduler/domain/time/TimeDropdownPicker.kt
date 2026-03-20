@@ -1,10 +1,10 @@
 @file:OptIn(ExperimentalMaterial3Api::class)
 package com.example.familyscheduler.domain.time
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -41,19 +41,22 @@ fun TimeDropdownPicker(
     Column {
         Text(label)
 
-        Row {
+        Row (
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
 
             // ===== 時 =====
             ExposedDropdownMenuBox(
                 expanded = hourExpanded,
-                onExpandedChange = { hourExpanded = it }
+                onExpandedChange = { hourExpanded = it },
+                modifier = Modifier.weight(1f)
             ) {
                 OutlinedTextField(
                     value = selectedHour.toString().padStart(2, '0'),
                     onValueChange = {},
                     readOnly = true,
                     label = { Text("時") },
-                    modifier = Modifier.menuAnchor()
+                    modifier = Modifier.menuAnchor().fillMaxWidth()
                 )
 
                 ExposedDropdownMenu(
@@ -77,19 +80,18 @@ fun TimeDropdownPicker(
                 }
             }
 
-            Spacer(Modifier.width(8.dp))
-
             // ===== 分 =====
             ExposedDropdownMenuBox(
                 expanded = minuteExpanded,
-                onExpandedChange = { minuteExpanded = it }
+                onExpandedChange = { minuteExpanded = it },
+                modifier = Modifier.weight(1f)
             ) {
                 OutlinedTextField(
                     value = selectedMinute.toString().padStart(2, '0'),
                     onValueChange = {},
                     readOnly = true,
                     label = { Text("分") },
-                    modifier = Modifier.menuAnchor()
+                    modifier = Modifier.menuAnchor().fillMaxWidth()
                 )
 
                 ExposedDropdownMenu(

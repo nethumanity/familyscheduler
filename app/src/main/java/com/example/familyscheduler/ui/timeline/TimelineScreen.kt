@@ -10,6 +10,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -75,6 +76,22 @@ fun TimelineScreen(
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
+            .pointerInput(Unit) {
+                var totalDrag = 0f
+
+                detectHorizontalDragGestures(
+                    onDragEnd = {
+                        if (totalDrag > 200) {
+                            viewModel.moveToPreviousDay()
+                        } else if (totalDrag < -200) {
+                            viewModel.moveToNextDay()
+                        }
+                        totalDrag = 0f
+                    }
+                ) { _, dragAmount ->
+                    totalDrag += dragAmount
+                }
+            }
     ) {
         stickyHeader {
             TimelineHeaderRow(
@@ -174,7 +191,8 @@ fun TimelineScreen(
                     ) {
                         Text(
                             slot?.taskName ?: "",
-                            fontSize = 12.sp
+                            fontSize = 12.sp,
+                            color = Color.Black
                         )
                     }
                 }

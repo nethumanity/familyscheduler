@@ -53,6 +53,7 @@ fun TimelineHeaderRow(
                 Text(
                     text = person.label,
                     fontSize = 12.sp,
+                    color = Color.Black,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
