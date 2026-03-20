@@ -95,6 +95,7 @@ fun TimelineScreen(
     ) {
         stickyHeader {
             TimelineHeaderRow(
+                viewModel = viewModel,
                 persons = persons,
                 dailyStates = dailyStates,
                 onDailyStateClick = { person ->

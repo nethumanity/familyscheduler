@@ -38,7 +38,6 @@ import com.example.familyscheduler.ui.components.DailyOverviewSheet
 import com.example.familyscheduler.ui.components.SettingsScreen
 import com.example.familyscheduler.ui.inputs.AddTaskScreen
 import com.example.familyscheduler.ui.inputs.ScheduleInputScreen
-import com.example.familyscheduler.ui.manager.ChildPage
 import com.example.familyscheduler.ui.manager.MainSheet
 import com.example.familyscheduler.ui.theme.FamilySchedulerTheme
 import com.example.familyscheduler.ui.timeline.FooterBar
@@ -132,6 +131,8 @@ fun MainScreen() {
 
         bottomBar = {
             FooterBar(
+                viewModel = timelineViewModel,
+
                 onOverviewClick = {
                     sheet = MainSheet.DAILY_OVERVIEW
                 },
@@ -228,6 +229,7 @@ fun MainScreen() {
                         onSaved = {
                             timelineViewModel.dismissTemplateSheet()
                             timelineViewModel.reloadCurrentDate()
+                            timelineViewModel.refreshGuideState()
                             navController.popBackStack("timeline", false)
                         },
                         onBack = {
@@ -253,6 +255,7 @@ fun MainScreen() {
                                 currentDate = timelineViewModel.currentDate.collectAsState().value,
                                 onClose = {
                                     timelineViewModel.onChildRoutineChanged()
+                                    timelineViewModel.refreshGuideState()
                                     sheet = null
                                 },
                                 onToggle = { timelineViewModel.onChildRoutineChanged() }

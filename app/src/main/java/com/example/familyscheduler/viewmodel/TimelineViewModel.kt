@@ -17,6 +17,7 @@ import com.example.familyscheduler.domain.requirement.RequirementOverride
 import com.example.familyscheduler.domain.requirement.repository.HouseholdRequirementRepository
 import com.example.familyscheduler.domain.routine.ChildCareRuleConverter
 import com.example.familyscheduler.domain.routine.ChildRoutineBuilder
+import com.example.familyscheduler.domain.routine.ChildRoutineInput
 import com.example.familyscheduler.domain.routine.RoutineResolver
 import com.example.familyscheduler.domain.routine.repository.ChildRoutineRepository
 import com.example.familyscheduler.domain.schedule.DailyState
@@ -28,8 +29,10 @@ import com.example.familyscheduler.domain.slot.FlexWindowParameters
 import com.example.familyscheduler.domain.slot.SlotState
 import com.example.familyscheduler.domain.slot.TimeSlot
 import com.example.familyscheduler.seeder.SampleDataSeeder
+import com.example.familyscheduler.ui.utilities.GuideState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 
@@ -67,6 +70,11 @@ class TimelineViewModel(
     val slots: StateFlow<List<TimeSlot>> =
         _slots
 
+    private val _childRoutines =
+        MutableStateFlow<List<ChildRoutineInput>>(emptyList())
+    val childRoutines: StateFlow<List<ChildRoutineInput>> =
+        _childRoutines
+
     private val _householdRequirements =
         MutableStateFlow<List<HouseholdRequirement>>(emptyList())
     val householdRequirements: StateFlow<List<HouseholdRequirement>> =
@@ -85,7 +93,7 @@ class TimelineViewModel(
     var editingTemplateFor by mutableStateOf<Person?>(null)
         private set
 
-    private val ENABLE_SAMPLE_DATA = true   // falseでサンプル注入なし
+    private val ENABLE_SAMPLE_DATA = false   // falseでサンプル注入なし
 
     // 初期化
     init {
@@ -123,6 +131,8 @@ class TimelineViewModel(
 
                 val templates =
                     templateRepository.getTemplates()
+
+                _templates.value = templates
 
                 val generated =
                     generateDailyStatesFromTemplates(
@@ -199,6 +209,8 @@ class TimelineViewModel(
 
         val routines =
             childRoutineRepository.getAll()
+
+        _childRoutines.value = routines
 
         val resolved =
             routineResolver.resolve(routines, date)
@@ -377,6 +389,30 @@ class TimelineViewModel(
 
     fun reloadCurrentDate() {
         loadForDate(_currentDate.value)
+    }
+
+    private val _guideState = MutableStateFlow(GuideState())
+    val guideState: StateFlow<GuideState> = _guideState
+
+    fun refreshGuideState() {
+        val templates = _templates.value
+        val childRoutines = _childRoutines.value
+
+        _guideState.update { current ->
+            GuideState(
+                showFatherHint =
+                    current.showFatherHint &&
+                            templates.none { it.person == Person.FATHER },
+
+                showMotherHint =
+                    current.showMotherHint &&
+                            templates.none { it.person == Person.MOTHER },
+
+                showChildHint =
+                    current.showChildHint &&
+                            childRoutines.isEmpty()
+            )
+        }
     }
 
     // 警告→提案→実行：編集機能（今後の強化ポイント）
