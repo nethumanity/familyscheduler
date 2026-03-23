@@ -39,8 +39,7 @@ import java.time.DayOfWeek
 fun ScheduleInputScreen(
     viewModel: TemplateEditViewModel,
     onSaved: () -> Unit,
-    onBack: () -> Unit,
-    paddingValues: PaddingValues = PaddingValues()
+    onBack: () -> Unit
 ) {
 
     val state by viewModel.uiState.collectAsState()
@@ -51,15 +50,6 @@ fun ScheduleInputScreen(
             .fillMaxSize()
             .padding(16.dp)
             .imePadding(),
-
-        /*
-        contentPadding = PaddingValues(
-            start = 16.dp,
-            end = 16.dp,
-            top = 16.dp,
-            bottom = 100.dp
-        ),
-         */
 
         verticalArrangement = Arrangement.spacedBy(16.dp)
 

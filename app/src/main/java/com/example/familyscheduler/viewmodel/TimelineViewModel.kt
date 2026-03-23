@@ -124,33 +124,7 @@ class TimelineViewModel(
                 _currentDate.value = date
             }
 
-            var states =
-                dailyStateRepository.get(date)
-
-            if (states.isEmpty()) {
-
-                val templates =
-                    templateRepository.getTemplates()
-
-                _templates.value = templates
-
-                val generated =
-                    generateDailyStatesFromTemplates(
-                        templates,
-                        date
-                    )
-
-                generated.forEach {
-                    dailyStateRepository.save(it)
-                }
-
-                states =
-                    dailyStateRepository.get(date)
-
-                Log.d("TimelineVM", "templates size = ${templates.size}")
-                Log.d("TimelineVM", "states size = ${states.size}")
-                Log.d("TimelineVM", "slots size = ${states.flatMap { it.slots }.size}")
-            }
+            val states = ensureDailyStates(date)
 
             updateSlots(states)
 
@@ -160,31 +134,54 @@ class TimelineViewModel(
         }
     }
 
+    suspend fun ensureDailyStates(date: LocalDate): List<DailyState> {
+
+        val states = dailyStateRepository.get(date)
+
+        val existing = states.map { it.person }.toSet()
+        val missing = Person.entries - existing
+
+        if (missing.isEmpty()) return states
+
+        val templates = templateRepository.getTemplates()
+
+        _templates.value = templates
+
+        val generated = missing.flatMap { person ->
+
+            generateDailyStatesFromTemplates(
+                person,
+                templates.filter { it.person == person},
+                date
+            )
+        }
+
+        generated.forEach { dailyStateRepository.save(it) }
+
+        return dailyStateRepository.get(date)
+    }
+
     private fun generateDailyStatesFromTemplates(
+        person: Person,
         templates: List<DailyTemplate>,
         date: LocalDate
     ): List<DailyState> {
 
-        return templates
-            .groupBy { it.person }
-            .flatMap { (person, personTemplates) ->
+        val resolved = templates.resolveFor(date)
 
-                val resolved = personTemplates.resolveFor(date)
+        val selected = resolved.take(1)
 
-                val selected = resolved.take(1)
+        return selected.map { template ->
 
-                selected.map { template ->
+            val slots = template.expandToSlots()
 
-                    val slots = template.expandToSlots()
-
-                    DailyState(
-                        person = person,
-                        date = date,
-                        templateName = template.name,
-                        slots = slots
-                    )
-                }
-            }
+            DailyState(
+                person = person,
+                date = date,
+                templateName = template.name,
+                slots = slots
+            )
+        }
     }
 
     fun List<DailyTemplate>.resolveFor(date: LocalDate): List<DailyTemplate> {
