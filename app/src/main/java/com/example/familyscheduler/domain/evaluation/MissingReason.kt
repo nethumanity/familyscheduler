@@ -36,7 +36,7 @@ sealed class MissingReason {
                         val statesText =
                             block.currentState.joinToString("、") { slotStateLabel(it) }
 
-                        "${personsText}に${block.taskName}の予定がありますが、すでに${statesText}が入っています"
+                        "${personsText}に${reason.requirementName}の予定がありますが、すでに${statesText}が入っています"
                     }
 
                 is NoAssignablePerson ->
@@ -61,5 +61,5 @@ sealed class MissingReason {
 data class BlockInfo(
     val person: List<Person>,
     val currentState: List<SlotState>,
-    val taskName: String?
+    val taskName: List<String?>
 )

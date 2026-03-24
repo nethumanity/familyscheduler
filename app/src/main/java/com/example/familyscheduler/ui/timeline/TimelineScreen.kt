@@ -127,7 +127,7 @@ fun TimelineScreen(
 
                         detectTapGestures(
                             onTap = {
-                                val evaluation = evaluations.getOrNull(index)
+                                val evaluation = evaluations.find { it.index == index } //修正
 
                                 if (evaluation?.state == AvailabilityState.WARN) {
                                     viewModel.onAvailabilityWarningClick(index)
@@ -159,9 +159,10 @@ fun TimelineScreen(
                         fontSize = 12.sp
                     )
 
-                    val evaluation = evaluations.getOrNull(index)
+                    //val evaluation = evaluations.getOrNull(index)
+                    val evaluation = evaluations.find { it.index == index }
 
-                    if (evaluation?.state == AvailabilityState.WARN) {
+                    if (evaluation?.state == AvailabilityState.WARN) {  //アイコンを出すindexがずれている
                         Spacer(modifier = Modifier.height(2.dp))
                         Icon(
                             painter = painterResource(R.drawable.ic_warning),
@@ -280,7 +281,7 @@ fun TimelineScreen(
 
     dialogState?.let { state ->
 
-        val evaluation = evaluations[state.index]
+        val evaluation = evaluations.find { it.index == state.index }
 
         WarningDialog(
             index = state.index,

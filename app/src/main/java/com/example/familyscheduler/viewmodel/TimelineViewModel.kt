@@ -90,10 +90,13 @@ class TimelineViewModel(
     val warningDialogState: StateFlow<WarningDialogState?> =
         _warningDialogState
 
+    private val _guideState = MutableStateFlow(GuideState())
+    val guideState: StateFlow<GuideState> = _guideState
+
     var editingTemplateFor by mutableStateOf<Person?>(null)
         private set
 
-    private val ENABLE_SAMPLE_DATA = false   // falseでサンプル注入なし
+    private val ENABLE_SAMPLE_DATA = true   // falseでサンプル注入なし
 
     // 初期化
     init {
@@ -109,6 +112,8 @@ class TimelineViewModel(
                     householdRequirementRepository,
                     childRoutineRepository
                 )
+
+                _guideState.value = GuideState(false, false, false)
             }
 
             loadForDate(LocalDate.now())    // 二重のlaunch
@@ -259,6 +264,8 @@ class TimelineViewModel(
 
         _slots.value = result.slots.toList()
         _evaluations.value = result.evaluations
+
+        Log.d("evaluations", "evaluations = ${result.evaluations}")
     }
 
     fun applyOverrides(
@@ -388,9 +395,6 @@ class TimelineViewModel(
         loadForDate(_currentDate.value)
     }
 
-    private val _guideState = MutableStateFlow(GuideState())
-    val guideState: StateFlow<GuideState> = _guideState
-
     fun refreshGuideState() {
         val templates = _templates.value
         val childRoutines = _childRoutines.value
@@ -415,7 +419,7 @@ class TimelineViewModel(
     // 警告→提案→実行：編集機能（今後の強化ポイント）
     fun onAvailabilityWarningClick(index: Int) {
 
-        val evaluation = _evaluations.value.getOrNull(index)
+        val evaluation = _evaluations.value.find { it.index == index }
             ?: return
 
         if (evaluation.state != AvailabilityState.WARN) return

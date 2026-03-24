@@ -31,7 +31,7 @@ import com.example.familyscheduler.domain.time.TimeAxis
 @Composable
 fun WarningDialog(
     index: Int,
-    evaluation: AvailabilityEvaluation,
+    evaluation: AvailabilityEvaluation?,
     flexProposals: List<FlexResolveProposal>,
     onDismiss: () -> Unit,
     onApplyProposal: (FlexResolveProposal) -> Unit
@@ -65,7 +65,7 @@ fun WarningDialog(
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
 
-                evaluation.reasons.forEach { reason ->
+                evaluation?.reasons?.forEach { reason ->
                     Text(MissingReason.renderMissingReason(reason))
                 }
 

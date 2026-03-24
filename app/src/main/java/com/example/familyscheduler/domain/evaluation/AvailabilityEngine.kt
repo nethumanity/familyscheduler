@@ -101,10 +101,15 @@ object AvailabilityEngine {
         requirements: List<HouseholdRequirement>
     ): List<AvailabilityEvaluation> {
 
-        return TimeAxis.indices.map { index ->
+        val slotsByIndex = slots.groupBy { it.index }
 
-            val slotsAtIndex = slots.filter { it.index == index }   //O(n2)
+        return TimeAxis.indices.mapNotNull { index ->
+
+            //val slotsAtIndex = slots.filter { it.index == index }   //O(n2)問題に対応中
+            val slotsAtIndex = slotsByIndex[index].orEmpty()
             val activeReqs = requirements.filter { it.isRequiredAt(index) }
+
+            if (activeReqs.isEmpty()) return@mapNotNull null
 
             val reasons = mutableListOf<MissingReason>()
 
@@ -131,7 +136,7 @@ object AvailabilityEngine {
                         )
                     )
                 }
-
+                /*
                 if (assigned == 0 && required > 0 && req.allowedPersons.isEmpty()) { //この状況を想定できない
                     reasons.add(
                         MissingReason.NoAssignablePerson(
@@ -139,6 +144,7 @@ object AvailabilityEngine {
                         )
                     )
                 }
+                 */
             }
 
             val proposals =
@@ -149,11 +155,11 @@ object AvailabilityEngine {
                     reasons = reasons
                 )
 
-            AvailabilityEvaluation(     //そもそも必要な情報を要検討
+            AvailabilityEvaluation(     //必要な情報を検討中
                 index = index,
-                requiredCount = activeReqs.sumOf { it.requiredCount },  //いらない？
-                availableCount = slotsAtIndex.count { it.state == SlotState.FREE },  //いらない？
-                hasFixRequirement = activeReqs.any { it.flexWindowSlots.backward == 0 && it.flexWindowSlots.forward == 0 },
+                //requiredCount = activeReqs.sumOf { it.requiredCount },
+                //availableCount = slotsAtIndex.count { it.state == SlotState.FREE },
+                //hasFixRequirement = activeReqs.any { it.flexWindowSlots.backward == 0 && it.flexWindowSlots.forward == 0 },
                 hasFlexRequirement = activeReqs.any { it.flexWindowSlots.backward != 0 || it.flexWindowSlots.forward != 0 },
                 missing = reasons.size,
                 reasons = reasons,
@@ -167,16 +173,19 @@ object AvailabilityEngine {
         requirement: HouseholdRequirement
     ): List<BlockInfo> {
         val persons = requirement.allowedPersons
+        val slotByPerson = slots.filter { it.person in persons }
+        /*
         val currentState = slots
             .filter { it.person in persons }
             .map { it.state }
         val taskName = requirement.name
+         */
 
         return listOf(
             BlockInfo(
                 person = persons.toList(),
-                currentState = currentState,
-                taskName = taskName
+                currentState = slotByPerson.map { it.state }, //currentState,
+                taskName = slotByPerson.map { it.taskName } //taskName
             )
         )
     }
