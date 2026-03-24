@@ -441,18 +441,18 @@ class TimelineViewModel(
             // （代替案）TimeSlotにisUserLocked = falseを追加し、newSlotsはtrueにする
             val states = _dailyStates.value.map { state ->
 
-                if (state.person != proposal.person) return@map state
+                if (state.person !in proposal.persons) return@map state
 
                 val newSlots = state.slots.map { slot ->
                     when {
 
                         slot.index == proposal.candidateIndex &&
-                                slot.person == proposal.person ->
+                                slot.person in proposal.persons ->
                             slot.copy(state = proposal.targetState)
 
 
                         slot.index == proposal.initialIndex &&
-                                slot.person == proposal.person ->
+                                slot.person in proposal.persons ->
                             slot.copy(state = SlotState.UNASSIGNED)     //initialはそのままでは？
 
                         else -> slot

@@ -91,9 +91,9 @@ fun WarningDialog(
 
                             Text(
                                 text =
-                                    "${proposal.person} の " +
+                                    "${proposal.persons.joinToString("・") { it.name }} の " +
                                             "${proposal.requirementName} 予定を " +
-                                            "${proposal.deltaMinutes}分ずらす",
+                                            "${(proposal.candidateIndex - proposal.initialIndex) * TimeAxis.stepMinutes}分ずらす",
                                 fontSize = 14.sp
                             )
                         }

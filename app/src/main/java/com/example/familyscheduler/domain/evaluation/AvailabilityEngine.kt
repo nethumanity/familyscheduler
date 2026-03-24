@@ -45,11 +45,14 @@ object AvailabilityEngine {
             it.prioritySeed
         }
 
+        //val slotsByIndex = slots.groupBy { it.index }
+
         for (req in orderedReqs) {
             for (index in TimeAxis.indices) {
                 if (!req.isRequiredAt(index)) continue
 
-                val slotsAtIndex = slots.filter { it.index == index }   //O(n2)、この先あと2回出てくる
+                val slotsAtIndex = slots.filter { it.index == index }
+                //val slotsAtIndex = slotsByIndex[index].orEmpty() //O(n2)対応中→失敗
 
                 val alreadySatisfied =
                     slotsAtIndex.count {
@@ -71,7 +74,7 @@ object AvailabilityEngine {
                     if (remaining <= 0) break
 
                     val i = slots.indexOf(slot)
-                    slots[i] = slot.copy(
+                    slots[i] = slot.copy(   //77行目：i = -1　でエラーになる
                         state = req.targetState,
                         flexWindow = req.flexWindowSlots,
                         taskName = req.name
@@ -151,7 +154,7 @@ object AvailabilityEngine {
                 flexResolveProposalsAt(
                     index = index,
                     slots = slots,
-                    requirements = requirements,
+                    requirements = activeReqs, //requirements,
                     reasons = reasons
                 )
 
@@ -197,10 +200,11 @@ object AvailabilityEngine {
         reasons: List<MissingReason>
     ): List<FlexResolveProposal> {
 
-        val activeReqs = requirements.filter { it.isRequiredAt(index) }
+        //val activeReqs = requirements.filter { it.isRequiredAt(index) }
 
         val hasFlexRequirement =
-            activeReqs.any {
+            //activeReqs.any {
+            requirements.any {
                 it.flexWindowSlots.backward != 0 ||
                         it.flexWindowSlots.forward != 0
             }
@@ -218,6 +222,7 @@ object AvailabilityEngine {
                 )
             }
             .sortedBy { it.score(slots) }
+            .take(3)                        // 追加
     }
 
     fun generateFlexResolveProposalsForReason(
@@ -227,58 +232,90 @@ object AvailabilityEngine {
         reason: MissingReason.NotEnoughPeople
     ): List<FlexResolveProposal> {
 
-        val persons = listOf(
-            Person.FATHER,
-            Person.MOTHER
-        )
         val requirement = requirements
             .find { it.name == reason.requirementName }
             ?: return emptyList()
+
+        val persons = requirement.allowedPersons.toList()
         val window = requirement.flexWindowSlots
         val offsets = (-window.backward until 0) + (1..window.forward)
 
         return offsets.flatMap { offset ->
+
+            val candidateIndex = index + offset
+            if (candidateIndex !in TimeAxis.all.indices) return@flatMap emptyList()
+
+            val validPersons = persons.filter {
+                canAssign(it, candidateIndex, slots, requirement.targetState)
+            }
+
+            when {
+                // ★ 1人必要 → 全員分 proposal
+                requirement.requiredCount == 1 -> {
+                    validPersons.map { person ->
+                        FlexResolveProposal(
+                            requirementName = reason.requirementName,
+                            persons = listOf(person),
+                            initialIndex = index,
+                            candidateIndex = candidateIndex,
+                            targetState = requirement.targetState
+                        )
+                    }
+                }
+
+                // ★ 複数人必要 → まとめて1 proposal
+                validPersons.size >= requirement.requiredCount -> {
+                    listOf(
+                        FlexResolveProposal(
+                            requirementName = reason.requirementName,
+                            persons = validPersons.take(requirement.requiredCount),
+                            initialIndex = index,
+                            candidateIndex = candidateIndex,
+                            targetState = requirement.targetState
+                        )
+                    )
+                }
+
+                else -> emptyList()
+            }
+        }
+        /* 旧バージョン
+        return offsets.flatMap { offset ->
+
             val candidateIndex = index + offset
             if (candidateIndex !in TimeAxis.all.indices) return@flatMap emptyList()
 
             persons.mapNotNull { person ->
 
-                // ① 移動元にその人が存在するか  ←いらない？
-                //val candidateSlot = slots.find {
-                //    it.person == person && it.index == candidateIndex
-                //} ?: return@mapNotNull null
-
-                // ② 移動元が動かせる状態か　←いらない？？
-                //if (candidateSlot.state !in listOf(SlotState.FREE, SlotState.LIFE))
-                //    return@mapNotNull null
-
-                // ③ 移動先で requirement を満たせるか
-                if (!canAssign(person, index, slots,requirement.targetState))
+                if (!canAssign(person, candidateIndex, slots,requirement.targetState))
                     return@mapNotNull null
 
                 FlexResolveProposal(
                     requirementName = reason.requirementName,
-                    person = person,
-                    candidateIndex = candidateIndex,
+                    persons = listOf(person),
                     initialIndex = index,
-                    deltaMinutes = offset * TimeAxis.stepMinutes,
+                    candidateIndex = candidateIndex,
                     targetState = requirement.targetState
                 )
             }
         }
+         */
     }
 
     private fun canAssign(
         person: Person,
-        index: Int,
+        candidateIndex: Int,
         slots: List<TimeSlot>,
         requiredState: SlotState
     ): Boolean {
-        val slot = slots.find { it.person == person && it.index == index }  //O(n2)
+        val slotsByPersonIndex = slots.associateBy { it.person to it.index }
+        //val slot = slots.find { it.person == person && it.index == candidateIndex }
+        val slot = slotsByPersonIndex[person to candidateIndex]  //O(n2)対応中
             ?: return false
-        val candidatePriority = slot.state.weight
-        val initialPriority = requiredState.weight
 
-        return candidatePriority <= initialPriority
+        val candidatePriority = slot.state.weight
+        val reqPriority = requiredState.weight
+
+        return candidatePriority <= reqPriority
     }
 }
