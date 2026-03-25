@@ -24,7 +24,7 @@ data class DailyTemplate(   //1つのDailyTemplateは複数のScheduleTemplate�
                     person = person,
                     state = SlotState.UNASSIGNED,
                     flexWindow = FlexWindowParameters(0, 0),
-                    taskName = null
+                    taskName = emptyList()
                 )
             }.toMutableList()
 

@@ -192,7 +192,9 @@ fun TimelineScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            slot?.taskName ?: "",
+                            text = (slot?.taskName ?: emptyList())
+                                .filterNotNull()
+                                .joinToString("  "),
                             fontSize = 12.sp,
                             color = Color.Black
                         )

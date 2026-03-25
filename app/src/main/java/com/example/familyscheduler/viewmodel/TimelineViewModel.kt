@@ -302,7 +302,7 @@ class TimelineViewModel(
                         slot.copy(
                             state = newState,
                             flexWindow = FlexWindowParameters(0,0),
-                            taskName = null
+                            taskName = emptyList()
                         )
                     } else slot
                 }
@@ -446,14 +446,23 @@ class TimelineViewModel(
                 val newSlots = state.slots.map { slot ->
                     when {
 
+                        // この部分は保険、重要なのはRequirementのOverride生成
                         slot.index == proposal.candidateIndex &&
                                 slot.person in proposal.persons ->
-                            slot.copy(state = proposal.targetState)
+                            slot.copy(
+                                state = proposal.targetState//,
+                                //taskName = slot.taskName + proposal.requirementName
+                            )
 
+                        // Override（RequirementRuleからの差分）生成ロジック
+                        // requirementNameから対象Requirementを探索（IDがあった方がいいかも？）
+                        // proposalからdeltaMinutes（あるいは、deltaSteps）算出→TimeRangeの差分
 
+                        /* initial側はslotの変更なし
                         slot.index == proposal.initialIndex &&
                                 slot.person in proposal.persons ->
-                            slot.copy(state = SlotState.UNASSIGNED)     //initialはそのままでは？
+                            slot.copy(state = SlotState.UNASSIGNED)
+                        */
 
                         else -> slot
                     }

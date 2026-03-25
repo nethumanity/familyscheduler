@@ -2,7 +2,7 @@ package com.example.familyscheduler.domain.requirement
 
 import java.time.LocalDate
 
-data class RequirementOverride(     //未実装
+data class RequirementOverride(     //未実装（RequirementRuleからの差分）
     val date: LocalDate,
     val ruleId: String,
     val disabled: Boolean = true,    //ユーザーがキャンセルした時（ReqToday: 自動アサイン↔キャンセル↔逆転）

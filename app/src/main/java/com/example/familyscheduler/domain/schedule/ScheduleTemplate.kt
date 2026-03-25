@@ -32,7 +32,7 @@ data class ScheduleTemplate(
                 person = person,
                 state = type.state,
                 flexWindow = FlexWindowParameters(type.flexWindow, type.flexWindow),
-                taskName = null
+                taskName = emptyList()
             )
         }
     }
