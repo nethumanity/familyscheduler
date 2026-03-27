@@ -194,7 +194,7 @@ fun TimelineScreen(
                         Text(
                             text = (slot?.taskName ?: emptyList())
                                 .filterNotNull()
-                                .joinToString("  "),
+                                .joinToString("  "),    // 合成が上手くいってない？Log?
                             fontSize = 12.sp,
                             color = Color.Black
                         )

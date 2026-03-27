@@ -12,30 +12,35 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.familyscheduler.domain.evaluation.AvailabilityEvaluation
 import com.example.familyscheduler.domain.evaluation.AvailabilityState
 import com.example.familyscheduler.domain.evaluation.MissingReason
-import com.example.familyscheduler.domain.person.Person
-import com.example.familyscheduler.domain.requirement.HouseholdRequirement
+import com.example.familyscheduler.domain.requirement.RequirementModeToday
 import com.example.familyscheduler.domain.requirement.TimeRangeHouseholdRequirement
+import com.example.familyscheduler.domain.slot.SlotState
 import com.example.familyscheduler.domain.time.TimeAxis
-import java.time.LocalDate
-import java.util.UUID
+import com.example.familyscheduler.ui.utilities.renderBlockingPersons
+import com.example.familyscheduler.ui.utilities.slotStateLabel
+import com.example.familyscheduler.viewmodel.TimelineViewModel
 
 @Composable
 fun DailyOverviewSheet(
-    date: LocalDate,
-    //slots: List<TimeSlot>,
-    requirements: List<HouseholdRequirement>,
-    evaluations: List<AvailabilityEvaluation>,
-    //onDisableRule: (ruleId: UUID) -> Unit,    //override生成関数発火
-    onWarningClick: (Int) -> Unit
+    viewModel: TimelineViewModel,
+    onWarningClick: (Int) -> Unit,
+    onToggle: () -> Unit
 ) {
+    val currentDate by viewModel.currentDate.collectAsState()
+    val rules by viewModel.householdRequirementRules.collectAsState()
+    val requirements by viewModel.householdRequirements.collectAsState()
+    val evaluations by viewModel.evaluations.collectAsState()
+    val overrides by viewModel.overrides.collectAsState()
+
     fun indexToTime(index: Int): String {
         return TimeAxis.all.getOrNull(index)?.toString() ?: "--:--"
     }
@@ -45,7 +50,7 @@ fun DailyOverviewSheet(
         contentPadding = PaddingValues(16.dp)
     ) {
         item {
-            Text("📅 ${date}", fontWeight = FontWeight.Bold)
+            Text("📅 ${currentDate}", fontWeight = FontWeight.Bold)
 
         }
         item {
@@ -65,19 +70,39 @@ fun DailyOverviewSheet(
                 Text("⚠ 警告", fontWeight = FontWeight.Bold)
 
             }
-            items(warnings) { eval ->
 
-                val summary = eval.reasons.joinToString(" / ") {
-                    MissingReason.renderMissingReasonSummary(it)
-                }
+            warnings.forEach { eval ->
 
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onWarningClick(eval.index) }
-                        .padding(vertical = 4.dp)
-                ) {
-                    Text("${indexToTime(eval.index)} $summary")
+                val reasons = eval.reasons
+                    .filterIsInstance<MissingReason.NotEnoughPeople>()
+
+                items(reasons) { reason ->
+                    val blockText = renderBlockingPersons(reason)
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onWarningClick(eval.index) }
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            indexToTime(eval.index),
+                            modifier = Modifier.width(60.dp)
+                        )
+
+                        val nameText = if (reason.requirementName == "") {
+                            slotStateLabel(
+                                rules.first { it.id == reason.sourceRuleId }.targetState
+                            )
+                        } else {
+                            reason.requirementName
+                        }
+
+                        Text(nameText)
+                        Spacer(Modifier.weight(1f))
+                        Text("${blockText}　提案：${eval.flexProposals.size}")
+                    }
                 }
             }
         }
@@ -86,19 +111,36 @@ fun DailyOverviewSheet(
         // 予定一覧（簡易）
         // =========================
         data class RequirementUiModel(
+            val id: String,
             val name: String,
             val startIndex: Int,
-            val person: Set<Person>
+            //val requiredCount: Int,
+            //val allowedPersons: Set<Person>,
+            val targetState: SlotState,
+            val mode: RequirementModeToday
+            //val isCanceled: Boolean,
+            //val requirement: TimeRangeHouseholdRequirement?
         )
 
-        val uiRequirements = requirements.mapNotNull {
-            if (it is TimeRangeHouseholdRequirement) {
-                RequirementUiModel(
-                    it.name,
-                    it.startIndex,
-                    it.allowedPersons
-                )
-            } else null
+        val uiRequirements = rules.map { rule ->
+            val mode = viewModel.resolveMode(rule.id, overrides)
+
+            val req = requirements
+                .filterIsInstance<TimeRangeHouseholdRequirement>()
+                .find { it.sourceRuleId == rule.id }
+
+
+            RequirementUiModel(
+                id = rule.id,
+                name = rule.taskName,
+                startIndex = req?.startIndex ?: TimeAxis.indexOf(rule.timeRange.start),
+                //requiredCount = req?.requiredCount ?: rule.requiredCount,
+               // allowedPersons = req?.allowedPersons ?: rule.allowedPersons,
+                targetState = rule.targetState,
+                mode = mode
+                //isCanceled = mode == RequirementModeToday.CANCELED,
+                //requirement = req
+            )
         }
 
         item {
@@ -109,28 +151,67 @@ fun DailyOverviewSheet(
                 .filter { it.name != "" }.sortedBy { it.startIndex }
         ) { req ->
 
+            //状態判定//
+            val warningMap = warnings
+                .flatMap { it.reasons }
+                .filterIsInstance<MissingReason.NotEnoughPeople>()
+                .associateBy { it.sourceRuleId }
+            val reason = warningMap[req.id]
+            val isWarn = reason != null
+            val count = reason?.let {
+                MissingReason.renderMissingReasonCount(it)
+            }
+            val ruleMap = rules.associateBy { it.id }
+
+            val assignedPersons = viewModel.getAssignedPersons(req.id)
+                .joinToString(" ") { it.label }
+
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        viewModel.toggleRequirementMode(ruleMap.getValue(req.id))
+                        onToggle()
+                               }
+                    .padding(vertical = 2.dp),
+                //horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                val baseColor =
+                    if (req.mode == RequirementModeToday.CANCELED) Color.LightGray
+                    else Color.Unspecified
 
                 Text(
                     indexToTime(req.startIndex),
-                    modifier = Modifier.width(60.dp)
+                    modifier = Modifier.width(60.dp),
+                    color = baseColor
                 )
-
-                Text("${req.name}（${req.person.joinToString()}）")
+                Text(req.name, color = baseColor)
 
                 Spacer(Modifier.weight(1f))
 
-                Text(
-                    "削除",
-                    color = Color.Red,
-                    modifier = Modifier.clickable {
-                        //onDisableRule(rule.id)
-                        // 👉 ruleベース設計必要
+                when(req.mode) {
+                    RequirementModeToday.AUTO -> {
+                        if (!isWarn) {
+                            Text(text = "✔ $assignedPersons", color = Color.Green)
+                        } else {
+                            Text(
+                                text = "⚠ $count",
+                                color = Color.Red
+                            )
+                        }
                     }
-                )
+
+                    RequirementModeToday.REVERSE -> {
+                        if (!isWarn) {
+                            Text(text = "㏌➡ $assignedPersons", color = Color.Green)
+                        }
+                    }
+
+                    RequirementModeToday.CANCELED -> {
+                        Text(text = "キャンセル", color = Color.LightGray)
+                    }
+                }
             }
         }
     }

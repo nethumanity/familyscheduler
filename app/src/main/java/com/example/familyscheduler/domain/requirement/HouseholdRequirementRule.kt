@@ -41,6 +41,7 @@ data class HouseholdRequirementRule(
         val endIndex = TimeAxis.indexOf(timeRange.end)
 
         return TimeRangeHouseholdRequirement(
+            sourceRuleId = id,
             name = taskName,
             targetState = targetState,
             requiredCount = requiredCount,

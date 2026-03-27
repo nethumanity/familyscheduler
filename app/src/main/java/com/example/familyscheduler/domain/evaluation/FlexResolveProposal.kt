@@ -6,11 +6,11 @@ import com.example.familyscheduler.domain.slot.TimeSlot
 import kotlin.math.abs
 
 data class FlexResolveProposal(
+    val sourceRuleId: String,
     val requirementName: String,    //絞り込み条件を確認
-    val persons: List<Person>,             //Personから変更、Set?
-    val initialIndex: Int,          //reqIndexとかがいい？
+    val persons: List<Person>,      //Personから変更、Set?
+    val initialIndex: Int,
     val candidateIndex: Int,
-    //val deltaMinutes: Int,          //いらない？
     val targetState: SlotState
 ) {
     fun score(slots: List<TimeSlot>): Int {     //検証中

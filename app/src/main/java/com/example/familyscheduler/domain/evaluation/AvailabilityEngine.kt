@@ -1,5 +1,6 @@
 package com.example.familyscheduler.domain.evaluation
 
+import android.util.Log
 import com.example.familyscheduler.domain.person.Person
 import com.example.familyscheduler.domain.requirement.HouseholdRequirement
 import com.example.familyscheduler.domain.slot.SlotState
@@ -45,14 +46,18 @@ object AvailabilityEngine {
             it.prioritySeed
         }
 
-        val slotsByIndex = slots.withIndex().groupBy { it.value.index }
+        //val slotsByIndex = slots.withIndex().groupBy { it.value.index }
+        val slotsByIndex = slots.indices.groupBy { slots[it].index }
 
         for (req in orderedReqs) {
             for (index in TimeAxis.indices) {
                 if (!req.isRequiredAt(index)) continue
 
                 //val slotsAtIndex = slots.filter { it.index == index }
-                val slotsAtIndex = slotsByIndex[index].orEmpty() //O(n2)対応→たぶんOK
+                //val slotsAtIndex = slotsByIndex[index].orEmpty() //O(n2)対応
+                val slotsAtIndex = slotsByIndex[index]
+                    .orEmpty()
+                    .map { i -> i to slots[i] } // ← 毎回最新
 
                 val alreadySatisfiedSlots =
                     slotsAtIndex.filter { (_, slot) ->
@@ -62,10 +67,15 @@ object AvailabilityEngine {
 
                 val alreadySatisfied = alreadySatisfiedSlots.size
 
+                Log.d ("taskNameIssue", "alreadySatisfiedSlots size = ${alreadySatisfiedSlots.size}")
+
                 for ((i, slot) in alreadySatisfiedSlots) {
-                    slots[i] = slot.copy(
-                        taskName = slot.taskName + req.name
-                    )
+                    val newTask = (slot.taskName + req.name).distinct()
+
+                    Log.d("taskNameIssue", "Before: ${slot.taskName}")
+                    Log.d("taskNameIssue", "After: $newTask")
+
+                    slots[i] = slot.copy(taskName = newTask)
                 }
 
                 var remaining = req.requiredCount - alreadySatisfied
@@ -84,8 +94,8 @@ object AvailabilityEngine {
                     //val i = slots.indexOf(slot)
                     slots[i] = slot.copy(
                         state = req.targetState,
-                        flexWindow = req.flexWindowSlots,
-                        taskName = slot.taskName + req.name //念のため追加する形
+                        //flexWindow = req.flexWindowSlots, //複数の予定に対しひとつのflexWindow問題
+                        taskName = slot.taskName + req.name
                     )
                     remaining--
                 }
@@ -146,6 +156,7 @@ object AvailabilityEngine {
                         )
                     reasons.add(
                         MissingReason.NotEnoughPeople(
+                            sourceRuleId = req.sourceRuleId,
                             requirementName = req.name,
                             requiredCount = required,
                             assignedCount = assigned,
@@ -173,20 +184,17 @@ object AvailabilityEngine {
         }
     }
 
-    fun collectBlockInfo(
+    fun collectBlockInfo(   // BlockInfoは単数前提に変更
         slots: List<TimeSlot>,
         persons: List<Person>,
-        //requirement: HouseholdRequirement
-    ): List<BlockInfo> {
-        //val persons = requirement.allowedPersons
+    ): BlockInfo {
+
         val slotByPerson = slots.filter { it.person in persons }
 
-        return listOf(
-            BlockInfo(
+        return BlockInfo(
                 person = persons,
                 currentState = slotByPerson.map { it.state },
                 taskName = slotByPerson.flatMap { it.taskName }
-            )
         )
     }
 
@@ -251,6 +259,7 @@ object AvailabilityEngine {
                 requirement.requiredCount == 1 -> {
                     validPersons.map { person ->
                         FlexResolveProposal(
+                            sourceRuleId = requirement.sourceRuleId,
                             requirementName = reason.requirementName,
                             persons = listOf(person),
                             initialIndex = index,
@@ -264,6 +273,7 @@ object AvailabilityEngine {
                 validPersons.size >= requirement.requiredCount -> {
                     listOf(
                         FlexResolveProposal(
+                            sourceRuleId = requirement.sourceRuleId,
                             requirementName = reason.requirementName,
                             persons = validPersons.take(requirement.requiredCount),
                             initialIndex = index,
@@ -278,7 +288,7 @@ object AvailabilityEngine {
         }
     }
 
-    private fun canAssign(  //その場所に置けるか？
+    fun canAssign(  //その場所に置けるか？
         person: Person,
         candidateIndex: Int,
         slots: List<TimeSlot>,

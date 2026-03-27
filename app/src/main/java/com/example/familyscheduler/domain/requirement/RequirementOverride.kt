@@ -2,10 +2,20 @@ package com.example.familyscheduler.domain.requirement
 
 import java.time.LocalDate
 
-data class RequirementOverride(     //未実装（RequirementRuleからの差分）
-    val date: LocalDate,
-    val ruleId: String,
-    val disabled: Boolean = true,    //ユーザーがキャンセルした時（ReqToday: 自動アサイン↔キャンセル↔逆転）
-    val deltaSteps: Int,             //FlexResolveProposal実行時（仮）
-    val splitIndex: Int              //Block分割を伴う移動時（仮）
-)
+sealed interface RequirementOverride {
+    val ruleId: String
+    val date: LocalDate
+}
+
+data class RequirementToggleOverride(
+    override val ruleId: String,
+    override val date: LocalDate,
+    val mode: RequirementModeToday
+) : RequirementOverride
+
+data class RequirementShiftOverride(
+    override val ruleId: String,
+    override val date: LocalDate,
+    //val person: Person,
+    val deltaSteps: Int
+) : RequirementOverride

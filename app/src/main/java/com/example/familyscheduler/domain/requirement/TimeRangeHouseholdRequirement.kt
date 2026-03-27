@@ -4,7 +4,8 @@ import com.example.familyscheduler.domain.person.Person
 import com.example.familyscheduler.domain.slot.FlexWindowParameters
 import com.example.familyscheduler.domain.slot.SlotState
 
-class TimeRangeHouseholdRequirement(
+data class TimeRangeHouseholdRequirement(
+    override val sourceRuleId: String,
     override val name: String,
     override val targetState: SlotState,
     override val requiredCount: Int,

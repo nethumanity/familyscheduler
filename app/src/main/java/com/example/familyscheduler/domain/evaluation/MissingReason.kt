@@ -6,10 +6,11 @@ import com.example.familyscheduler.ui.utilities.slotStateLabel
 
 sealed class MissingReason {
     data class NotEnoughPeople(
+        val sourceRuleId: String,
         val requirementName: String,
         val requiredCount: Int,
         val assignedCount: Int,
-        val blockingPersons: List<BlockInfo>
+        val blockingPersons: BlockInfo    //Listをやめて検証中
     ) : MissingReason()
 
     data class NoAssignablePerson(
@@ -26,18 +27,18 @@ sealed class MissingReason {
         fun renderMissingReason(reason: MissingReason): String =
             when (reason) {
 
-                is NotEnoughPeople ->
+                is NotEnoughPeople -> {
 
-                    reason.blockingPersons.joinToString("\n") { block ->
+                    val block = reason.blockingPersons
 
-                        val personsText =
-                            block.person.joinToString("、") { it.label }
+                    val personsText =
+                        block.person.joinToString("、") { it.label }
 
-                        val statesText =
-                            block.currentState.joinToString("、") { slotStateLabel(it) }
+                    val statesText =
+                        block.currentState.joinToString("、") { slotStateLabel(it) }
 
-                        "${personsText}に${reason.requirementName}の予定がありますが、すでに${statesText}が入っています"
-                    }
+                    "${personsText}に${reason.requirementName}の予定がありますが、すでに${statesText}が入っています"
+                }
 
                 is NoAssignablePerson ->
                     "${reason.requirementName}：割り当て可能な人がいません"
@@ -51,6 +52,16 @@ sealed class MissingReason {
             return when (reason) {
                 is NotEnoughPeople ->
                     "${reason.requirementName}：${reason.assignedCount}/${reason.requiredCount}"
+                is NoAssignablePerson -> "状態不一致（未設定）"
+                is StateConflict -> "担当不可（未設定）"
+            }
+        }
+
+        fun renderMissingReasonCount(reason: MissingReason): String {
+
+            return when (reason) {
+                is NotEnoughPeople ->
+                    "${reason.assignedCount}/${reason.requiredCount}"
                 is NoAssignablePerson -> "状態不一致（未設定）"
                 is StateConflict -> "担当不可（未設定）"
             }

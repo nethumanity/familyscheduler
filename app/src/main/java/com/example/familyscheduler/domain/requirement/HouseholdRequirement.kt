@@ -5,6 +5,7 @@ import com.example.familyscheduler.domain.slot.FlexWindowParameters
 import com.example.familyscheduler.domain.slot.SlotState
 
 interface HouseholdRequirement {
+    val sourceRuleId: String
     val name: String
     val targetState: SlotState
     val requiredCount: Int

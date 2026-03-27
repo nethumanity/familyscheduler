@@ -13,8 +13,14 @@ import com.example.familyscheduler.domain.evaluation.FlexResolveProposal
 import com.example.familyscheduler.domain.person.Person
 import com.example.familyscheduler.domain.requirement.HouseholdRequirement
 import com.example.familyscheduler.domain.requirement.HouseholdRequirementRule
+import com.example.familyscheduler.domain.requirement.RequirementBuilder
+import com.example.familyscheduler.domain.requirement.RequirementModeToday
 import com.example.familyscheduler.domain.requirement.RequirementOverride
+import com.example.familyscheduler.domain.requirement.RequirementShiftOverride
+import com.example.familyscheduler.domain.requirement.RequirementToggleOverride
+import com.example.familyscheduler.domain.requirement.TimeRangeHouseholdRequirement
 import com.example.familyscheduler.domain.requirement.repository.HouseholdRequirementRepository
+import com.example.familyscheduler.domain.requirement.repository.RequirementOverrideRepository
 import com.example.familyscheduler.domain.routine.ChildCareRuleConverter
 import com.example.familyscheduler.domain.routine.ChildRoutineBuilder
 import com.example.familyscheduler.domain.routine.ChildRoutineInput
@@ -28,6 +34,7 @@ import com.example.familyscheduler.domain.schedule.repository.TemplateRepository
 import com.example.familyscheduler.domain.slot.FlexWindowParameters
 import com.example.familyscheduler.domain.slot.SlotState
 import com.example.familyscheduler.domain.slot.TimeSlot
+import com.example.familyscheduler.domain.time.TimeAxis
 import com.example.familyscheduler.seeder.SampleDataSeeder
 import com.example.familyscheduler.ui.utilities.GuideState
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -40,10 +47,12 @@ class TimelineViewModel(
     private val templateRepository: TemplateRepository,
     private val dailyStateRepository: DailyStateRepository,
     private val householdRequirementRepository: HouseholdRequirementRepository,
+    private val requirementOverrideRepository: RequirementOverrideRepository,
     private val childRoutineRepository: ChildRoutineRepository,
     private val routineResolver: RoutineResolver,
     private val childRoutineBuilder: ChildRoutineBuilder,
-    private val childCareRuleConverter: ChildCareRuleConverter
+    private val childCareRuleConverter: ChildCareRuleConverter,
+    private val requirementBuilder: RequirementBuilder
 ) : ViewModel() {
 
     data class WarningDialogState(
@@ -75,10 +84,21 @@ class TimelineViewModel(
     val childRoutines: StateFlow<List<ChildRoutineInput>> =
         _childRoutines
 
+    private val _householdRequirementRules =
+        MutableStateFlow<List<HouseholdRequirementRule>>(emptyList())
+    val householdRequirementRules: StateFlow<List<HouseholdRequirementRule>> =
+        _householdRequirementRules
+
     private val _householdRequirements =
         MutableStateFlow<List<HouseholdRequirement>>(emptyList())
     val householdRequirements: StateFlow<List<HouseholdRequirement>> =
         _householdRequirements
+
+    private val _overrides =
+        MutableStateFlow<List<RequirementOverride>>(emptyList())
+
+    val overrides: StateFlow<List<RequirementOverride>> =
+        _overrides
 
     private val _evaluations =
         MutableStateFlow<List<AvailabilityEvaluation>>(emptyList())
@@ -238,21 +258,22 @@ class TimelineViewModel(
         val rules =
             householdRequirementRepository.getByDate(date)
 
-        val overrides = emptyList<RequirementOverride>()    //今はスタブ
-        //requirementOverrideRepository.getByDate(date) //実装予定
+        _householdRequirementRules.value = rules
+
+        val overrides = requirementOverrideRepository.getOverrides(date)
+
+        val assignedPersonsMap: Map<String, List<Person>> =
+            _householdRequirementRules.value
+                .associate { rule ->
+                    val persons = getAssignedPersons(rule.id)
+
+                    rule.id to persons
+                }
 
         val originalSlots = _dailyStates.value.flatMap { it.slots }
 
-        Log.d("TimelineVM", "rules size = ${rules.size}")
-        rules.forEach {
-            Log.d("TimelineVM", "rule = $it")
-        }
-
-        val activeRules =
-            applyOverrides(rules, overrides)
-
         val requirements =
-            activeRules.map { it.toRequirement() }
+            requirementBuilder.build(rules, overrides, assignedPersonsMap)
 
         _householdRequirements.value = requirements
 
@@ -265,23 +286,98 @@ class TimelineViewModel(
         _slots.value = result.slots.toList()
         _evaluations.value = result.evaluations
 
-        Log.d("evaluations", "evaluations = ${result.evaluations}")
+        Log.d("TimelineVM", "rules size = ${rules.size}")
+        Log.d("TimelineVM", "rules = ${rules}")
+
+        Log.d("TimelineVM", "reqs size = ${requirements.size}")
+        Log.d("TimelineVM", "reqs = ${requirements}")
+
+        Log.d("TimelineVM", "overrides size = ${overrides.size}")
+        Log.d("TimelineVM", "overrides = ${overrides}")
+
+        result.slots.forEach { slot ->
+            Log.d("TimelineVM", "slot = ${slot}")
+        }
+        result.evaluations.forEach { evaluation ->
+            Log.d("TimelineVM", "evaluation = ${evaluation}")
+        }
     }
 
-    fun applyOverrides(
-        rules: List<HouseholdRequirementRule>,
-        overrides: List<RequirementOverride>,
-    ): List<HouseholdRequirementRule> {
+    fun getAssignedPersons(ruleId: String): List<Person> {
 
-        val disabledIds = overrides
-            .filter { it.disabled }
-            .map { it.ruleId }
-            .toSet()
+        val req = _householdRequirements.value
+            .filterIsInstance<TimeRangeHouseholdRequirement>()
+            .firstOrNull { it.sourceRuleId == ruleId }
+            ?: return emptyList()
 
-        return rules.filterNot { it.id in disabledIds }
+        return _slots.value
+            .filter {
+                it.index == req.startIndex &&
+                        it.state == req.targetState &&
+                        it.person in req.allowedPersons &&
+                        req.name in it.taskName
+            }
+            .mapNotNull { it.person }
     }
 
     //編集機能（状態変更）
+    fun toggleRequirementMode(
+        rule: HouseholdRequirementRule
+    ) {
+        viewModelScope.launch {
+
+            val current = resolveMode(rule.id, _overrides.value)
+
+            val assignedPersons = getAssignedPersons(rule.id)
+
+            val reversedPerson =
+                if (rule.requiredCount == 1 && rule.allowedPersons.size == 2)
+                    rule.allowedPersons.toList() - assignedPersons
+                else emptyList()
+
+            val reverseAssignable =
+                if (reversedPerson.size == 1)
+                    AvailabilityEngine.canAssign(
+                        reversedPerson.single(),
+                        TimeAxis.indexOf(rule.timeRange.start),
+                        _slots.value,
+                        rule.targetState
+                    )
+                else false
+
+            val next = current.next(reverseAssignable)
+
+            Log.d("override", "current=$current next=$next")
+
+            requirementOverrideRepository.saveOverride(
+                override = RequirementToggleOverride(
+                    ruleId = rule.id,
+                    date = _currentDate.value,
+                    mode = next
+                )
+            )
+
+            _overrides.value = requirementOverrideRepository.getOverrides(_currentDate.value)
+        }
+    }
+
+    fun resolveMode(
+        //req: HouseholdRequirement,
+        //date: LocalDate,
+        id: String,
+        overrides: List<RequirementOverride>
+    ): RequirementModeToday {
+
+        overrides
+            .filterIsInstance<RequirementToggleOverride>()
+            .firstOrNull { it.ruleId == id && it.date == _currentDate.value }
+            ?.let {
+                return it.mode
+            }
+
+        return RequirementModeToday.AUTO
+    }
+
     fun changeSlotState(
         index: Int,
         person: Person,
@@ -432,7 +528,9 @@ class TimelineViewModel(
         _warningDialogState.value = null
     }
 
-    fun applyFlexResolveProposal(proposal: FlexResolveProposal) {
+    fun applyFlexResolveProposal(
+        proposal: FlexResolveProposal
+    ) {
 
         viewModelScope.launch {
 
@@ -452,13 +550,10 @@ class TimelineViewModel(
                             slot.copy(
                                 state = proposal.targetState//,
                                 //taskName = slot.taskName + proposal.requirementName
+                                // taskNameの引継ぎはSolverに任せる
                             )
 
-                        // Override（RequirementRuleからの差分）生成ロジック
-                        // requirementNameから対象Requirementを探索（IDがあった方がいいかも？）
-                        // proposalからdeltaMinutes（あるいは、deltaSteps）算出→TimeRangeの差分
-
-                        /* initial側はslotの変更なし
+                        /* initial側はslotの変更なし（現状案）
                         slot.index == proposal.initialIndex &&
                                 slot.person in proposal.persons ->
                             slot.copy(state = SlotState.UNASSIGNED)
@@ -474,6 +569,26 @@ class TimelineViewModel(
             states.forEach {
                 dailyStateRepository.save(it)
             }
+
+            val existOverride =
+                _overrides.value
+                    .filterIsInstance<RequirementShiftOverride>()
+                    .firstOrNull {it.ruleId == proposal.sourceRuleId}
+
+            val deltaSteps =
+                if(existOverride != null) {
+                    proposal.candidateIndex - proposal.initialIndex + existOverride.deltaSteps
+                } else {proposal.candidateIndex - proposal.initialIndex}
+
+            requirementOverrideRepository.saveOverride(
+                override = RequirementShiftOverride(
+                    ruleId = proposal.sourceRuleId,
+                    date = _currentDate.value,
+                    deltaSteps = deltaSteps
+                )
+            )
+
+            _overrides.value = requirementOverrideRepository.getOverrides(_currentDate.value)
 
             updateSlots(states)
             recomputeAvailability()

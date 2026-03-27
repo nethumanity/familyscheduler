@@ -2,7 +2,9 @@ package com.example.familyscheduler.viewmodel.Factory
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import com.example.familyscheduler.domain.requirement.RequirementBuilder
 import com.example.familyscheduler.domain.requirement.repository.HouseholdRequirementRepository
+import com.example.familyscheduler.domain.requirement.repository.RequirementOverrideRepository
 import com.example.familyscheduler.domain.routine.ChildCareRuleConverter
 import com.example.familyscheduler.domain.routine.ChildRoutineBuilder
 import com.example.familyscheduler.domain.routine.RoutineResolver
@@ -15,10 +17,12 @@ class TimelineViewModelFactory(
     private val templateRepository: TemplateRepository,
     private val dailyStateRepository: DailyStateRepository,
     private val householdRequirementRepository: HouseholdRequirementRepository,
+    private val requirementOverrideRepository: RequirementOverrideRepository,
     private val childRoutineRepository: ChildRoutineRepository,
     private val routineResolver: RoutineResolver,
     private val childRoutineBuilder: ChildRoutineBuilder,
-    private val childCareRuleConverter: ChildCareRuleConverter
+    private val childCareRuleConverter: ChildCareRuleConverter,
+    private val requirementBuilder: RequirementBuilder
 ) : ViewModelProvider.Factory {
 
     override fun <T : ViewModel> create(
@@ -31,10 +35,12 @@ class TimelineViewModelFactory(
                 templateRepository = templateRepository,
                 dailyStateRepository = dailyStateRepository,
                 householdRequirementRepository = householdRequirementRepository,
+                requirementOverrideRepository = requirementOverrideRepository,
                 childRoutineRepository = childRoutineRepository,
                 routineResolver = routineResolver,
                 childRoutineBuilder = childRoutineBuilder,
-                childCareRuleConverter = childCareRuleConverter
+                childCareRuleConverter = childCareRuleConverter,
+                requirementBuilder = requirementBuilder
             ) as T
         }
 

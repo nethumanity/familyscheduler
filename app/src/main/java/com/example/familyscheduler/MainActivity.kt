@@ -27,8 +27,10 @@ import com.example.familyscheduler.data.repository.InMemoryChildOverrideReposito
 import com.example.familyscheduler.data.repository.InMemoryChildRoutineRepository
 import com.example.familyscheduler.data.repository.InMemoryDailyStateRepository
 import com.example.familyscheduler.data.repository.InMemoryHouseholdRequirementRepository
+import com.example.familyscheduler.data.repository.InMemoryRequirementOverrideRepository
 import com.example.familyscheduler.data.repository.InMemoryTemplateRepository
 import com.example.familyscheduler.domain.person.Person
+import com.example.familyscheduler.domain.requirement.RequirementBuilder
 import com.example.familyscheduler.domain.routine.CareCapacityCalculator
 import com.example.familyscheduler.domain.routine.ChildCareRuleConverter
 import com.example.familyscheduler.domain.routine.ChildRoutineBuilder
@@ -77,6 +79,7 @@ fun MainScreen() {
     val templateRepository = remember { InMemoryTemplateRepository() }
     val dailyStateRepository = remember { InMemoryDailyStateRepository() }
     val householdRequirementRepository = remember { InMemoryHouseholdRequirementRepository() }
+    val requirementOverrideRepository = remember { InMemoryRequirementOverrideRepository() }
     val childRepository = remember { InMemoryChildRoutineRepository() }
     val overrideRepository = remember { InMemoryChildOverrideRepository() }
 
@@ -84,6 +87,7 @@ fun MainScreen() {
         templateRepository = templateRepository,
         dailyStateRepository = dailyStateRepository,
         householdRequirementRepository = householdRequirementRepository,
+        requirementOverrideRepository = requirementOverrideRepository,
         childRoutineRepository = childRepository,
         routineResolver = RoutineResolver(
             overrideRepository = overrideRepository
@@ -92,7 +96,8 @@ fun MainScreen() {
         childCareRuleConverter = ChildCareRuleConverter(
             capacityCalculator = CareCapacityCalculator(),
             allowedPersons = Person.values().toSet()
-        )
+        ),
+        requirementBuilder = RequirementBuilder()
     )
 
     val timelineViewModel: TimelineViewModel =
@@ -264,12 +269,9 @@ fun MainScreen() {
 
                         MainSheet.DAILY_OVERVIEW -> {
                             DailyOverviewSheet(
-                                date = timelineViewModel.currentDate.collectAsState().value,
-                                //slots = timelineViewModel.slots.collectAsState().value,
-                                requirements = timelineViewModel.householdRequirements.collectAsState().value,
-                                evaluations = timelineViewModel.evaluations.collectAsState().value,
-                                //onDisableRule = {},   // VMで関数定義が必要
-                                onWarningClick = { timelineViewModel.onAvailabilityWarningClick(it) }
+                                viewModel = timelineViewModel,
+                                onWarningClick = { timelineViewModel.onAvailabilityWarningClick(it) },
+                                onToggle = { timelineViewModel.refreshAvailability() }
                             )
                         }
                     }
