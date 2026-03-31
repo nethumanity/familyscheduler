@@ -331,6 +331,8 @@ class ChildRoutineViewModel(
 
     fun startEditChildRoutine(childName: String) {
 
+        if (_editingTarget.value != null) return
+
         _editingTarget.value = EditingTarget(
             childRoutineId = childName
         )
@@ -338,6 +340,7 @@ class ChildRoutineViewModel(
 
     fun deleteChildRoutine(childName: String) {
         viewModelScope.launch {
+            overrideRepository.deleteByChildName(childName)
             repository.delete(childName)
 
             // 編集中なら解除

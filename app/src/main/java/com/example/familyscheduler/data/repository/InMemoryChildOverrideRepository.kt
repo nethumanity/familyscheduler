@@ -27,4 +27,8 @@ class InMemoryChildOverrideRepository: ChildOverrideRepository {
     override fun getAll(): Map<Pair<String, LocalDate>, ChildTodayRoutine> {
         return overrides.toMap()
     }
+
+    override suspend fun deleteByChildName(childName: String) {
+        overrides.entries.removeAll { it.key.first == childName }
+    }
 }

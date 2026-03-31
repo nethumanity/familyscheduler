@@ -96,7 +96,6 @@ fun ChildListSheet(
                         text = { Text("編集") },
                         onClick = {
                             expandedMenuId = null
-                            //viewModel.startEditChildRoutine(child.name)
                             onEditChildRoutine(child.name)
                         }
                     )

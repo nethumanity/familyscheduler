@@ -384,6 +384,8 @@ class TimelineViewModel(
 
     fun startEditRequirement(ruleId: String) {
 
+        if (_editingTarget.value != null) return
+
         _editingTarget.value = EditingTarget(
             requirementId = ruleId
         )
@@ -391,6 +393,7 @@ class TimelineViewModel(
 
     fun deleteRequirement(ruleId: String) {
         viewModelScope.launch {
+            requirementOverrideRepository.deleteByRuleId(ruleId)
             householdRequirementRepository.delete(ruleId)
 
             // 編集中なら解除
@@ -476,6 +479,8 @@ class TimelineViewModel(
     }
 
     fun startEditTemplate(templateId: String) {
+
+        if (_editingTarget.value != null) return
 
         _editingTarget.value = EditingTarget(
             templateId = templateId

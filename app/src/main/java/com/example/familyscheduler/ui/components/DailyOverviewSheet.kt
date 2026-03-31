@@ -1,7 +1,6 @@
 package com.example.familyscheduler.ui.components
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -23,17 +22,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.familyscheduler.domain.evaluation.AvailabilityEvaluation
 import com.example.familyscheduler.domain.evaluation.AvailabilityState
-import com.example.familyscheduler.domain.requirement.RequirementModeToday
-import com.example.familyscheduler.domain.requirement.TimeRangeHouseholdRequirement
-import com.example.familyscheduler.domain.slot.SlotState
 import com.example.familyscheduler.domain.time.TimeAxis
 import com.example.familyscheduler.ui.utilities.renderBlockingPersons
 import com.example.familyscheduler.ui.utilities.renderMissingReasonCount
 import com.example.familyscheduler.ui.utilities.slotStateLabel
+import com.example.familyscheduler.ui.utilities.toUiModels
 import com.example.familyscheduler.viewmodel.TimelineViewModel
 
 @Composable
@@ -55,6 +52,21 @@ fun DailyOverviewSheet(
     fun indexToTime(index: Int): String {
         return TimeAxis.all.getOrNull(index)?.toString() ?: "--:--"
     }
+    fun List<AvailabilityEvaluation>.extractWarnings() =
+        filter { it.state == AvailabilityState.WARN }
+
+    val warnings = evaluations.extractWarnings()
+    val warningMap = warnings
+        .flatMap { it.reasons }
+        .associateBy { it.sourceRuleId }
+    val uiRequirements = rules
+        .toUiModels(
+            requirements = requirements,
+            overrides = overrides,
+            viewModel = viewModel
+        )
+        .filter { it.name.isNotEmpty() }
+        .sortedBy { it.startIndex }
 
     LazyColumn(
         //modifier = Modifier.fillMaxHeight(),
@@ -71,10 +83,6 @@ fun DailyOverviewSheet(
         // =========================
         // 警告一覧
         // =========================
-        val warnings = evaluations.filter {
-            it.state == AvailabilityState.WARN
-        }
-
         if (warnings.isNotEmpty()) {
 
             item {
@@ -118,33 +126,8 @@ fun DailyOverviewSheet(
         }
 
         // =========================
-        // 予定一覧（簡易）
+        // 予定一覧
         // =========================
-        data class RequirementUiModel(
-            val id: String,
-            val name: String,
-            val startIndex: Int,
-            val targetState: SlotState,
-            val mode: RequirementModeToday
-        )
-
-        val uiRequirements = rules.map { rule ->
-            val mode = viewModel.resolveMode(rule.id, overrides)
-
-            val req = requirements
-                .filterIsInstance<TimeRangeHouseholdRequirement>()
-                .find { it.sourceRuleId == rule.id }
-
-
-            RequirementUiModel(
-                id = rule.id,
-                name = rule.taskName,
-                startIndex = req?.startIndex ?: TimeAxis.indexOf(rule.timeRange.start),
-                targetState = rule.targetState,
-                mode = mode
-            )
-        }
-
         item {
             Spacer(Modifier.height(8.dp))
             Text("■ 予定一覧", fontWeight = FontWeight.Bold)
@@ -153,70 +136,25 @@ fun DailyOverviewSheet(
                 .filter { it.name != "" }.sortedBy { it.startIndex }
         ) { req ->
 
-            //状態判定//
-            val warningMap = warnings
-                .flatMap { it.reasons }
-                .associateBy { it.sourceRuleId }
             val reason = warningMap[req.id]
             val isWarn = reason != null
-            val count = reason?.let {
-                renderMissingReasonCount(it)
-            }
-            val ruleMap = rules.associateBy { it.id }
-
+            val count = reason?.let { renderMissingReasonCount(it) }
             val assignedPersons = viewModel.getAssignedPersons(req.id)
                 .joinToString(" ") { it.label }
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .combinedClickable(
-                        onClick = {
-                            viewModel.toggleRequirementMode(ruleMap.getValue(req.id))
-                            onToggle()
-                        },
-                        onLongClick = { expandedMenuId = req.id}
-                    )
-                    .padding(vertical = 2.dp),
-                //horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                val baseColor =
-                    if (req.mode == RequirementModeToday.CANCELED) Color.LightGray
-                    else Color.Unspecified
-
-                Text(
-                    indexToTime(req.startIndex),
-                    modifier = Modifier.width(60.dp),
-                    color = baseColor
-                )
-                Text(req.name, color = baseColor)
-
-                Spacer(Modifier.weight(1f))
-
-                when(req.mode) {
-                    RequirementModeToday.AUTO -> {
-                        if (!isWarn) {
-                            Text(text = "✔ $assignedPersons", color = Color.Green)
-                        } else {
-                            Text(
-                                text = "⚠ $count",
-                                color = Color.Red
-                            )
-                        }
-                    }
-
-                    RequirementModeToday.REVERSE -> {
-                        if (!isWarn) {
-                            Text(text = "➥ $assignedPersons", color = Color.Blue)
-                        }
-                    }
-
-                    RequirementModeToday.CANCELED -> {
-                        Text(text = "キャンセル", color = Color.LightGray)
-                    }
+            RequirementRow(
+                req = req,
+                isWarn = isWarn,
+                count = count,
+                assignedPersons = assignedPersons,
+                onClick = {
+                    viewModel.toggleRequirementMode(rules.first { it.id == req.id })
+                    onToggle()
+                },
+                onLongClick = {
+                    expandedMenuId = req.id
                 }
-            }
+            )
 
             DropdownMenu(
                 expanded = expandedMenuId == req.id,

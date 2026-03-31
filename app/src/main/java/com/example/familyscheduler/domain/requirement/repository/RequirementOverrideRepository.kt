@@ -12,4 +12,5 @@ interface RequirementOverrideRepository {
     fun saveOverride(override: RequirementOverride)
     fun getAll(): List<RequirementOverride>
 
+    suspend fun deleteByRuleId(ruleId: String)
 }

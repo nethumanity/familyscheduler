@@ -17,4 +17,6 @@ interface ChildOverrideRepository {
     )
 
     fun getAll(): Map<Pair<String, LocalDate>, ChildTodayRoutine>
+
+    suspend fun deleteByChildName(ChildName: String)
 }

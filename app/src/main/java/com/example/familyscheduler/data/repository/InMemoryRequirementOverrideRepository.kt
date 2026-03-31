@@ -29,4 +29,8 @@ class InMemoryRequirementOverrideRepository : RequirementOverrideRepository {
     override fun getAll(): List<RequirementOverride> {
         return overrides.toList()
     }
+
+    override suspend fun deleteByRuleId(ruleId: String) {
+        overrides.removeAll { it.ruleId == ruleId }
+    }
 }
