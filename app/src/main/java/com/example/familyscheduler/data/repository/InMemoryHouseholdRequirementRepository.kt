@@ -20,6 +20,13 @@ class InMemoryHouseholdRequirementRepository :
         }
     }
 
+    override suspend fun getFromId(
+        id: String
+    ): HouseholdRequirementRule? {
+
+        return storage.firstOrNull { it.id == id }
+    }
+
     override suspend fun getAll(): List<HouseholdRequirementRule> {
         return storage.toList()
     }
@@ -27,13 +34,25 @@ class InMemoryHouseholdRequirementRepository :
     override suspend fun add(
         rule: HouseholdRequirementRule
     ) {
-        storage.add(rule)
+        val index = storage.indexOfFirst { it.id == rule.id }
+
+        if (index >= 0) {
+            // 更新
+            storage[index] = rule
+        } else {
+            // 新規追加
+            storage.add(rule)
+        }
     }
 
     override suspend fun saveAll(
         rules: List<HouseholdRequirementRule>
     ) {
         storage.addAll(rules)
+    }
+
+    override suspend fun delete(id: String) {
+        storage.removeAll { it.id == id }
     }
 
     override suspend fun clearChildRoutineRules() {

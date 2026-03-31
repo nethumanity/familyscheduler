@@ -9,6 +9,7 @@ import com.example.familyscheduler.domain.requirement.HouseholdRequirementRule
 import com.example.familyscheduler.domain.requirement.repository.HouseholdRequirementRepository
 import com.example.familyscheduler.domain.slot.FlexWindowParameters
 import com.example.familyscheduler.domain.slot.SlotState
+import com.example.familyscheduler.domain.time.TimeAxis
 import com.example.familyscheduler.domain.time.TimeRange
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -112,7 +113,7 @@ class OneTimeTaskViewModel(
             if (!input.isFlexible) {
                 FlexWindowParameters(0, 0)
             } else {
-                val slot = input.flexMinutes / 30
+                val slot = input.flexMinutes / TimeAxis.stepMinutes
                 FlexWindowParameters(slot, slot)
             }
 
@@ -131,6 +132,53 @@ class OneTimeTaskViewModel(
                 start = start,
                 end = endTime
             )
+        )
+    }
+
+    fun load(rule: HouseholdRequirementRule) {
+
+        val start = rule.timeRange.start
+        val end = rule.timeRange.end
+
+        val duration =
+            java.time.Duration.between(start, end).toMinutes().toInt()
+
+        val isTwoPerson = rule.requiredCount >= 2
+
+        val allowedOption =
+            if (isTwoPerson) {
+                AllowedPersonOption.EITHER
+            } else {
+                when (rule.allowedPersons) {
+                    setOf(Person.FATHER) -> AllowedPersonOption.FATHER_ONLY
+                    setOf(Person.MOTHER) -> AllowedPersonOption.MOTHER_ONLY
+                    else -> AllowedPersonOption.EITHER
+                }
+            }
+
+        val isFlexible =
+            rule.flexWindowSlots.backward > 0 ||
+                    rule.flexWindowSlots.forward > 0
+
+        val flexMinutes =
+            if (isFlexible) {
+                rule.flexWindowSlots.backward * TimeAxis.stepMinutes
+            } else 0
+
+        _uiState.value = OneTimeTaskUiState(
+            date = rule.date ?: LocalDate.now(),
+
+            taskName = rule.taskName,
+            targetState = rule.targetState,
+
+            isTwoPersonTask = isTwoPerson,
+            allowedPersonOption = allowedOption,
+
+            startTime = start,
+            durationMinutes = duration,
+
+            isFlexible = isFlexible,
+            flexMinutes = flexMinutes
         )
     }
 }

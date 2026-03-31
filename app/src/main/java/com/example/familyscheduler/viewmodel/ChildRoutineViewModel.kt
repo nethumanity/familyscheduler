@@ -7,6 +7,8 @@ import com.example.familyscheduler.domain.routine.ChildRoutineInput
 import com.example.familyscheduler.domain.routine.ChildTodayRoutine
 import com.example.familyscheduler.domain.routine.repository.ChildOverrideRepository
 import com.example.familyscheduler.domain.routine.repository.ChildRoutineRepository
+import com.example.familyscheduler.ui.utilities.EditingTarget
+import com.example.familyscheduler.ui.utilities.editingTarget
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -31,6 +33,9 @@ class ChildRoutineViewModel(
 
     val overrides: StateFlow<Map<Pair<String, LocalDate>, ChildTodayRoutine>> =
         _overrides
+
+    private val _editingTarget = MutableStateFlow<EditingTarget?>(null)
+    val editingTarget: StateFlow<EditingTarget?> = _editingTarget
 
     init {
         viewModelScope.launch {
@@ -249,6 +254,39 @@ class ChildRoutineViewModel(
         val nurseryEndLatest: LocalTime? = null
     )
 
+    fun load(childName: String) {
+
+        viewModelScope.launch {
+
+            val child = repository.getFromChildName(childName) ?: return@launch
+
+            _uiState.update {
+                ChildRoutineUiState(
+                    name = child.name,
+
+                    wakeUpTime = child.wakeUpTime,
+                    sleepTime = child.sleepTime,
+
+                    hasNursery = child.daysOfWeek.isNotEmpty(),
+
+                    daysOfWeek = child.daysOfWeek,
+
+                    nurseryStart = child.nurseryStart,
+                    nurseryStartEarliest = child.nurseryStartEarliest,
+                    nurseryStartLatest = child.nurseryStartLatest,
+
+                    nurseryEnd = child.nurseryEnd,
+                    nurseryEndEarliest = child.nurseryEndEarliest,
+                    nurseryEndLatest = child.nurseryEndLatest
+                )
+            }
+        }
+    }
+
+    fun clearEditingTarget() {
+        _editingTarget.value = null
+    }
+
     fun toggleTodayRoutine(
         child: ChildRoutineInput,
         date: LocalDate
@@ -288,6 +326,29 @@ class ChildRoutineViewModel(
             ChildTodayRoutine.NURSERY
         } else {
             ChildTodayRoutine.HOME
+        }
+    }
+
+    fun startEditChildRoutine(childName: String) {
+
+        _editingTarget.value = EditingTarget(
+            childRoutineId = childName
+        )
+    }
+
+    fun deleteChildRoutine(childName: String) {
+        viewModelScope.launch {
+            repository.delete(childName)
+
+            // 編集中なら解除
+            if (_editingTarget.value?.childRoutineId == childName) {
+                _editingTarget.value = null
+            }
+
+            // UI通知（任意）
+            //_deleteCompleted.emit(Unit)
+
+            _children.value = repository.getAll()
         }
     }
 }

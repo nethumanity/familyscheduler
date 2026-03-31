@@ -1,6 +1,7 @@
 package com.example.familyscheduler.ui.components
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -10,22 +11,28 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.familyscheduler.domain.evaluation.AvailabilityState
-import com.example.familyscheduler.domain.evaluation.MissingReason
 import com.example.familyscheduler.domain.requirement.RequirementModeToday
 import com.example.familyscheduler.domain.requirement.TimeRangeHouseholdRequirement
 import com.example.familyscheduler.domain.slot.SlotState
 import com.example.familyscheduler.domain.time.TimeAxis
 import com.example.familyscheduler.ui.utilities.renderBlockingPersons
+import com.example.familyscheduler.ui.utilities.renderMissingReasonCount
 import com.example.familyscheduler.ui.utilities.slotStateLabel
 import com.example.familyscheduler.viewmodel.TimelineViewModel
 
@@ -33,13 +40,17 @@ import com.example.familyscheduler.viewmodel.TimelineViewModel
 fun DailyOverviewSheet(
     viewModel: TimelineViewModel,
     onWarningClick: (Int) -> Unit,
-    onToggle: () -> Unit
+    onToggle: () -> Unit,
+    onEditRequirement: (String) -> Unit
 ) {
     val currentDate by viewModel.currentDate.collectAsState()
     val rules by viewModel.householdRequirementRules.collectAsState()
     val requirements by viewModel.householdRequirements.collectAsState()
     val evaluations by viewModel.evaluations.collectAsState()
     val overrides by viewModel.overrides.collectAsState()
+
+    var menuPosition by remember { mutableStateOf<Offset?>(null) }
+    var expandedMenuId by remember { mutableStateOf<String?>(null) }
 
     fun indexToTime(index: Int): String {
         return TimeAxis.all.getOrNull(index)?.toString() ?: "--:--"
@@ -74,7 +85,6 @@ fun DailyOverviewSheet(
             warnings.forEach { eval ->
 
                 val reasons = eval.reasons
-                    .filterIsInstance<MissingReason.NotEnoughPeople>()
 
                 items(reasons) { reason ->
                     val blockText = renderBlockingPersons(reason)
@@ -114,12 +124,8 @@ fun DailyOverviewSheet(
             val id: String,
             val name: String,
             val startIndex: Int,
-            //val requiredCount: Int,
-            //val allowedPersons: Set<Person>,
             val targetState: SlotState,
             val mode: RequirementModeToday
-            //val isCanceled: Boolean,
-            //val requirement: TimeRangeHouseholdRequirement?
         )
 
         val uiRequirements = rules.map { rule ->
@@ -134,12 +140,8 @@ fun DailyOverviewSheet(
                 id = rule.id,
                 name = rule.taskName,
                 startIndex = req?.startIndex ?: TimeAxis.indexOf(rule.timeRange.start),
-                //requiredCount = req?.requiredCount ?: rule.requiredCount,
-               // allowedPersons = req?.allowedPersons ?: rule.allowedPersons,
                 targetState = rule.targetState,
                 mode = mode
-                //isCanceled = mode == RequirementModeToday.CANCELED,
-                //requirement = req
             )
         }
 
@@ -154,12 +156,11 @@ fun DailyOverviewSheet(
             //状態判定//
             val warningMap = warnings
                 .flatMap { it.reasons }
-                .filterIsInstance<MissingReason.NotEnoughPeople>()
                 .associateBy { it.sourceRuleId }
             val reason = warningMap[req.id]
             val isWarn = reason != null
             val count = reason?.let {
-                MissingReason.renderMissingReasonCount(it)
+                renderMissingReasonCount(it)
             }
             val ruleMap = rules.associateBy { it.id }
 
@@ -169,10 +170,13 @@ fun DailyOverviewSheet(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable {
-                        viewModel.toggleRequirementMode(ruleMap.getValue(req.id))
-                        onToggle()
-                               }
+                    .combinedClickable(
+                        onClick = {
+                            viewModel.toggleRequirementMode(ruleMap.getValue(req.id))
+                            onToggle()
+                        },
+                        onLongClick = { expandedMenuId = req.id}
+                    )
                     .padding(vertical = 2.dp),
                 //horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
@@ -204,7 +208,7 @@ fun DailyOverviewSheet(
 
                     RequirementModeToday.REVERSE -> {
                         if (!isWarn) {
-                            Text(text = "㏌➡ $assignedPersons", color = Color.Green)
+                            Text(text = "➥ $assignedPersons", color = Color.Blue)
                         }
                     }
 
@@ -212,6 +216,26 @@ fun DailyOverviewSheet(
                         Text(text = "キャンセル", color = Color.LightGray)
                     }
                 }
+            }
+
+            DropdownMenu(
+                expanded = expandedMenuId == req.id,
+                onDismissRequest = { expandedMenuId = null }
+            ) {
+                DropdownMenuItem(
+                    text = { Text("編集") },
+                    onClick = {
+                        expandedMenuId = null
+                        onEditRequirement(req.id)
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text("削除") },
+                    onClick = {
+                        expandedMenuId = null
+                        viewModel.deleteRequirement(req.id)
+                    }
+                )
             }
         }
     }

@@ -10,6 +10,7 @@ import com.example.familyscheduler.domain.schedule.ScheduleTemplate
 import com.example.familyscheduler.domain.schedule.ScheduleType
 import com.example.familyscheduler.domain.schedule.TemplateNormalizer
 import com.example.familyscheduler.domain.schedule.repository.TemplateRepository
+import com.example.familyscheduler.domain.time.TimeAxis
 import com.example.familyscheduler.domain.time.TimeRange
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -389,6 +390,113 @@ class TemplateEditViewModel(
             templateRepository.saveTemplate(template)
             Log.d("TemplateSave", "Saved template: $template")
             _saveCompleted.emit(Unit)
+        }
+    }
+    fun load(template: DailyTemplate) {
+
+        val schedules = template.schedules
+
+        // ---- 各Scheduleを取得 ----
+        val work = schedules.find { it.type == ScheduleType.WORK }
+        val go = schedules.find { it.type == ScheduleType.COMMUTE_GO }
+        val back = schedules.find { it.type == ScheduleType.COMMUTE_BACK }
+        val sleepList = schedules.filter { it.type == ScheduleType.SLEEP }
+
+        val additional = schedules.filter {
+            it.type !in ScheduleType.core
+        }
+
+        // ---- repeatRuleの復元 ----
+        val (noWeeklyRule, selectedDays) =
+            when (val repeatRule = template.repeatRule) {
+                is RepeatRule.None -> true to emptySet()
+
+                is RepeatRule.Daily -> false to DayOfWeek.values().toSet()
+
+                is RepeatRule.Weekly -> false to repeatRule.days.toSet()
+            }
+
+        // ---- SLEEPの復元----
+        val (sleepStart, sleepEnd) = restoreSleepRange(sleepList)
+
+        // ---- 現在のUIをベースにする（重要）----
+        val current = _uiState.value
+
+        // ---- UIにセット ----
+        _uiState.value = current.copy(
+            person = template.person,
+            templateName = template.name,
+
+            // repeat
+            noWeeklyRule = noWeeklyRule,
+            selectedDays = selectedDays,
+
+            // WORK
+            noWork = work == null,
+            workStart = work?.timeRange?.start ?: current.workStart,
+            workEnd = work?.timeRange?.end ?: current.workEnd,
+
+            // GO COMMUTE
+            noGoCommute = go == null,
+            goCommuteStart = go?.timeRange?.start ?: current.goCommuteStart,
+            goCommuteEnd = go?.timeRange?.end ?: current.goCommuteEnd,
+
+            // BACK COMMUTE
+            noBackCommute = back == null,
+            backCommuteStart = back?.timeRange?.start ?: current.backCommuteStart,
+            backCommuteEnd = back?.timeRange?.end ?: current.backCommuteEnd,
+
+            // SLEEP（必ずある前提なら!!でもOK）
+            sleepStart = sleepStart,
+            sleepEnd = sleepEnd,
+
+            // 追加
+            additionalSchedules = additional
+        )
+    }
+
+    private fun restoreSleepRange(
+        list: List<ScheduleTemplate>
+    ): Pair<LocalTime, LocalTime> {
+
+        require(list.isNotEmpty()) { "SLEEPは最低1つ必要" }
+
+        if (list.size == 1) {
+            val r = list.first().timeRange
+            return r.start to r.end
+        }
+
+        // 2つ（またはそれ以上）を想定
+        val sorted = list.sortedBy { it.timeRange.start }
+
+        val first = sorted.first()
+        val last = sorted.last()
+
+        val axisStart = TimeAxis.all.first()
+        val axisEnd = TimeAxis.all.last()
+
+        return when {
+            // パターン1：日またぎ（典型）
+            first.timeRange.start == axisStart -> {
+                // [00:00 → X] と [Y → end]
+                val start = last.timeRange.start
+                val end = first.timeRange.end
+                start to end
+            }
+
+            // パターン2：逆順（安全策）
+            last.timeRange.end == LocalTime.MIDNIGHT -> {
+                val start = first.timeRange.start
+                val end = last.timeRange.end
+                start to end
+            }
+
+            else -> {
+                // フォールバック（通常連結）
+                val start = sorted.minBy { it.timeRange.start }.timeRange.start
+                val end = sorted.maxBy { it.timeRange.end }.timeRange.end
+                start to end
+            }
         }
     }
 }

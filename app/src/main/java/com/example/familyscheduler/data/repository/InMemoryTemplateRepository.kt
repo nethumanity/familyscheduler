@@ -9,10 +9,16 @@ class InMemoryTemplateRepository : TemplateRepository {
     private val templates = mutableListOf<DailyTemplate>()
 
     override suspend fun saveTemplate(template: DailyTemplate) {
-        templates.removeAll {
-            it.person == template.person && it.name == template.name
+
+        val index = templates.indexOfFirst { it.id == template.id }
+
+        if (index >= 0) {
+            // 更新
+            templates[index] = template
+        } else {
+            // 新規追加
+            templates.add(template)
         }
-        templates.add(template)
     }
 
     override suspend fun getTemplates(): List<DailyTemplate> {
@@ -21,5 +27,13 @@ class InMemoryTemplateRepository : TemplateRepository {
 
     override suspend fun getTemplatesForPerson(person: Person): List<DailyTemplate> {
         return templates.filter { it.person == person }
+    }
+
+    override suspend fun getTemplateFromId(id: String): DailyTemplate? {
+        return templates.firstOrNull { it.id == id}
+    }
+
+    override suspend fun delete(id: String) {
+        templates.removeAll { it.id == id }
     }
 }

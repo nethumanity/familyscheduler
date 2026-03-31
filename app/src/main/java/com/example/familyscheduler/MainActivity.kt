@@ -12,6 +12,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -172,6 +173,10 @@ fun MainScreen() {
                         viewModel = timelineViewModel,
                         onAddClick = { person ->
                             navController.navigate("schedule_input/${person.name}")
+                        },
+                        onEditTemplate = { templateId, person ->
+                            timelineViewModel.startEditTemplate(templateId)
+                            navController.navigate("schedule_input/${person.name}")
                         }
                     )
                 }
@@ -192,9 +197,32 @@ fun MainScreen() {
                             factory = WeeklyTaskViewModelFactory(householdRequirementRepository)
                         )
 
+                    val editingTarget by timelineViewModel.editingTarget.collectAsState()
+
+                    var selectedTab by remember { mutableStateOf(0) }
+
+                    LaunchedEffect(editingTarget?.requirementId) {
+                        val id = editingTarget?.requirementId ?: return@LaunchedEffect
+
+                        val rule = householdRequirementRepository.getFromId(id)
+
+                        rule?.let {
+                            selectedTab = if (it.date != null) 0 else 1
+
+                            when {
+                                it.date != null -> oneTimeViewModel.load(it)
+                                else -> weeklyViewModel.load(it)
+                            }
+                        }
+
+                        timelineViewModel.clearEditingTarget()
+                    }
+
                     AddTaskScreen(
                         oneTimeViewModel = oneTimeViewModel,
                         weeklyViewModel = weeklyViewModel,
+                        selectedTab = selectedTab,
+                        onTabChange = { selectedTab = it },
                         onBack = {
                             navController.popBackStack()
                         },
@@ -228,6 +256,20 @@ fun MainScreen() {
                                 person
                             )
                         )
+
+                    val editingTarget by timelineViewModel.editingTarget.collectAsState()
+
+                    LaunchedEffect(editingTarget?.templateId) {
+                        val target = editingTarget ?: return@LaunchedEffect
+
+                        if (target.isTemplate()) {
+                            val template = templateRepository.getTemplateFromId(target.templateId!!)
+                            template?.let {
+                                templateEditViewModel.load(it)
+                            }
+                            timelineViewModel.clearEditingTarget()
+                        }
+                    }
 
                     ScheduleInputScreen(
                         viewModel = templateEditViewModel,
@@ -263,7 +305,8 @@ fun MainScreen() {
                                     timelineViewModel.refreshGuideState()
                                     sheet = null
                                 },
-                                onToggle = { timelineViewModel.onChildRoutineChanged() }
+                                onToggle = { timelineViewModel.onChildRoutineChanged() },
+                                onDeleteChildRoutine = { timelineViewModel.onChildRoutineChanged() }
                             )
                         }
 
@@ -271,7 +314,12 @@ fun MainScreen() {
                             DailyOverviewSheet(
                                 viewModel = timelineViewModel,
                                 onWarningClick = { timelineViewModel.onAvailabilityWarningClick(it) },
-                                onToggle = { timelineViewModel.refreshAvailability() }
+                                onToggle = { timelineViewModel.refreshAvailability() },
+                                onEditRequirement = { ruleId ->
+                                    timelineViewModel.startEditRequirement(ruleId)
+                                    sheet = null
+                                    navController.navigate("add_task")
+                                }
                             )
                         }
                     }

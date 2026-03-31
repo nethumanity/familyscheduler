@@ -10,6 +10,10 @@ interface HouseholdRequirementRepository {
         date: LocalDate
     ): List<HouseholdRequirementRule>
 
+    suspend fun getFromId(
+        id: String
+    ): HouseholdRequirementRule?
+
     suspend fun getAll(): List<HouseholdRequirementRule>
 
     suspend fun add(
@@ -19,6 +23,8 @@ interface HouseholdRequirementRepository {
     suspend fun saveAll(
         rules: List<HouseholdRequirementRule>
     )
+
+    suspend fun delete(id: String)
 
     suspend fun clearChildRoutineRules()
 }

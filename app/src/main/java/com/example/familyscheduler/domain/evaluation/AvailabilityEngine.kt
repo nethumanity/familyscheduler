@@ -155,7 +155,7 @@ object AvailabilityEngine {
                             persons = req.allowedPersons.toList() - satisfiedPersons
                         )
                     reasons.add(
-                        MissingReason.NotEnoughPeople(
+                        MissingReason(
                             sourceRuleId = req.sourceRuleId,
                             requirementName = req.name,
                             requiredCount = required,
@@ -217,7 +217,6 @@ object AvailabilityEngine {
         if (!hasFlexRequirement) return emptyList()
 
         return reasons
-            .filterIsInstance<MissingReason.NotEnoughPeople>()
             .flatMap { reason ->
                 generateFlexResolveProposalsForReason(
                     index = index,
@@ -234,7 +233,7 @@ object AvailabilityEngine {
         index: Int,
         slots: List<TimeSlot>,
         requirements: List<HouseholdRequirement>,
-        reason: MissingReason.NotEnoughPeople
+        reason: MissingReason
     ): List<FlexResolveProposal> {
 
         val requirement = requirements

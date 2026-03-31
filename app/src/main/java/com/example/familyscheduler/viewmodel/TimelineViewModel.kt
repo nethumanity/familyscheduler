@@ -36,6 +36,7 @@ import com.example.familyscheduler.domain.slot.SlotState
 import com.example.familyscheduler.domain.slot.TimeSlot
 import com.example.familyscheduler.domain.time.TimeAxis
 import com.example.familyscheduler.seeder.SampleDataSeeder
+import com.example.familyscheduler.ui.utilities.EditingTarget
 import com.example.familyscheduler.ui.utilities.GuideState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -115,6 +116,9 @@ class TimelineViewModel(
 
     var editingTemplateFor by mutableStateOf<Person?>(null)
         private set
+
+    private val _editingTarget = MutableStateFlow<EditingTarget?>(null)
+    val editingTarget: StateFlow<EditingTarget?> = _editingTarget
 
     private val ENABLE_SAMPLE_DATA = true   // falseでサンプル注入なし
 
@@ -378,6 +382,28 @@ class TimelineViewModel(
         return RequirementModeToday.AUTO
     }
 
+    fun startEditRequirement(ruleId: String) {
+
+        _editingTarget.value = EditingTarget(
+            requirementId = ruleId
+        )
+    }
+
+    fun deleteRequirement(ruleId: String) {
+        viewModelScope.launch {
+            householdRequirementRepository.delete(ruleId)
+
+            // 編集中なら解除
+            if (_editingTarget.value?.requirementId == ruleId) {
+                _editingTarget.value = null
+            }
+            refreshAvailability()
+
+            // UI通知（任意）
+            //_deleteCompleted.emit(Unit)
+        }
+    }
+
     fun changeSlotState(
         index: Int,
         person: Person,
@@ -447,6 +473,34 @@ class TimelineViewModel(
             loadForDate(currentDate.value)
             dismissTemplateSheet()
         }
+    }
+
+    fun startEditTemplate(templateId: String) {
+
+        _editingTarget.value = EditingTarget(
+            templateId = templateId
+        )
+    }
+
+    fun deleteTemplate(templateId: String, person:Person) {
+        viewModelScope.launch {
+            templateRepository.delete(templateId)
+
+            // 編集中なら解除
+            if (_editingTarget.value?.templateId == templateId) {
+                _editingTarget.value = null
+            }
+
+            _templates.value = templateRepository.getTemplatesForPerson(person)
+            loadForDate(currentDate.value)
+
+            // UI通知（任意）
+            //_deleteCompleted.emit(Unit)
+        }
+    }
+
+    fun clearEditingTarget() {
+        _editingTarget.value = null
     }
 
     //描画APIシリーズ
@@ -543,21 +597,14 @@ class TimelineViewModel(
 
                 val newSlots = state.slots.map { slot ->
                     when {
-
                         // この部分は保険、重要なのはRequirementのOverride生成
+                        // initial側はslotの変更なし（現状案）
+                        // taskNameの引継ぎはSolverに任せる
                         slot.index == proposal.candidateIndex &&
                                 slot.person in proposal.persons ->
                             slot.copy(
-                                state = proposal.targetState//,
-                                //taskName = slot.taskName + proposal.requirementName
-                                // taskNameの引継ぎはSolverに任せる
+                                state = proposal.targetState
                             )
-
-                        /* initial側はslotの変更なし（現状案）
-                        slot.index == proposal.initialIndex &&
-                                slot.person in proposal.persons ->
-                            slot.copy(state = SlotState.UNASSIGNED)
-                        */
 
                         else -> slot
                     }

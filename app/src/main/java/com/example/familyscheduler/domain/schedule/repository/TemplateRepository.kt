@@ -11,4 +11,8 @@ interface TemplateRepository {
 
     suspend fun getTemplatesForPerson(person: Person): List<DailyTemplate>
 
+    suspend fun getTemplateFromId(id: String): DailyTemplate?
+
+    suspend fun delete(id: String)
+
 }

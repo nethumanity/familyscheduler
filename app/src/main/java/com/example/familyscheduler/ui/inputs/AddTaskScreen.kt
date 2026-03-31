@@ -16,11 +16,11 @@ import com.example.familyscheduler.viewmodel.WeeklyTaskViewModel
 fun AddTaskScreen(
     oneTimeViewModel: OneTimeTaskViewModel,
     weeklyViewModel: WeeklyTaskViewModel,
+    selectedTab: Int,
+    onTabChange: (Int) -> Unit,
     onBack: () -> Unit,
     onSaved: () -> Unit
 ) {
-
-    var selectedTab by remember { mutableStateOf(0) }
 
     Column {
 
@@ -28,13 +28,13 @@ fun AddTaskScreen(
 
             Tab(
                 selected = selectedTab == 0,
-                onClick = { selectedTab = 0 },
+                onClick = { onTabChange(0) },
                 text = { Text("日付指定") }
             )
 
             Tab(
                 selected = selectedTab == 1,
-                onClick = { selectedTab = 1 },
+                onClick = { onTabChange(1) },
                 text = { Text("毎週（毎日）") }
             )
         }

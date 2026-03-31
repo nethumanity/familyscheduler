@@ -13,6 +13,7 @@ enum class ScheduleType(
     COMMUTE_GO("往路通勤", SlotState.UNAVAILABLE, 3, 90),
     COMMUTE_BACK("復路通勤", SlotState.UNAVAILABLE, 3, 80),
     SLEEP("睡眠", SlotState.REST, 3, 30),
+    ADDITIONAL_WORK("仕事", SlotState.WORK, 3, 70),
     RESTRAINT("その他拘束", SlotState.UNAVAILABLE, 3, 100),
     REST("睡眠・休息", SlotState.REST, 3, 40),
     FREE("趣味・自由", SlotState.FREE, 3, 10);
@@ -27,7 +28,7 @@ enum class ScheduleType(
         )
 
         val additionalAllowedTypes = listOf(
-            WORK,
+            ADDITIONAL_WORK,
             REST,
             FREE,
             RESTRAINT

@@ -1,6 +1,7 @@
 package com.example.familyscheduler.ui.components
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,13 +20,17 @@ import com.example.familyscheduler.domain.routine.ChildTodayRoutine
 fun ChildRow(
     child: ChildRoutineInput,
     routine: ChildTodayRoutine,
-    onToggle: () -> Unit
+    onToggle: () -> Unit,
+    onExpandMenu: () -> Unit
 ) {
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onToggle() }
+            .combinedClickable(
+                onClick = { onToggle() },
+                onLongClick = { onExpandMenu() }
+            )
             .padding(vertical = 12.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically

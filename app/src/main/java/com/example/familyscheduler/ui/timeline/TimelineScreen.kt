@@ -10,6 +10,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -26,6 +27,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
@@ -41,6 +44,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.painterResource
@@ -61,7 +65,8 @@ fun TimelineScreen(
     viewModel: TimelineViewModel,
     persons: List<Person> =
         listOf(Person.FATHER, Person.MOTHER),
-    onAddClick: (Person) -> Unit
+    onAddClick: (Person) -> Unit,
+    onEditTemplate: (String, Person) -> Unit
 ) {
     //val currentDate by viewModel.currentDate.collectAsState()
     val dailyStates by viewModel.dailyStates.collectAsState()
@@ -72,6 +77,8 @@ fun TimelineScreen(
     val templates by viewModel.templates.collectAsState()
 
     var editingSlot by remember { mutableStateOf<Pair<Int, Person>?>(null) }
+    var menuPosition by remember { mutableStateOf<Offset?>(null) }
+    var expandedMenuId by remember { mutableStateOf<String?>(null) }
 
     LazyColumn(
         modifier = Modifier
@@ -162,7 +169,7 @@ fun TimelineScreen(
                     //val evaluation = evaluations.getOrNull(index)
                     val evaluation = evaluations.find { it.index == index }
 
-                    if (evaluation?.state == AvailabilityState.WARN) {  //アイコンを出すindexがずれている
+                    if (evaluation?.state == AvailabilityState.WARN) {
                         Spacer(modifier = Modifier.height(2.dp))
                         Icon(
                             painter = painterResource(R.drawable.ic_warning),
@@ -194,7 +201,7 @@ fun TimelineScreen(
                         Text(
                             text = (slot?.taskName ?: emptyList())
                                 .filterNotNull()
-                                .joinToString("  "),    // 合成が上手くいってない？Log?
+                                .joinToString("  "),
                             fontSize = 12.sp,
                             color = Color.Black
                         )
@@ -272,10 +279,33 @@ fun TimelineScreen(
                                 overflow = TextOverflow.Ellipsis
                             )
                         },
-                        modifier = Modifier.clickable {
-                            viewModel.applyTemplate(person, template)
-                        }
+                        modifier = Modifier.combinedClickable(
+                            onClick = {
+                                viewModel.applyTemplate(person, template)
+                            },
+                            onLongClick = { expandedMenuId = template.id }
+                        )
                     )
+
+                    DropdownMenu(
+                        expanded = expandedMenuId == template.id,
+                        onDismissRequest = { expandedMenuId = null }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("編集") },
+                            onClick = {
+                                expandedMenuId = null
+                                onEditTemplate(template.id, person)
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("削除") },
+                            onClick = {
+                                expandedMenuId = null
+                                viewModel.deleteTemplate(template.id, person)
+                            }
+                        )
+                    }
                 }
             }
         }

@@ -9,7 +9,9 @@ import com.example.familyscheduler.domain.requirement.HouseholdRequirementRule
 import com.example.familyscheduler.domain.requirement.repository.HouseholdRequirementRepository
 import com.example.familyscheduler.domain.slot.FlexWindowParameters
 import com.example.familyscheduler.domain.slot.SlotState
+import com.example.familyscheduler.domain.time.TimeAxis
 import com.example.familyscheduler.domain.time.TimeRange
+import com.example.familyscheduler.viewmodel.OneTimeTaskViewModel.OneTimeTaskUiState
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -17,6 +19,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
+import java.time.LocalDate
 import java.time.LocalTime
 
 class WeeklyTaskViewModel(
@@ -144,7 +147,7 @@ class WeeklyTaskViewModel(
             if (!input.isFlexible) {
                 FlexWindowParameters(0, 0)
             } else {
-                val slot = input.flexMinutes / 30
+                val slot = input.flexMinutes / TimeAxis.stepMinutes
                 FlexWindowParameters(slot, slot)
             }
 
@@ -167,6 +170,60 @@ class WeeklyTaskViewModel(
                 start = start,
                 end = endTime
             )
+        )
+    }
+
+    fun load(rule: HouseholdRequirementRule) {
+
+        val start = rule.timeRange.start
+        val end = rule.timeRange.end
+
+        val duration =
+            java.time.Duration.between(start, end).toMinutes().toInt()
+
+        val isTwoPerson = rule.requiredCount >= 2
+
+        val allowedOption =
+            if (isTwoPerson) {
+                AllowedPersonOption.EITHER
+            } else {
+                when (rule.allowedPersons) {
+                    setOf(Person.FATHER) -> AllowedPersonOption.FATHER_ONLY
+                    setOf(Person.MOTHER) -> AllowedPersonOption.MOTHER_ONLY
+                    else -> AllowedPersonOption.EITHER
+                }
+            }
+
+        val isFlexible =
+            rule.flexWindowSlots.backward > 0 ||
+                    rule.flexWindowSlots.forward > 0
+
+        val flexMinutes =
+            if (isFlexible) {
+                rule.flexWindowSlots.backward * TimeAxis.stepMinutes
+            } else 0
+
+        val days = rule.daysOfWeek ?: emptySet()
+
+        val isEveryDay = days.size == 7
+
+        _uiState.value = WeeklyTaskUiState(
+
+            taskName = rule.taskName,
+            targetState = rule.targetState,
+
+            everyDay = isEveryDay,
+            daysOfWeek =
+                if (isEveryDay) emptySet() else days,
+
+            isTwoPersonTask = isTwoPerson,
+            allowedPersonOption = allowedOption,
+
+            startTime = start,
+            durationMinutes = duration,
+
+            isFlexible = isFlexible,
+            flexMinutes = flexMinutes
         )
     }
 }

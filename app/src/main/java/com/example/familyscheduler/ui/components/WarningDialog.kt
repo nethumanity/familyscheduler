@@ -27,6 +27,7 @@ import com.example.familyscheduler.domain.evaluation.AvailabilityEvaluation
 import com.example.familyscheduler.domain.evaluation.FlexResolveProposal
 import com.example.familyscheduler.domain.evaluation.MissingReason
 import com.example.familyscheduler.domain.time.TimeAxis
+import com.example.familyscheduler.ui.utilities.renderMissingReason
 
 @Composable
 fun WarningDialog(
@@ -66,7 +67,7 @@ fun WarningDialog(
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
 
                 evaluation?.reasons?.forEach { reason ->
-                    Text(MissingReason.renderMissingReason(reason))
+                    Text(renderMissingReason(reason))
                 }
 
                 if (flexProposals.isNotEmpty()) {

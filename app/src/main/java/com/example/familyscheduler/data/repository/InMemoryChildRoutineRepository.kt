@@ -18,6 +18,10 @@ class InMemoryChildRoutineRepository :
         return routines.toList()
     }
 
+    override suspend fun getFromChildName(childName: String): ChildRoutineInput? {
+        return routines.firstOrNull { it.name == childName }
+    }
+
     override suspend fun delete(name: String) {
         routines.removeAll { it.name == name }
     }

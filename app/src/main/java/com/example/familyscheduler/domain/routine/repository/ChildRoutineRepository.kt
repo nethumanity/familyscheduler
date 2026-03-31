@@ -8,5 +8,7 @@ interface ChildRoutineRepository {
 
     suspend fun getAll(): List<ChildRoutineInput>
 
+    suspend fun getFromChildName(childName: String): ChildRoutineInput?
+
     suspend fun delete(name: String)
 }
