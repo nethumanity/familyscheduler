@@ -1,10 +1,7 @@
 package com.example.familyscheduler.domain.evaluation
 
-data class AvailabilityEvaluation(
+data class AvailabilityEvaluation(      //ネスト構造を要検討
     val index: Int,
-    //val requiredCount: Int,
-    //val availableCount: Int,
-    //val hasFixRequirement: Boolean,
     val hasFlexRequirement: Boolean,
     val missing: Int,
     val reasons: List<MissingReason>,

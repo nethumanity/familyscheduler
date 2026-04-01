@@ -25,7 +25,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.familyscheduler.domain.evaluation.AvailabilityEvaluation
 import com.example.familyscheduler.domain.evaluation.FlexResolveProposal
-import com.example.familyscheduler.domain.evaluation.MissingReason
 import com.example.familyscheduler.domain.time.TimeAxis
 import com.example.familyscheduler.ui.utilities.renderMissingReason
 
@@ -91,7 +90,7 @@ fun WarningDialog(
                             Spacer(modifier = Modifier.width(8.dp))
 
                             Text(
-                                text =
+                                text =  //下記をより分かりやすい文章にし、外部関数renderFlexProposal(proposal)として切り出したい
                                     "${proposal.persons.joinToString("・") { it.name }} の " +
                                             "${proposal.requirementName} 予定を " +
                                             "${(proposal.candidateIndex - proposal.initialIndex) * TimeAxis.stepMinutes}分ずらす",

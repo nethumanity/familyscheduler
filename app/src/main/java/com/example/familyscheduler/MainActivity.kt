@@ -188,10 +188,8 @@ fun MainScreen() {
 
                     val viewModel = childRoutineViewModel
 
-                    val editingTarget by viewModel.editingTarget.collectAsState()
-
-                    LaunchedEffect(editingTarget?.childRoutineId) {
-                        val id = editingTarget?.childRoutineId
+                    LaunchedEffect(Unit) {
+                        val id = viewModel.editingTarget.value?.childRoutineId
 
                         if (id != null) {
                             viewModel.load(id)
