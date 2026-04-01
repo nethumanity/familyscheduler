@@ -36,10 +36,11 @@ import com.example.familyscheduler.domain.routine.CareCapacityCalculator
 import com.example.familyscheduler.domain.routine.ChildCareRuleConverter
 import com.example.familyscheduler.domain.routine.ChildRoutineBuilder
 import com.example.familyscheduler.domain.routine.RoutineResolver
-import com.example.familyscheduler.ui.components.ChildScreen
+import com.example.familyscheduler.ui.components.ChildListSheet
 import com.example.familyscheduler.ui.components.DailyOverviewSheet
 import com.example.familyscheduler.ui.components.SettingsScreen
 import com.example.familyscheduler.ui.inputs.AddTaskScreen
+import com.example.familyscheduler.ui.inputs.ChildRoutineInputScreen
 import com.example.familyscheduler.ui.inputs.ScheduleInputScreen
 import com.example.familyscheduler.ui.manager.MainSheet
 import com.example.familyscheduler.ui.theme.FamilySchedulerTheme
@@ -111,6 +112,8 @@ fun MainScreen() {
         skipPartiallyExpanded = true
     )
 
+    val currentDate by timelineViewModel.currentDate.collectAsState()
+
     Scaffold(
         topBar = {
 
@@ -119,7 +122,7 @@ fun MainScreen() {
                 "timeline" -> {
 
                     HeaderBar(
-                        date = timelineViewModel.currentDate.collectAsState().value,
+                        date = currentDate,
                         onPreviousDay = {
                             timelineViewModel.moveToPreviousDay()   // changeDate(currentDate.minusDays(1))
                         },
@@ -181,8 +184,32 @@ fun MainScreen() {
                     )
                 }
 
-                composable("calender") {
+                composable("child_input") {
 
+                    val viewModel = childRoutineViewModel
+
+                    val editingTarget by viewModel.editingTarget.collectAsState()
+
+                    LaunchedEffect(editingTarget?.childRoutineId) {
+                        val id = editingTarget?.childRoutineId
+
+                        if (id != null) {
+                            viewModel.load(id)
+                            viewModel.clearEditingTarget()
+                        } else {
+                            viewModel.resetUiState()
+                        }
+                    }
+
+                    ChildRoutineInputScreen(
+                        viewModel = viewModel,
+                        onBack = { navController.popBackStack() },
+                        onSaved = {
+                            timelineViewModel.onChildRoutineChanged()
+                            timelineViewModel.refreshGuideState()
+                            navController.popBackStack("timeline", false)
+                        }
+                    )
                 }
 
                 composable("add_task") {
@@ -296,16 +323,19 @@ fun MainScreen() {
                     when (it) {
 
                         MainSheet.CHILD -> {
-
-                            ChildScreen(
+                            ChildListSheet(
                                 viewModel = childRoutineViewModel,
-                                currentDate = timelineViewModel.currentDate.collectAsState().value,
-                                onClose = {
-                                    timelineViewModel.onChildRoutineChanged()
-                                    timelineViewModel.refreshGuideState()
+                                currentDate = currentDate,
+                                onAddClick = {
                                     sheet = null
+                                    navController.navigate("child_input")
                                 },
                                 onToggle = { timelineViewModel.onChildRoutineChanged() },
+                                onEditChildRoutine = { childName ->
+                                    childRoutineViewModel.startEditChildRoutine(childName)
+                                    sheet = null
+                                    navController.navigate("child_input")
+                                },
                                 onDeleteChildRoutine = { timelineViewModel.onChildRoutineChanged() }
                             )
                         }

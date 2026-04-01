@@ -1,5 +1,7 @@
 package com.example.familyscheduler.ui.utilities
 
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.graphics.Color
 import java.time.DayOfWeek
 
 object DayOfWeekUtilities {
@@ -35,4 +37,14 @@ object DayOfWeekUtilities {
         DayOfWeek.SATURDAY,
         DayOfWeek.SUNDAY
     )
+    
+    fun color(
+        day: DayOfWeek,
+        defaultColor: Color
+    ): Color =
+        when(day) {
+            DayOfWeek.SATURDAY -> Color.Blue
+            DayOfWeek.SUNDAY -> Color.Red
+            else -> defaultColor
+        }
 }

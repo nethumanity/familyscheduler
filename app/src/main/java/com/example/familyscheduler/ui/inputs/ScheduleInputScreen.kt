@@ -140,18 +140,14 @@ fun ScheduleInputScreen(
 
                         DayOfWeek.entries.forEach { day ->
 
-                            val color =
-                                when(day) {
-                                    DayOfWeek.SATURDAY -> Color.Blue
-                                    DayOfWeek.SUNDAY -> Color.Red
-                                    else -> MaterialTheme.colorScheme.onSurface
-                                }
-
                             FilterChip(
                                 selected = state.selectedDays.contains(day),    //引数に
                                 onClick = { viewModel.toggleDay(day) },
                                 label = {
-                                    Text(text = DayOfWeekUtilities.short(day), color = color)
+                                    Text(
+                                        text = DayOfWeekUtilities.short(day),
+                                        color = DayOfWeekUtilities.color(day, MaterialTheme.colorScheme.onSurface)
+                                    )
                                 }
                             )
                         }

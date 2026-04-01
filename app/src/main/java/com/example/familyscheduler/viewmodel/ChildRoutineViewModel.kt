@@ -8,7 +8,6 @@ import com.example.familyscheduler.domain.routine.ChildTodayRoutine
 import com.example.familyscheduler.domain.routine.repository.ChildOverrideRepository
 import com.example.familyscheduler.domain.routine.repository.ChildRoutineRepository
 import com.example.familyscheduler.ui.utilities.EditingTarget
-import com.example.familyscheduler.ui.utilities.editingTarget
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -85,22 +84,6 @@ class ChildRoutineViewModel(
         }
     }
 
-    /* 旧バージョン（どっちがいい？）
-    fun updateNurseryStart(time: LocalTime) {
-
-        _uiState.update {
-
-            it.copy(
-                nurseryStart = time,
-                nurseryStartEarliest =
-                    it.nurseryStartEarliest ?: time,
-                nurseryStartLatest =
-                    it.nurseryStartLatest ?: time
-            )
-        }
-    }
-     */
-
     fun updateNurseryStartEarliest(time: LocalTime) =
         _uiState.update { it.copy(nurseryStartEarliest = time) }
 
@@ -124,22 +107,6 @@ class ChildRoutineViewModel(
             )
         }
     }
-
-    /* 旧バージョン（どっちがいい？）
-    fun updateNurseryEnd(time: LocalTime) {
-
-        _uiState.update {
-
-            it.copy(
-                nurseryEnd = time,
-                nurseryEndEarliest =
-                    it.nurseryEndEarliest ?: time,
-                nurseryEndLatest =
-                    it.nurseryEndLatest ?: time
-            )
-        }
-    }
-     */
 
     fun updateNurseryEndEarliest(time: LocalTime) =
         _uiState.update { it.copy(nurseryEndEarliest = time) }
@@ -217,16 +184,6 @@ class ChildRoutineViewModel(
         )
     }
 
-    val dayLabels = mapOf(
-        DayOfWeek.MONDAY to "月",
-        DayOfWeek.TUESDAY to "火",
-        DayOfWeek.WEDNESDAY to "水",
-        DayOfWeek.THURSDAY to "木",
-        DayOfWeek.FRIDAY to "金",
-        DayOfWeek.SATURDAY to "土",
-        DayOfWeek.SUNDAY to "日"
-    )
-
     data class ChildRoutineUiState(
 
         val name: String = "",
@@ -254,6 +211,10 @@ class ChildRoutineViewModel(
         val nurseryEndLatest: LocalTime? = null
     )
 
+    fun resetUiState() {
+        _uiState.value = ChildRoutineUiState()
+    }
+
     fun load(childName: String) {
 
         viewModelScope.launch {
@@ -280,6 +241,7 @@ class ChildRoutineViewModel(
                     nurseryEndLatest = child.nurseryEndLatest
                 )
             }
+            //clearEditingTarget() //現在はComposeで関数呼び出し
         }
     }
 

@@ -245,7 +245,7 @@ class TimelineViewModel(
             childRoutineBuilder.build(date.dayOfWeek, resolved)
 
         val rules =
-            childCareRuleConverter.convert(blocks)
+            childCareRuleConverter.convert(blocks, date)
 
         householdRequirementRepository.clearChildRoutineRules()
 
@@ -366,8 +366,6 @@ class TimelineViewModel(
     }
 
     fun resolveMode(
-        //req: HouseholdRequirement,
-        //date: LocalDate,
         id: String,
         overrides: List<RequirementOverride>
     ): RequirementModeToday {

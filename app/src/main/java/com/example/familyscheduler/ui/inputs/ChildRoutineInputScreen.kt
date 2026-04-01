@@ -28,6 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.familyscheduler.domain.time.TimeDropdownPicker
+import com.example.familyscheduler.ui.utilities.DayOfWeekUtilities
 import com.example.familyscheduler.viewmodel.ChildRoutineViewModel
 import java.time.DayOfWeek
 
@@ -113,19 +114,17 @@ fun ChildRoutineInputScreen(
                 ) {
                     DayOfWeek.entries.forEach { day ->
 
-                        val color =
-                            when(day) {
-                                DayOfWeek.SATURDAY -> Color.Blue
-                                DayOfWeek.SUNDAY -> Color.Red
-                                else -> MaterialTheme.colorScheme.onSurface
-                            }
-
                         val selected = state.daysOfWeek.contains(day)
 
                         FilterChip(
                             selected = selected,
                             onClick = { viewModel.toggleDay(day) },
-                            label = { Text(text = viewModel.dayLabels[day] ?: "", color = color) }
+                            label = {
+                                Text(
+                                    text = DayOfWeekUtilities.short(day),
+                                    color = DayOfWeekUtilities.color(day, MaterialTheme.colorScheme.onSurface)
+                                )
+                            }
                         )
                     }
                 }
