@@ -21,12 +21,14 @@ import kotlinx.coroutines.launch
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalTime
+import java.util.UUID
 
 class WeeklyTaskViewModel(
     private val repository: HouseholdRequirementRepository
 ) : ViewModel() {
 
     data class WeeklyTaskUiState(
+        val id: String? = null,   // ← 追加
 
         val taskName: String = "",
         val targetState: SlotState = SlotState.LIFE,
@@ -155,6 +157,7 @@ class WeeklyTaskViewModel(
             start.plusMinutes(input.durationMinutes.toLong())
 
         return HouseholdRequirementRule(
+            id = input.id ?: UUID.randomUUID().toString(),  // 修正
             taskName = input.taskName,
             targetState = input.targetState,
             requiredCount = requiredCount,
@@ -208,6 +211,7 @@ class WeeklyTaskViewModel(
         val isEveryDay = days.size == 7
 
         _uiState.value = WeeklyTaskUiState(
+            id = rule.id,   // 重要
 
             taskName = rule.taskName,
             targetState = rule.targetState,

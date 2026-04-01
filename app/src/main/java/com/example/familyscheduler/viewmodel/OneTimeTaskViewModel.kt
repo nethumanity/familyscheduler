@@ -19,12 +19,14 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalTime
+import java.util.UUID
 
 class OneTimeTaskViewModel(
     private val repository: HouseholdRequirementRepository
 ) : ViewModel() {
 
     data class OneTimeTaskUiState(
+        val id: String? = null,   // ← 追加
         val date: LocalDate = LocalDate.now(),
 
         val taskName: String = "",
@@ -121,6 +123,7 @@ class OneTimeTaskViewModel(
             start.plusMinutes(input.durationMinutes.toLong())
 
         return HouseholdRequirementRule(
+            id = input.id ?: UUID.randomUUID().toString(),  // 修正
             taskName = input.taskName,
             targetState = input.targetState,
             requiredCount = requiredCount,
@@ -166,6 +169,7 @@ class OneTimeTaskViewModel(
             } else 0
 
         _uiState.value = OneTimeTaskUiState(
+            id = rule.id,   // 重要
             date = rule.date ?: LocalDate.now(),
 
             taskName = rule.taskName,

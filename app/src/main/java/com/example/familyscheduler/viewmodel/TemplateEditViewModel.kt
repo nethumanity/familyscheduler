@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
 import java.time.LocalTime
+import java.util.UUID
 
 class TemplateEditViewModel(
     private val templateRepository: TemplateRepository,
@@ -28,12 +29,11 @@ class TemplateEditViewModel(
 
     data class TemplateEditUiState(
 
+        val id: String? = null,   // ← 追加
         val person: Person,
-
         val templateName: String = "",
 
         val noWeeklyRule: Boolean = false,
-
         val selectedDays: Set<DayOfWeek> =
             setOf(
                 DayOfWeek.MONDAY,
@@ -380,6 +380,7 @@ class TemplateEditViewModel(
 
         val template =
             DailyTemplate(
+                id = ui.id ?: UUID.randomUUID().toString(),  // 修正
                 person = ui.person,
                 name = ui.templateName,
                 schedules = schedules,
@@ -426,6 +427,7 @@ class TemplateEditViewModel(
 
         // ---- UIにセット ----
         _uiState.value = current.copy(
+            id = template.id,   // 重要
             person = template.person,
             templateName = template.name,
 
