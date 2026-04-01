@@ -31,12 +31,8 @@ fun TimeDropdownPicker(
     var hourExpanded by remember { mutableStateOf(false) }
     var minuteExpanded by remember { mutableStateOf(false) }
 
-    var selectedHour by remember {
-        mutableStateOf(selectedTime?.hour ?: 0)
-    }
-    var selectedMinute by remember {
-        mutableStateOf(selectedTime?.minute ?: 0)
-    }
+    val selectedHour = selectedTime?.hour ?: 0
+    val selectedMinute = selectedTime?.minute ?: 0
 
     Column {
         Text(label)
@@ -69,10 +65,9 @@ fun TimeDropdownPicker(
                                 Text(hour.toString().padStart(2, '0'))
                             },
                             onClick = {
-                                selectedHour = hour
                                 hourExpanded = false
                                 onTimeSelected(
-                                    LocalTime.of(selectedHour, selectedMinute)
+                                    LocalTime.of(hour, selectedMinute)
                                 )
                             }
                         )
@@ -104,10 +99,9 @@ fun TimeDropdownPicker(
                                 Text(minute.toString().padStart(2, '0'))
                             },
                             onClick = {
-                                selectedMinute = minute
                                 minuteExpanded = false
                                 onTimeSelected(
-                                    LocalTime.of(selectedHour, selectedMinute)
+                                    LocalTime.of(selectedHour, minute)
                                 )
                             }
                         )

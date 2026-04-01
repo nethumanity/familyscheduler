@@ -1,9 +1,9 @@
 package com.example.familyscheduler.ui.inputs
 
+import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -32,7 +32,6 @@ import androidx.compose.ui.unit.sp
 import com.example.familyscheduler.domain.person.Person
 import com.example.familyscheduler.domain.time.TimeDropdownPicker
 import com.example.familyscheduler.ui.utilities.DayOfWeekUtilities
-import com.example.familyscheduler.ui.utilities.editingTarget
 import com.example.familyscheduler.viewmodel.TemplateEditViewModel
 import java.time.DayOfWeek
 
@@ -193,6 +192,7 @@ fun ScheduleInputScreen(
                 ) {
                     viewModel.updateWorkEnd(it)
                 }
+                Log.d("UI", "workStart=${state.workStart}")
             }
         }
 

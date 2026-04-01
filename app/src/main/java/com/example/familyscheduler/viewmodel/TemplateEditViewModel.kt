@@ -396,6 +396,8 @@ class TemplateEditViewModel(
 
         val schedules = template.schedules
 
+        Log.d("LOAD_DEBUG", "schedules = ${schedules.map { it.type }}")
+
         // ---- 各Scheduleを取得 ----
         val work = schedules.find { it.type == ScheduleType.WORK }
         val go = schedules.find { it.type == ScheduleType.COMMUTE_GO }
