@@ -114,7 +114,6 @@ class WeeklyTaskViewModel(
 
             repository.save(rule)
 
-            //_uiState.value = WeeklyTaskUiState() // 挙動確認後、不要なら削除
             _saveCompleted.emit(Unit)
 
             Log.d("WeeklySave", "Saved rule: $rule")

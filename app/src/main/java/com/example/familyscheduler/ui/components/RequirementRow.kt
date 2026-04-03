@@ -68,5 +68,9 @@ fun RequirementRow(
                 Text("キャンセル", color = Color.LightGray)
             }
         }
+        //ケバブメニューを追加（タップで現在の削除・編集メニューが展開される）
+        //ケバブメニュー表示条件は、rulesのsource = RequirementSource.USERの場合
+        //（おそらく、RequirementUiModelにsourceを追加すべき）
+        //RowにもonClickのクリッカブル機能があるので、Rowとメニューの境界をなるべくわかりやすくする
     }
 }

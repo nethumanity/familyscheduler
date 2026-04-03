@@ -380,7 +380,7 @@ class TemplateEditViewModel(
 
         val template =
             DailyTemplate(
-                id = ui.id ?: UUID.randomUUID().toString(),  // 修正
+                id = ui.id ?: UUID.randomUUID().toString(),
                 person = ui.person,
                 name = ui.templateName,
                 schedules = schedules,
@@ -390,7 +390,6 @@ class TemplateEditViewModel(
         viewModelScope.launch {
             templateRepository.save(template)
 
-            //_uiState.value = TemplateEditUiState(person = Person.FATHER) // 挙動確認後、不要なら削除
             _saveCompleted.emit(Unit)
 
             Log.d("TemplateSave", "Saved template: $template")

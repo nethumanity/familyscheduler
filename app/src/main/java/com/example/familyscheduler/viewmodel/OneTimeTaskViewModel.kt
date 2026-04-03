@@ -82,7 +82,6 @@ class OneTimeTaskViewModel(
         viewModelScope.launch {
             repository.save(rule)
 
-            //_uiState.value = OneTimeTaskUiState() // 挙動確認後、不要なら削除
             _saveCompleted.emit(Unit)
 
             Log.d("OneTimeSave", "Saved rule: $rule")

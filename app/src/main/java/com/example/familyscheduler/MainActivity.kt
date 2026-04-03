@@ -10,6 +10,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -111,7 +114,29 @@ fun MainScreen() {
         skipPartiallyExpanded = true
     )
 
+    val snackbarHostState = remember { SnackbarHostState() }
+
     val currentDate by timelineViewModel.currentDate.collectAsState()
+
+    LaunchedEffect(Unit) {
+        timelineViewModel.events.collect { event ->
+
+            when (event) {
+
+                is TimelineViewModel.UiEvent.ShowUndoDeleteRequirement -> {
+
+                    val result = snackbarHostState.showSnackbar(
+                        message = "削除しました",
+                        actionLabel = "元に戻す"
+                    )
+
+                    if (result == SnackbarResult.ActionPerformed) {
+                        timelineViewModel.undoDeleteRequirement(event.rule)
+                    }
+                }
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -123,10 +148,10 @@ fun MainScreen() {
                     HeaderBar(
                         date = currentDate,
                         onPreviousDay = {
-                            timelineViewModel.changeDate(currentDate.minusDays(1)) //挙動要確認
+                            timelineViewModel.changeDate(currentDate.minusDays(1))
                         },
                         onNextDay = {
-                            timelineViewModel.changeDate(currentDate.plusDays(1)) //挙動要確認
+                            timelineViewModel.changeDate(currentDate.plusDays(1))
                         }
                     )
                 }
@@ -159,7 +184,10 @@ fun MainScreen() {
                     navController.navigate("settings")
                 }
             )
-        }
+        },
+
+        snackbarHost = { SnackbarHost(snackbarHostState) }
+
     ) { padding ->
 
         Box(Modifier.padding(padding)) {
@@ -195,9 +223,7 @@ fun MainScreen() {
                         if (id != null) {
                             viewModel.load(id)
                             viewModel.clearEditingTarget()
-                        } //else if (viewModel.uiState.value.form.name.isEmpty()) { //いらない可能性を検証中
-                        //    viewModel.resetUiState()
-                        //}
+                        }
                     }
 
                     ChildRoutineInputScreen(

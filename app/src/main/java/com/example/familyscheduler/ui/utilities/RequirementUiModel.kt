@@ -8,7 +8,8 @@ data class RequirementUiModel(
     val name: String,
     val startIndex: Int,
     val targetState: SlotState,
-    val mode: RequirementModeToday
+    val mode: RequirementModeToday,
+    val canEdit: Boolean // ← 追加
 )
 
 /* 将来向け

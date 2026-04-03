@@ -3,6 +3,7 @@ package com.example.familyscheduler.ui.utilities
 import com.example.familyscheduler.domain.requirement.HouseholdRequirement
 import com.example.familyscheduler.domain.requirement.HouseholdRequirementRule
 import com.example.familyscheduler.domain.requirement.RequirementOverride
+import com.example.familyscheduler.domain.requirement.RequirementSource
 import com.example.familyscheduler.domain.requirement.TimeRangeHouseholdRequirement
 import com.example.familyscheduler.domain.time.TimeAxis
 import com.example.familyscheduler.viewmodel.TimelineViewModel
@@ -20,12 +21,15 @@ fun List<HouseholdRequirementRule>.toUiModels(
             .filterIsInstance<TimeRangeHouseholdRequirement>()
             .find { it.sourceRuleId == rule.id }
 
+        val canEdit = (rule.source == RequirementSource.USER)
+
         RequirementUiModel(
             id = rule.id,
             name = rule.taskName,
             startIndex = req?.startIndex ?: TimeAxis.indexOf(rule.timeRange.start),
             targetState = rule.targetState,
-            mode = mode
+            mode = mode,
+            canEdit = canEdit
         )
     }
 }

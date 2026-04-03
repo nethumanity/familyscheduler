@@ -155,7 +155,7 @@ fun DailyOverviewSheet(
                     )
                     onToggle()
                 },
-                onLongClick = {
+                onLongClick = {     //ロングタップでのメニュー起動は廃止する
                     expandedMenuId = req.id
                 }
             )
@@ -173,7 +173,7 @@ fun DailyOverviewSheet(
                 )
                 DropdownMenuItem(
                     text = { Text("削除") },
-                    onClick = {
+                    onClick = {                             // タップ時、元に戻すためのSnackBarを出したい
                         expandedMenuId = null
                         viewModel.deleteRequirement(req.id)
                     }

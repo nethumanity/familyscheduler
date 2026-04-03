@@ -231,11 +231,6 @@ class ChildRoutineViewModel(
         val nurseryEndLatest: LocalTime? = null
     )
 
-    // 挙動確認後、削除
-    fun resetUiState() {
-        _formState.value = ChildRoutineUiState()
-    }
-
     fun load(childName: String) {
 
         viewModelScope.launch {

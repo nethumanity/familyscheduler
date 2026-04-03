@@ -37,8 +37,10 @@ import com.example.familyscheduler.domain.slot.TimeSlot
 import com.example.familyscheduler.seeder.SampleDataSeeder
 import com.example.familyscheduler.ui.utilities.EditingTarget
 import com.example.familyscheduler.ui.utilities.GuideState
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -56,6 +58,15 @@ class TimelineViewModel(
     private val childCareRuleConverter: ChildCareRuleConverter,
     private val requirementBuilder: RequirementBuilder
 ) : ViewModel() {
+
+    sealed class UiEvent {
+        data class ShowUndoDeleteRequirement(
+            val rule: HouseholdRequirementRule
+        ) : UiEvent()
+    }
+
+    private val _events = MutableSharedFlow<UiEvent>()
+    val events = _events.asSharedFlow()
 
     data class WarningDialogState(
         val index: Int,
@@ -308,8 +319,7 @@ class TimelineViewModel(
         val requirements =
             requirementBuilder.build(
                 mergedRules,
-                overridesForDate//,
-                //emptyMap()
+                overridesForDate
             )
 
         // ⑤ Solver
@@ -419,6 +429,11 @@ class TimelineViewModel(
     }
 
     fun deleteRequirement(ruleId: String) {
+
+        val rule = _uiState.value.rules
+            .find { it.id == ruleId }
+            ?: return
+
         viewModelScope.launch {
             requirementOverrideRepository.deleteByRuleId(ruleId)
             householdRequirementRepository.delete(ruleId)
@@ -428,8 +443,17 @@ class TimelineViewModel(
                 _editingTarget.value = null
             }
 
+            _events.emit(UiEvent.ShowUndoDeleteRequirement(rule))
+
             // UI通知（任意）
             //_deleteCompleted.emit(Unit)
+        }
+    }
+
+    fun undoDeleteRequirement(rule: HouseholdRequirementRule) {
+
+        viewModelScope.launch {
+            householdRequirementRepository.save(rule)
         }
     }
 
@@ -466,8 +490,6 @@ class TimelineViewModel(
             }
         }
     }
-
-
 
     fun showTemplateSheet(person: Person) {
         _selectedPerson.value = person
