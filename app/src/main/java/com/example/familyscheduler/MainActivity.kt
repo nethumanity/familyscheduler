@@ -343,7 +343,6 @@ fun MainScreen() {
                         MainSheet.DAILY_OVERVIEW -> {
                             DailyOverviewSheet(
                                 viewModel = timelineViewModel,
-                                onWarningClick = { timelineViewModel.onAvailabilityWarningClick(it) },
                                 onToggle = {},
                                 onEditRequirement = { ruleId ->
                                     timelineViewModel.startEditRequirement(ruleId)

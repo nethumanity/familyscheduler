@@ -59,7 +59,8 @@ class TimelineViewModel(
 
     data class WarningDialogState(
         val index: Int,
-        val proposals: List<FlexResolveProposal>
+        val reasonIndex: Int, //追加
+        val proposals: List<FlexResolveProposal> //たぶん、削除可能
     )
 
     data class TimelineUiState(
@@ -70,6 +71,7 @@ class TimelineViewModel(
         val childRoutines: List<ChildRoutineInput>,
         val slots: List<TimeSlot>,
         val evaluations: List<AvailabilityEvaluation>,
+        val evaluationsByIndex: Map<Int, AvailabilityEvaluation>, // ←追加
         val requirements: List<HouseholdRequirement>,
         val rules: List<HouseholdRequirementRule>,
     )
@@ -86,6 +88,7 @@ class TimelineViewModel(
             childRoutines = emptyList(),
             slots = emptyList(),
             evaluations = emptyList(),
+            evaluationsByIndex = emptyMap(),
             requirements = emptyList(),
             rules = emptyList()
         )
@@ -317,6 +320,9 @@ class TimelineViewModel(
                 overrides = overridesForDate
             )
 
+        val evaluationsByIndex =
+            result.evaluations.associateBy { it.index }
+
         return TimelineUiState(
             date = date,
             templates = templates,
@@ -325,6 +331,7 @@ class TimelineViewModel(
             childRoutines = routines,
             slots = result.slots,
             evaluations = result.evaluations,
+            evaluationsByIndex = evaluationsByIndex,
             requirements = requirements,
             rules = mergedRules
         )
@@ -553,15 +560,21 @@ class TimelineViewModel(
     }
 
     // 警告→提案→実行：編集機能（今後の強化ポイント）
-    fun onAvailabilityWarningClick(index: Int) {
-
-        val evaluation = _uiState.value.evaluations.find { it.index == index }
-            ?: return
+    fun onAvailabilityWarningClick(
+        index: Int,
+        reasonIndex: Int = 0
+    ) {
+        val evaluation = _uiState.value.evaluationsByIndex[index] ?: return
+        //val evaluation = _uiState.value.evaluations.find { it.index == index } ?: return
 
         if (evaluation.state != AvailabilityState.WARN) return
 
         _warningDialogState.value =
-            WarningDialogState(index, evaluation.flexProposals)
+            WarningDialogState(
+                index = index,
+                reasonIndex = reasonIndex,
+                proposals = evaluation.flexProposals
+            )
     }
 
     fun dismissWarningDialog() {

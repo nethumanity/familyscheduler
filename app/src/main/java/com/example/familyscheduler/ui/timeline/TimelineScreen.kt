@@ -132,10 +132,11 @@ fun TimelineScreen(
 
                         detectTapGestures(
                             onTap = {
-                                val evaluation = uiState.evaluations.find { it.index == index } //O(n2)問題
+                                val evaluation = uiState.evaluationsByIndex[index]
+                                //uiState.evaluations.find { it.index == index } //O(n2)問題
 
                                 if (evaluation?.state == AvailabilityState.WARN) {
-                                    viewModel.onAvailabilityWarningClick(index)
+                                    viewModel.onAvailabilityWarningClick(index, 0)
                                 }
                             },
                             onLongPress = { offset ->
@@ -165,7 +166,8 @@ fun TimelineScreen(
                     )
 
                     //val evaluation = evaluations.getOrNull(index)
-                    val evaluation = uiState.evaluations.find { it.index == index }
+                    //val evaluation = uiState.evaluations.find { it.index == index }
+                    val evaluation = uiState.evaluationsByIndex[index]
 
                     if (evaluation?.state == AvailabilityState.WARN) {
                         Spacer(modifier = Modifier.height(2.dp))
@@ -311,17 +313,17 @@ fun TimelineScreen(
 
     dialogState?.let { state ->
 
-        val evaluation = uiState.evaluations.find { it.index == state.index }
+        //val evaluation = uiState.evaluations.find { it.index == state.index }
+        val evaluation = uiState.evaluationsByIndex[state.index]
 
         WarningDialog(
             index = state.index,
             evaluation = evaluation,
-            flexProposals = state.proposals,
-
+            flexProposals = state.proposals, // evaluation?.flexProposals ?: emptyList(), でもOK?
+            initialPage = state.reasonIndex,
             onDismiss = {
                 viewModel.dismissWarningDialog()
             },
-
             onApplyProposal = {
                 viewModel.applyFlexResolveProposal(it)
             }

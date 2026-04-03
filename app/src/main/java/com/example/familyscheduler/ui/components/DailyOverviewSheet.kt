@@ -37,7 +37,6 @@ import com.example.familyscheduler.viewmodel.TimelineViewModel
 @Composable
 fun DailyOverviewSheet(
     viewModel: TimelineViewModel,
-    onWarningClick: (Int) -> Unit,
     onToggle: () -> Unit,
     onEditRequirement: (String) -> Unit
 ) {
@@ -87,17 +86,20 @@ fun DailyOverviewSheet(
 
             }
 
-            warnings.forEach { eval ->
+            items(warnings) { eval ->
+                eval.reasons.forEachIndexed { i, reason ->
 
-                val reasons = eval.reasons
-
-                items(reasons) { reason ->
                     val blockText = renderBlockingPersons(reason)
 
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { onWarningClick(eval.index) }
+                            .clickable {
+                                viewModel.onAvailabilityWarningClick(
+                                index = eval.index,
+                                reasonIndex = i
+                                )
+                            } //onWarningClick(eval.index, i) }
                             .padding(vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {

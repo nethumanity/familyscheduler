@@ -1,7 +1,9 @@
 package com.example.familyscheduler.ui.utilities
 
+import com.example.familyscheduler.domain.evaluation.FlexResolveProposal
 import com.example.familyscheduler.domain.evaluation.MissingReason
 import com.example.familyscheduler.domain.person.Person
+import com.example.familyscheduler.domain.time.TimeAxis
 
 fun renderBlockingPersons(reason: MissingReason): String {
     val persons = reason.blockingPersons.person   // List<Person>
@@ -39,3 +41,15 @@ fun renderMissingReason(reason: MissingReason): String {
 
 fun renderMissingReasonCount(reason: MissingReason): String =
     "${reason.assignedCount}/${reason.requiredCount}"
+
+fun renderFlexProposal(proposal: FlexResolveProposal): String {
+    val persons = proposal.persons.joinToString("・") { it.name }
+
+    val minutes =
+        (proposal.candidateIndex - proposal.initialIndex) *
+                TimeAxis.stepMinutes
+
+    val direction = if (minutes > 0) "後ろに" else "前に"
+
+    return "$persons の ${proposal.requirementName} を ${kotlin.math.abs(minutes)}分$direction ずらす"
+}
