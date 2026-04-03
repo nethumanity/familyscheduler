@@ -22,7 +22,7 @@ object SampleDataSeeder {
         repo: TemplateRepository
     ) {
         TemplateSamples.defaultTemplates()
-            .forEach { repo.saveTemplate(it) }
+            .forEach { repo.save(it) }
     }
 
     private suspend fun seedRequirements(
@@ -30,7 +30,7 @@ object SampleDataSeeder {
     ) {
 
         RequirementSamples.defaultRequirements()
-            .forEach { repo.add(it) }
+            .forEach { repo.save(it) }
     }
 
     private suspend fun seedRoutines(
@@ -38,7 +38,7 @@ object SampleDataSeeder {
     ) {
 
         RoutineSamples.defaultRoutine()
-            .forEach { repo.add(it) }
+            .forEach { repo.save(it) }
     }
 
 }

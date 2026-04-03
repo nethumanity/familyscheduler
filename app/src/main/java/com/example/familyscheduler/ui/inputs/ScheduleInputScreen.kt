@@ -41,7 +41,6 @@ fun ScheduleInputScreen(
     onSaved: () -> Unit,
     onBack: () -> Unit
 ) {
-
     val state by viewModel.uiState.collectAsState()
 
     LazyColumn(
@@ -329,7 +328,7 @@ fun ScheduleInputScreen(
         item {
             Spacer(Modifier.height(8.dp))
 
-            val isValid =
+            val isValid =                           // VMに関数として持っていく
                 state.templateName.isNotBlank() &&
                         state.workStart != state.workEnd &&
                         state.goCommuteStart != state.goCommuteEnd &&
@@ -351,7 +350,7 @@ fun ScheduleInputScreen(
         }
     }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(viewModel) {
         viewModel.saveCompleted.collect {
             onSaved()
         }

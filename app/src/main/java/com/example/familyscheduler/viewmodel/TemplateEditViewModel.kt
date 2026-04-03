@@ -29,7 +29,7 @@ class TemplateEditViewModel(
 
     data class TemplateEditUiState(
 
-        val id: String? = null,   // ← 追加
+        val id: String? = null,
         val person: Person,
         val templateName: String = "",
 
@@ -388,9 +388,12 @@ class TemplateEditViewModel(
             )
 
         viewModelScope.launch {
-            templateRepository.saveTemplate(template)
-            Log.d("TemplateSave", "Saved template: $template")
+            templateRepository.save(template)
+
+            //_uiState.value = TemplateEditUiState(person = Person.FATHER) // 挙動確認後、不要なら削除
             _saveCompleted.emit(Unit)
+
+            Log.d("TemplateSave", "Saved template: $template")
         }
     }
     fun load(template: DailyTemplate) {

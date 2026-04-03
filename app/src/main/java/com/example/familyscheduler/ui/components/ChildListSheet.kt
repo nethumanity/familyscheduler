@@ -37,9 +37,10 @@ fun ChildListSheet(
     onEditChildRoutine: (String) -> Unit,
     onDeleteChildRoutine: () -> Unit
 ) {
+    val uiState by viewModel.uiState.collectAsState()
 
-    val children by viewModel.children.collectAsState()
-    val overrides by viewModel.overrides.collectAsState()
+    val children = uiState.routines
+    val overrides = uiState.overrides
 
     var menuPosition by remember { mutableStateOf<Offset?>(null) }
     var expandedMenuId by remember { mutableStateOf<String?>(null) }
@@ -73,14 +74,14 @@ fun ChildListSheet(
 
             items(children) { child ->
 
-                val routine = viewModel.resolveTodayRoutine(
+                val todayRoutine = viewModel.resolveTodayRoutine(
                     child,
                     currentDate,
                     overrides)
 
                 ChildRow(
                     child = child,
-                    routine = routine,
+                    routine = todayRoutine,
                     onToggle = {
                         viewModel.toggleTodayRoutine(child, currentDate)
                         onToggle()

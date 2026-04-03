@@ -1,6 +1,5 @@
 package com.example.familyscheduler.domain.requirement
 
-import com.example.familyscheduler.domain.person.Person
 import com.example.familyscheduler.domain.slot.FlexWindowParameters
 import com.example.familyscheduler.domain.time.TimeAxis
 
@@ -8,12 +7,11 @@ class RequirementBuilder {
 
     fun build(
         rules: List<HouseholdRequirementRule>,
-        overrides: List<RequirementOverride>,
-        assignedPersonsMap: Map<String, List<Person>>
+        overrides: List<RequirementOverride>
     ): List<HouseholdRequirement> {
 
         val activeRules =
-            applyToggleOverrides(rules, overrides, assignedPersonsMap)
+            applyToggleOverrides(rules, overrides)
 
         return activeRules
             .map { it.toRequirement() }
@@ -22,8 +20,7 @@ class RequirementBuilder {
 
     private fun applyToggleOverrides(
         rules: List<HouseholdRequirementRule>,
-        overrides: List<RequirementOverride>,
-        assignedPersonsMap: Map<String, List<Person>>
+        overrides: List<RequirementOverride>
     ): List<HouseholdRequirementRule> {
 
         val toggleMap = overrides
@@ -38,18 +35,9 @@ class RequirementBuilder {
 
                 RequirementModeToday.CANCELED -> null
 
-                RequirementModeToday.REVERSE -> {       // 適用条件はVMのToggle関数で管理
-                    val assignedPersons =
-                        assignedPersonsMap[rule.id] ?: emptyList()
-
-                    val reversedPerson =
-                            rule.allowedPersons - assignedPersons.toSet()
-
-                    val reversed = rule.copy(
-                        allowedPersons = reversedPerson
-                    )
-                    reversed
-                }
+                RequirementModeToday.REVERSE ->  rule
+                // 適用条件はVMのToggle関数で管理
+                // ロジックはSolverで処理
 
                 RequirementModeToday.AUTO -> rule
             }

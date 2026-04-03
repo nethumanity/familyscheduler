@@ -26,6 +26,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.familyscheduler.domain.evaluation.AvailabilityEvaluation
 import com.example.familyscheduler.domain.evaluation.AvailabilityState
+import com.example.familyscheduler.domain.requirement.TimeRangeHouseholdRequirement
 import com.example.familyscheduler.domain.time.TimeAxis
 import com.example.familyscheduler.ui.utilities.renderBlockingPersons
 import com.example.familyscheduler.ui.utilities.renderMissingReasonCount
@@ -40,11 +41,7 @@ fun DailyOverviewSheet(
     onToggle: () -> Unit,
     onEditRequirement: (String) -> Unit
 ) {
-    val currentDate by viewModel.currentDate.collectAsState()
-    val rules by viewModel.householdRequirementRules.collectAsState()
-    val requirements by viewModel.householdRequirements.collectAsState()
-    val evaluations by viewModel.evaluations.collectAsState()
-    val overrides by viewModel.overrides.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
 
     var menuPosition by remember { mutableStateOf<Offset?>(null) }
     var expandedMenuId by remember { mutableStateOf<String?>(null) }
@@ -55,14 +52,14 @@ fun DailyOverviewSheet(
     fun List<AvailabilityEvaluation>.extractWarnings() =
         filter { it.state == AvailabilityState.WARN }
 
-    val warnings = evaluations.extractWarnings()
+    val warnings = uiState.evaluations.extractWarnings()
     val warningMap = warnings
         .flatMap { it.reasons }
         .associateBy { it.sourceRuleId }
-    val uiRequirements = rules
+    val uiRequirements = uiState.rules
         .toUiModels(
-            requirements = requirements,
-            overrides = overrides,
+            requirements = uiState.requirements,
+            overrides = uiState.overrides,
             viewModel = viewModel
         )
         .filter { it.name.isNotEmpty() }
@@ -73,7 +70,7 @@ fun DailyOverviewSheet(
         contentPadding = PaddingValues(16.dp)
     ) {
         item {
-            Text("📅 ${currentDate}", fontWeight = FontWeight.Bold)
+            Text("📅 ${uiState.date}", fontWeight = FontWeight.Bold)
 
         }
         item {
@@ -111,7 +108,7 @@ fun DailyOverviewSheet(
 
                         val nameText = if (reason.requirementName == "") {
                             slotStateLabel(
-                                rules.first { it.id == reason.sourceRuleId }.targetState
+                                uiState.rules.first { it.id == reason.sourceRuleId }.targetState
                             )
                         } else {
                             reason.requirementName
@@ -148,7 +145,12 @@ fun DailyOverviewSheet(
                 count = count,
                 assignedPersons = assignedPersons,
                 onClick = {
-                    viewModel.toggleRequirementMode(rules.first { it.id == req.id })
+                    viewModel.toggleRequirementMode(
+                        uiState.rules.first { it.id == req.id },
+                        uiState.requirements
+                            .filterIsInstance<TimeRangeHouseholdRequirement>()
+                            .firstOrNull { it.sourceRuleId == req.id }
+                    )
                     onToggle()
                 },
                 onLongClick = {

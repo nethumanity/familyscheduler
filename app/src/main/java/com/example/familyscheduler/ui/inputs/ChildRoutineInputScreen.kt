@@ -38,7 +38,9 @@ fun ChildRoutineInputScreen(
     onBack: () -> Unit,
     onSaved: () -> Unit
 ) {
-    val state by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
+
+    val form = uiState.form
 
     LazyColumn (
         modifier = Modifier
@@ -61,7 +63,7 @@ fun ChildRoutineInputScreen(
         }
         item {
             OutlinedTextField(
-                value = state.name,
+                value = form.name,
                 onValueChange = viewModel::updateName,
                 modifier = Modifier.fillMaxWidth(),
                 label = { Text("名前")},
@@ -71,14 +73,14 @@ fun ChildRoutineInputScreen(
         item {
             TimeDropdownPicker(
                 label = "起床",
-                selectedTime = state.wakeUpTime,
+                selectedTime = form.wakeUpTime,
                 onTimeSelected = viewModel::updateWakeUpTime
             )
         }
         item {
             TimeDropdownPicker(
                 label = "就寝",
-                selectedTime = state.sleepTime,
+                selectedTime = form.sleepTime,
                 onTimeSelected = viewModel::updateSleepTime
             )
         }
@@ -88,7 +90,7 @@ fun ChildRoutineInputScreen(
             Row(verticalAlignment = Alignment.CenterVertically) {
 
                 RadioButton(
-                    selected = state.hasNursery,
+                    selected = form.hasNursery,
                     onClick = { viewModel.updateHasNursery(true) }
                 )
                 Text("あり")
@@ -96,7 +98,7 @@ fun ChildRoutineInputScreen(
                 Spacer(Modifier.width(16.dp))
 
                 RadioButton(
-                    selected = !state.hasNursery,
+                    selected = !form.hasNursery,
                     onClick = { viewModel.updateHasNursery(false) }
                 )
                 Text("なし")
@@ -105,7 +107,7 @@ fun ChildRoutineInputScreen(
             Spacer(Modifier.height(16.dp))
 
             // ===== 保育園ありのときのみ =====
-            if (state.hasNursery) {
+            if (form.hasNursery) {
 
                 Text("登園日", fontWeight = FontWeight.Bold)
 
@@ -114,7 +116,7 @@ fun ChildRoutineInputScreen(
                 ) {
                     DayOfWeek.entries.forEach { day ->
 
-                        val selected = state.daysOfWeek.contains(day)
+                        val selected = form.daysOfWeek.contains(day)
 
                         FilterChip(
                             selected = selected,
@@ -135,19 +137,19 @@ fun ChildRoutineInputScreen(
 
                 TimeDropdownPicker(
                     label = "希望時刻",
-                    selectedTime = state.nurseryStart,
+                    selectedTime = form.nurseryStart,
                     onTimeSelected = viewModel::updateNurseryStart
                 )
 
                 TimeDropdownPicker(
                     label = "最早時刻（任意）",
-                    selectedTime = state.nurseryStartEarliest,
+                    selectedTime = form.nurseryStartEarliest,
                     onTimeSelected = viewModel::updateNurseryStartEarliest
                 )
 
                 TimeDropdownPicker(
                     label = "最遅時刻（任意）",
-                    selectedTime = state.nurseryStartLatest,
+                    selectedTime = form.nurseryStartLatest,
                     onTimeSelected = viewModel::updateNurseryStartLatest
                 )
 
@@ -157,19 +159,19 @@ fun ChildRoutineInputScreen(
 
                 TimeDropdownPicker(
                     label = "希望時刻",
-                    selectedTime = state.nurseryEnd,
+                    selectedTime = form.nurseryEnd,
                     onTimeSelected = viewModel::updateNurseryEnd
                 )
 
                 TimeDropdownPicker(
                     label = "最早時刻（任意）",
-                    selectedTime = state.nurseryEndEarliest,
+                    selectedTime = form.nurseryEndEarliest,
                     onTimeSelected = viewModel::updateNurseryEndEarliest
                 )
 
                 TimeDropdownPicker(
                     label = "最遅時刻（任意）",
-                    selectedTime = state.nurseryEndLatest,
+                    selectedTime = form.nurseryEndLatest,
                     onTimeSelected = viewModel::updateNurseryEndLatest
                 )
             }
@@ -177,19 +179,7 @@ fun ChildRoutineInputScreen(
         item{
             Spacer(Modifier.height(8.dp))
 
-            val isValid =
-                if (state.hasNursery) {
-                    state.name.isNotBlank() &&
-                            state.wakeUpTime != null &&
-                            state.sleepTime != null &&
-                            state.daysOfWeek.isNotEmpty() &&
-                            state.nurseryStart != null &&
-                            state.nurseryEnd != null
-                } else {
-                    state.name.isNotBlank() &&
-                            state.wakeUpTime != null &&
-                            state.sleepTime != null
-                }
+            val isValid = viewModel.isValid(form)
 
             Button(
                 onClick = { viewModel.onSave() },
@@ -203,7 +193,7 @@ fun ChildRoutineInputScreen(
 
     }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(viewModel) {
         viewModel.saveCompleted.collect {
             onSaved()
         }

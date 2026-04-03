@@ -2,33 +2,45 @@ package com.example.familyscheduler.data.repository
 
 import com.example.familyscheduler.domain.routine.ChildTodayRoutine
 import com.example.familyscheduler.domain.routine.repository.ChildOverrideRepository
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
 import java.time.LocalDate
 
 class InMemoryChildOverrideRepository: ChildOverrideRepository {
 
-    private val overrides =
-        mutableMapOf<Pair<String, LocalDate>, ChildTodayRoutine>()
+    private val _childOverrides =
+        MutableStateFlow<Map<Pair<String, LocalDate>, ChildTodayRoutine>>(emptyMap())
 
+    override fun getAllFlow(): Flow<Map<Pair<String, LocalDate>, ChildTodayRoutine>> {
+        return _childOverrides
+    }
+
+    // 編集画面用（いらない？）
     override fun getOverride(
         childName: String,
         date: LocalDate
-    ): ChildTodayRoutine? {
-        return overrides[childName to date]
+    ): Flow<ChildTodayRoutine?> {
+        return _childOverrides
+            .map { map ->
+                map[childName to date]
+            }
     }
 
-    override fun saveOverride(
+    override suspend fun saveOverride(
         childName: String,
         date: LocalDate,
         routine: ChildTodayRoutine
     ) {
-        overrides[childName to date] = routine
-    }
-
-    override fun getAll(): Map<Pair<String, LocalDate>, ChildTodayRoutine> {
-        return overrides.toMap()
+        _childOverrides.update { old ->
+            old + ((childName to date) to routine)
+        }
     }
 
     override suspend fun deleteByChildName(childName: String) {
-        overrides.entries.removeAll { it.key.first == childName }
+        _childOverrides.update { old ->
+            old.filterKeys { (name, _) -> name != childName }
+        }
     }
 }

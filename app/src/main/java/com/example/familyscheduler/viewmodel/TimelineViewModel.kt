@@ -1,9 +1,6 @@
 package com.example.familyscheduler.viewmodel
 
 import android.util.Log
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.familyscheduler.domain.evaluation.AvailabilityEngine
@@ -17,6 +14,7 @@ import com.example.familyscheduler.domain.requirement.RequirementBuilder
 import com.example.familyscheduler.domain.requirement.RequirementModeToday
 import com.example.familyscheduler.domain.requirement.RequirementOverride
 import com.example.familyscheduler.domain.requirement.RequirementShiftOverride
+import com.example.familyscheduler.domain.requirement.RequirementSource
 import com.example.familyscheduler.domain.requirement.RequirementToggleOverride
 import com.example.familyscheduler.domain.requirement.TimeRangeHouseholdRequirement
 import com.example.familyscheduler.domain.requirement.repository.HouseholdRequirementRepository
@@ -24,7 +22,9 @@ import com.example.familyscheduler.domain.requirement.repository.RequirementOver
 import com.example.familyscheduler.domain.routine.ChildCareRuleConverter
 import com.example.familyscheduler.domain.routine.ChildRoutineBuilder
 import com.example.familyscheduler.domain.routine.ChildRoutineInput
+import com.example.familyscheduler.domain.routine.ChildTodayRoutine
 import com.example.familyscheduler.domain.routine.RoutineResolver
+import com.example.familyscheduler.domain.routine.repository.ChildOverrideRepository
 import com.example.familyscheduler.domain.routine.repository.ChildRoutineRepository
 import com.example.familyscheduler.domain.schedule.DailyState
 import com.example.familyscheduler.domain.schedule.DailyTemplate
@@ -34,12 +34,12 @@ import com.example.familyscheduler.domain.schedule.repository.TemplateRepository
 import com.example.familyscheduler.domain.slot.FlexWindowParameters
 import com.example.familyscheduler.domain.slot.SlotState
 import com.example.familyscheduler.domain.slot.TimeSlot
-import com.example.familyscheduler.domain.time.TimeAxis
 import com.example.familyscheduler.seeder.SampleDataSeeder
 import com.example.familyscheduler.ui.utilities.EditingTarget
 import com.example.familyscheduler.ui.utilities.GuideState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -50,6 +50,7 @@ class TimelineViewModel(
     private val householdRequirementRepository: HouseholdRequirementRepository,
     private val requirementOverrideRepository: RequirementOverrideRepository,
     private val childRoutineRepository: ChildRoutineRepository,
+    private val childOverrideRepository: ChildOverrideRepository,
     private val routineResolver: RoutineResolver,
     private val childRoutineBuilder: ChildRoutineBuilder,
     private val childCareRuleConverter: ChildCareRuleConverter,
@@ -61,133 +62,170 @@ class TimelineViewModel(
         val proposals: List<FlexResolveProposal>
     )
 
-    private val _currentDate =
-        MutableStateFlow(LocalDate.now())
-    val currentDate: StateFlow<LocalDate> =
-        _currentDate
+    data class TimelineUiState(
+        val date: LocalDate,
+        val templates: List<DailyTemplate>,
+        val dailyStates: List<DailyState>,
+        val overrides: List<RequirementOverride>,
+        val childRoutines: List<ChildRoutineInput>,
+        val slots: List<TimeSlot>,
+        val evaluations: List<AvailabilityEvaluation>,
+        val requirements: List<HouseholdRequirement>,
+        val rules: List<HouseholdRequirementRule>,
+    )
 
-    private val _templates =
-        MutableStateFlow<List<DailyTemplate>>(emptyList())
-    val templates: StateFlow<List<DailyTemplate>> = _templates
+    private val _currentDate = MutableStateFlow(LocalDate.now())
+    val currentDate: StateFlow<LocalDate> = _currentDate
 
-    private val _dailyStates =
-        MutableStateFlow<List<DailyState>>(emptyList())
-    val dailyStates: StateFlow<List<DailyState>> =
-        _dailyStates
+    private val _uiState = MutableStateFlow(
+        TimelineUiState(
+            date = LocalDate.now(),
+            templates = emptyList(),
+            dailyStates = emptyList(),
+            overrides = emptyList(),
+            childRoutines = emptyList(),
+            slots = emptyList(),
+            evaluations = emptyList(),
+            requirements = emptyList(),
+            rules = emptyList()
+        )
+    )
+    val uiState: StateFlow<TimelineUiState> = _uiState
 
-    private val _slots =
-        MutableStateFlow<List<TimeSlot>>(emptyList())
-    val slots: StateFlow<List<TimeSlot>> =
-        _slots
-
-    private val _childRoutines =
-        MutableStateFlow<List<ChildRoutineInput>>(emptyList())
-    val childRoutines: StateFlow<List<ChildRoutineInput>> =
-        _childRoutines
-
-    private val _householdRequirementRules =
-        MutableStateFlow<List<HouseholdRequirementRule>>(emptyList())
-    val householdRequirementRules: StateFlow<List<HouseholdRequirementRule>> =
-        _householdRequirementRules
-
-    private val _householdRequirements =
-        MutableStateFlow<List<HouseholdRequirement>>(emptyList())
-    val householdRequirements: StateFlow<List<HouseholdRequirement>> =
-        _householdRequirements
-
-    private val _overrides =
-        MutableStateFlow<List<RequirementOverride>>(emptyList())
-
-    val overrides: StateFlow<List<RequirementOverride>> =
-        _overrides
-
-    private val _evaluations =
-        MutableStateFlow<List<AvailabilityEvaluation>>(emptyList())
-    val evaluations: StateFlow<List<AvailabilityEvaluation>> =
-        _evaluations
+    private val ENABLE_SAMPLE_DATA = true   //falseでサンプル注入なし
 
     private val _warningDialogState =
         MutableStateFlow<WarningDialogState?>(null)
     val warningDialogState: StateFlow<WarningDialogState?> =
         _warningDialogState
 
+    private val _selectedPerson = MutableStateFlow<Person?>(null)
+    val selectedPerson: StateFlow<Person?> = _selectedPerson
+
     private val _guideState = MutableStateFlow(GuideState())
     val guideState: StateFlow<GuideState> = _guideState
-
-    var editingTemplateFor by mutableStateOf<Person?>(null)
-        private set
 
     private val _editingTarget = MutableStateFlow<EditingTarget?>(null)
     val editingTarget: StateFlow<EditingTarget?> = _editingTarget
 
-    private val ENABLE_SAMPLE_DATA = true   // falseでサンプル注入なし
-
-    // 初期化
     init {
+        // -------------------------------
+        // ① 初期データ投入（必要なら）
+        // -------------------------------
         viewModelScope.launch {
-
-            if (ENABLE_SAMPLE_DATA &&
-                templateRepository.getTemplates().isEmpty() &&
-                householdRequirementRepository.getByDate(_currentDate.value).isEmpty() &&
-                childRoutineRepository.getAll().isEmpty()) {
-
+            if (ENABLE_SAMPLE_DATA) {
                 SampleDataSeeder.seed(
                     templateRepository,
                     householdRequirementRepository,
                     childRoutineRepository
                 )
-
-                _guideState.value = GuideState(false, false, false)
             }
-
-            loadForDate(LocalDate.now())    // 二重のlaunch
         }
-    }
+        // -------------------------------
+        // ② DailyState不足分の補完（副作用）
+        // -------------------------------
+        viewModelScope.launch {
+            combine(
+                _currentDate,
+                templateRepository.getAllFlow(),
+                dailyStateRepository.getAllFlow()
+            ) { date, templates, statesMap ->
 
-    // 描画機能：日付ロード（中核）
-    fun loadForDate(date: LocalDate) {
+                val existing =
+                    statesMap
+                        .filterKeys { it.first == date }
+                        .values
+                        .toList()
 
+                buildMissingStates(date, templates, existing)
+
+            }.collect { missingList ->
+
+                missingList.forEach {
+                    dailyStateRepository.save(it)
+                }
+            }
+        }
+        // -------------------------------
+        // ③ UI計算（純関数）
+        // -------------------------------
         viewModelScope.launch {
 
-            if (_currentDate.value != date) {
-                _currentDate.value = date
+            val baseFlow = combine(
+                _currentDate,
+                templateRepository.getAllFlow(),
+                dailyStateRepository.getAllFlow()
+            ) { date: LocalDate,
+                templates: List<DailyTemplate>,
+                states: Map<Pair<LocalDate, Person>, DailyState> ->
+
+                Triple(date, templates, states)
             }
 
-            val states = ensureDailyStates(date)
+            val ruleFlow = combine(
+                householdRequirementRepository.getAllFlow(),
+                requirementOverrideRepository.getAllFlow()
+            ) { rules: List<HouseholdRequirementRule>,
+                overrides: List<RequirementOverride> ->
 
-            updateSlots(states)
+                rules to overrides
+            }
 
-            buildChildRoutineRules(date)
+            val childFlow = combine(
+                childRoutineRepository.getAllFlow(),
+                childOverrideRepository.getAllFlow()
+            ) { routines: List<ChildRoutineInput>,
+                childOverrides: Map<Pair<String, LocalDate>, ChildTodayRoutine> ->
 
-            recomputeAvailability()
+                routines to childOverrides
+            }
+
+            combine(
+                baseFlow,
+                ruleFlow,
+                childFlow
+            ) { base, rule, child ->
+
+                val (date, templates, statesMap) = base
+                val (rules, overrides) = rule
+                val (routines, childOverrides) = child
+
+                computeUiState(
+                    date = date,
+                    templates = templates,
+                    statesMap = statesMap,
+                    rules = rules,
+                    overrides = overrides,
+                    routines = routines,
+                    childOverrides = childOverrides
+                )
+
+            }.collect { state ->
+                Log.d("TimelineVM", buildUiLog(state))
+                _uiState.value = state
+            }
+
         }
     }
 
-    suspend fun ensureDailyStates(date: LocalDate): List<DailyState> {
+    private fun buildMissingStates(
+        date: LocalDate,
+        templates: List<DailyTemplate>,
+        existing: List<DailyState>
+    ): List<DailyState> {
 
-        val states = dailyStateRepository.get(date)
+        val existingPersons = existing.map { it.person }.toSet()
+        val missing = Person.entries - existingPersons
 
-        val existing = states.map { it.person }.toSet()
-        val missing = Person.entries - existing
+        if (missing.isEmpty()) return emptyList()
 
-        if (missing.isEmpty()) return states
-
-        val templates = templateRepository.getTemplates()
-
-        _templates.value = templates
-
-        val generated = missing.flatMap { person ->
-
+        return missing.flatMap { person ->
             generateDailyStatesFromTemplates(
                 person,
-                templates.filter { it.person == person},
+                templates.filter { it.person == person },
                 date
             )
         }
-
-        generated.forEach { dailyStateRepository.save(it) }
-
-        return dailyStateRepository.get(date)
     }
 
     private fun generateDailyStatesFromTemplates(
@@ -213,7 +251,7 @@ class TimelineViewModel(
         }
     }
 
-    fun List<DailyTemplate>.resolveFor(date: LocalDate): List<DailyTemplate> {
+    private fun List<DailyTemplate>.resolveFor(date: LocalDate): List<DailyTemplate> {
 
         return this
             .asSequence()
@@ -226,95 +264,80 @@ class TimelineViewModel(
             .toList()
     }
 
-    private fun updateSlots(states: List<DailyState>) {
-        _dailyStates.value = states
-        _slots.value = states.flatMap { it.slots }
-    }
+    private fun computeUiState(
+        date: LocalDate,
+        templates: List<DailyTemplate>,
+        statesMap: Map<Pair<LocalDate, Person>, DailyState>,
+        rules: List<HouseholdRequirementRule>,
+        overrides: List<RequirementOverride>,
+        routines: List<ChildRoutineInput>,
+        childOverrides: Map<Pair<String, LocalDate>, ChildTodayRoutine>
+    ): TimelineUiState {
 
-    private suspend fun buildChildRoutineRules(date: LocalDate) {
+        // ① DailyState抽出
+        val states =
+            statesMap
+                .filterKeys { it.first == date }
+                .values
+                .toList()
 
-        val routines =
-            childRoutineRepository.getAll()
+        val slots = states.flatMap { it.slots }
 
-        _childRoutines.value = routines
-
+        // ② ChildRoutine → Rule
         val resolved =
-            routineResolver.resolve(routines, date)
+            routineResolver.resolve(routines, date, childOverrides)
 
         val blocks =
             childRoutineBuilder.build(date.dayOfWeek, resolved)
 
-        val rules =
+        val childRules =
             childCareRuleConverter.convert(blocks, date)
 
-        householdRequirementRepository.clearChildRoutineRules()
+        val mergedRules =
+            rules.filter { it.source != RequirementSource.CHILD_ROUTINE } +
+                    childRules
 
-        householdRequirementRepository.saveAll(rules)
-    }
+        // ③ Overrideフィルタ
+        val overridesForDate =
+            overrides.filter { it.date == date }
 
-    // UNASSIGNEDを探しtargetStateにする（割り当て）
-    // →余ったUNASSIGNEDはFREEにする（補完）
-    // →requiredCountを満たしているか全スロットを確認し、満たしてないRowに警告をだす（評価）
-    private suspend fun recomputeAvailability() {
-
-        val date = _currentDate.value
-
-        val rules =
-            householdRequirementRepository.getByDate(date)
-
-        _householdRequirementRules.value = rules
-
-        val overrides = requirementOverrideRepository.getOverrides(date)
-
-        val assignedPersonsMap: Map<String, List<Person>> =
-            _householdRequirementRules.value
-                .associate { rule ->
-                    val persons = getAssignedPersons(rule.id)
-
-                    rule.id to persons
-                }
-
-        val originalSlots = _dailyStates.value.flatMap { it.slots }
-
+        // ④ Requirement生成
         val requirements =
-            requirementBuilder.build(rules, overrides, assignedPersonsMap)
-
-        _householdRequirements.value = requirements
-
-        val result =
-            AvailabilityEngine.recompute(
-                originalSlots = originalSlots,
-                requirements = requirements
+            requirementBuilder.build(
+                mergedRules,
+                overridesForDate//,
+                //emptyMap()
             )
 
-        _slots.value = result.slots.toList()
-        _evaluations.value = result.evaluations
+        // ⑤ Solver
+        val result =
+            AvailabilityEngine.recompute(
+                originalSlots = slots,
+                requirements = requirements,
+                overrides = overridesForDate
+            )
 
-        Log.d("TimelineVM", "rules size = ${rules.size}")
-        Log.d("TimelineVM", "rules = ${rules}")
-
-        Log.d("TimelineVM", "reqs size = ${requirements.size}")
-        Log.d("TimelineVM", "reqs = ${requirements}")
-
-        Log.d("TimelineVM", "overrides size = ${overrides.size}")
-        Log.d("TimelineVM", "overrides = ${overrides}")
-
-        result.slots.forEach { slot ->
-            Log.d("TimelineVM", "slot = ${slot}")
-        }
-        result.evaluations.forEach { evaluation ->
-            Log.d("TimelineVM", "evaluation = ${evaluation}")
-        }
+        return TimelineUiState(
+            date = date,
+            templates = templates,
+            dailyStates = states,
+            overrides = overridesForDate,
+            childRoutines = routines,
+            slots = result.slots,
+            evaluations = result.evaluations,
+            requirements = requirements,
+            rules = mergedRules
+        )
     }
 
     fun getAssignedPersons(ruleId: String): List<Person> {
 
-        val req = _householdRequirements.value
+        val req = _uiState.value.requirements
             .filterIsInstance<TimeRangeHouseholdRequirement>()
             .firstOrNull { it.sourceRuleId == ruleId }
             ?: return emptyList()
 
-        return _slots.value
+        return _uiState.value.slots
             .filter {
                 it.index == req.startIndex &&
                         it.state == req.targetState &&
@@ -326,11 +349,12 @@ class TimelineViewModel(
 
     //編集機能（状態変更）
     fun toggleRequirementMode(
-        rule: HouseholdRequirementRule
+        rule: HouseholdRequirementRule,
+        req: TimeRangeHouseholdRequirement?
     ) {
         viewModelScope.launch {
 
-            val current = resolveMode(rule.id, _overrides.value)
+            val current = resolveMode(rule.id, _uiState.value.overrides)
 
             val assignedPersons = getAssignedPersons(rule.id)
 
@@ -340,11 +364,11 @@ class TimelineViewModel(
                 else emptyList()
 
             val reverseAssignable =
-                if (reversedPerson.size == 1)
+                if (req != null && reversedPerson.size == 1) // req != nullの代わりに↓を有効にしてもいい
                     AvailabilityEngine.canAssign(
                         reversedPerson.single(),
-                        TimeAxis.indexOf(rule.timeRange.start),
-                        _slots.value,
+                        req.startIndex, //?: TimeAxis.indexOf(rule.timeRange.start),
+                        _uiState.value.slots,
                         rule.targetState
                     )
                 else false
@@ -360,8 +384,6 @@ class TimelineViewModel(
                     mode = next
                 )
             )
-
-            _overrides.value = requirementOverrideRepository.getOverrides(_currentDate.value)
         }
     }
 
@@ -398,7 +420,6 @@ class TimelineViewModel(
             if (_editingTarget.value?.requirementId == ruleId) {
                 _editingTarget.value = null
             }
-            refreshAvailability()
 
             // UI通知（任意）
             //_deleteCompleted.emit(Unit)
@@ -416,7 +437,7 @@ class TimelineViewModel(
             // 現状では_dailyStatesのスロットと_slotsのスロットは一致しないことに留意
             // proposalの実行処理の仕様によってはバグるかも
             // （代替案）TimeSlotにisUserLocked = falseを追加し、newSlotsはtrueにする
-            val states = _dailyStates.value.map { state ->
+            val states = _uiState.value.dailyStates.map { state ->
 
                 if (state.person != person) return@map state
 
@@ -436,25 +457,28 @@ class TimelineViewModel(
             states.forEach {
                 dailyStateRepository.save(it)
             }
-
-            updateSlots(states)
-            recomputeAvailability()
         }
     }
 
+
+
     fun showTemplateSheet(person: Person) {
-
-        editingTemplateFor = person
-
-        viewModelScope.launch {
-            _templates.value =
-                templateRepository.getTemplatesForPerson(person)
-        }
+        _selectedPerson.value = person
     }
 
     fun dismissTemplateSheet() {
-        editingTemplateFor = null
+        _selectedPerson.value = null
     }
+
+    val templatesForSelectedPerson =
+        combine(
+            templateRepository.getAllFlow(),
+            _selectedPerson
+        ) { templates, person ->
+
+            if (person == null) emptyList()
+            else templates.filter { it.person == person }
+        }
 
     fun applyTemplate(person: Person, template: DailyTemplate) {
 
@@ -471,7 +495,6 @@ class TimelineViewModel(
 
             dailyStateRepository.save(state)
 
-            loadForDate(currentDate.value)
             dismissTemplateSheet()
         }
     }
@@ -494,9 +517,6 @@ class TimelineViewModel(
                 _editingTarget.value = null
             }
 
-            _templates.value = templateRepository.getTemplatesForPerson(person)
-            loadForDate(currentDate.value)
-
             // UI通知（任意）
             //_deleteCompleted.emit(Unit)
         }
@@ -506,51 +526,14 @@ class TimelineViewModel(
         _editingTarget.value = null
     }
 
-    //描画APIシリーズ
-    fun refreshAvailability() {
-        viewModelScope.launch {
-            recomputeAvailability()
-        }
-    }
-
-    fun onChildRoutineChanged() {
-
-        viewModelScope.launch {
-
-            val date = _currentDate.value
-
-            buildChildRoutineRules(date)
-
-            recomputeAvailability()
-        }
-    }
-
-    // 前日（できればなくす）
-    fun moveToPreviousDay() {
-        loadForDate(
-            _currentDate.value.minusDays(1)
-        )
-    }
-
-    // 翌日（できればなくす）
-    fun moveToNextDay() {
-        loadForDate(
-            _currentDate.value.plusDays(1)
-        )
-    }
-
-    // 将来用（今後はこれを使う）
+    // 日付変更
     fun changeDate(date: LocalDate) {
-        loadForDate(date)
-    }
-
-    fun reloadCurrentDate() {
-        loadForDate(_currentDate.value)
+        _currentDate.value = date
     }
 
     fun refreshGuideState() {
-        val templates = _templates.value
-        val childRoutines = _childRoutines.value
+        val templates = _uiState.value.templates
+        val childRoutines = _uiState.value.childRoutines
 
         _guideState.update { current ->
             GuideState(
@@ -572,7 +555,7 @@ class TimelineViewModel(
     // 警告→提案→実行：編集機能（今後の強化ポイント）
     fun onAvailabilityWarningClick(index: Int) {
 
-        val evaluation = _evaluations.value.find { it.index == index }
+        val evaluation = _uiState.value.evaluations.find { it.index == index }
             ?: return
 
         if (evaluation.state != AvailabilityState.WARN) return
@@ -594,7 +577,7 @@ class TimelineViewModel(
             // 現状では_dailyStatesのスロットと_slotsのスロットは一致しないことに留意
             // proposalの実行処理の仕様によってはバグるかも
             // （代替案）TimeSlotにisUserLocked = falseを追加し、newSlotsはtrueにする
-            val states = _dailyStates.value.map { state ->
+            val states = _uiState.value.dailyStates.map { state ->
 
                 if (state.person !in proposal.persons) return@map state
 
@@ -606,7 +589,7 @@ class TimelineViewModel(
                         slot.index == proposal.candidateIndex &&
                                 slot.person in proposal.persons ->
                             slot.copy(
-                                state = proposal.targetState
+                                state = proposal.targetState //むしろいらないかも。block導入時に要否を決める
                             )
 
                         else -> slot
@@ -621,7 +604,7 @@ class TimelineViewModel(
             }
 
             val existOverride =
-                _overrides.value
+                _uiState.value.overrides
                     .filterIsInstance<RequirementShiftOverride>()
                     .firstOrNull {it.ruleId == proposal.sourceRuleId}
 
@@ -638,12 +621,41 @@ class TimelineViewModel(
                 )
             )
 
-            _overrides.value = requirementOverrideRepository.getOverrides(_currentDate.value)
-
-            updateSlots(states)
-            recomputeAvailability()
-
             dismissWarningDialog()
+        }
+    }
+
+    private fun buildUiLog(state: TimelineUiState): String {
+        return """
+        ===== UI STATE =====
+        date: ${state.date}
+        templates: ${state.templates.size}
+        dailyStates: ${state.dailyStates.size}
+        overrides: ${state.overrides.size}
+        childRoutines: ${state.childRoutines.size}
+        
+        slots: ${state.slots.size}
+        evaluations: ${state.evaluations.size}
+        
+        requirements: ${state.requirements.size}
+        rules: ${state.rules.size}
+        ====================
+    """.trimIndent()
+    }
+
+    private fun buildUiLogDetail(state: TimelineUiState): String {
+        return buildString {
+            appendLine("=== UI DETAIL ===")
+
+            state.slots.forEach {
+                appendLine("slot: $it")
+            }
+
+            state.evaluations.forEach {
+                appendLine("eval: $it")
+            }
+
+            appendLine("=================")
         }
     }
 }

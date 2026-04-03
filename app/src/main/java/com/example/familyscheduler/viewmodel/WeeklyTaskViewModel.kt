@@ -11,7 +11,6 @@ import com.example.familyscheduler.domain.slot.FlexWindowParameters
 import com.example.familyscheduler.domain.slot.SlotState
 import com.example.familyscheduler.domain.time.TimeAxis
 import com.example.familyscheduler.domain.time.TimeRange
-import com.example.familyscheduler.viewmodel.OneTimeTaskViewModel.OneTimeTaskUiState
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -19,7 +18,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
-import java.time.LocalDate
 import java.time.LocalTime
 import java.util.UUID
 
@@ -28,7 +26,7 @@ class WeeklyTaskViewModel(
 ) : ViewModel() {
 
     data class WeeklyTaskUiState(
-        val id: String? = null,   // ← 追加
+        val id: String? = null,
 
         val taskName: String = "",
         val targetState: SlotState = SlotState.LIFE,
@@ -114,11 +112,12 @@ class WeeklyTaskViewModel(
 
         viewModelScope.launch {
 
-            repository.add(rule)
+            repository.save(rule)
+
+            //_uiState.value = WeeklyTaskUiState() // 挙動確認後、不要なら削除
+            _saveCompleted.emit(Unit)
 
             Log.d("WeeklySave", "Saved rule: $rule")
-
-            _saveCompleted.emit(Unit)
         }
     }
 
@@ -157,7 +156,7 @@ class WeeklyTaskViewModel(
             start.plusMinutes(input.durationMinutes.toLong())
 
         return HouseholdRequirementRule(
-            id = input.id ?: UUID.randomUUID().toString(),  // 修正
+            id = input.id ?: UUID.randomUUID().toString(),
             taskName = input.taskName,
             targetState = input.targetState,
             requiredCount = requiredCount,

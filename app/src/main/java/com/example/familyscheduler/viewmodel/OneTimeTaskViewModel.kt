@@ -26,7 +26,7 @@ class OneTimeTaskViewModel(
 ) : ViewModel() {
 
     data class OneTimeTaskUiState(
-        val id: String? = null,   // ← 追加
+        val id: String? = null,
         val date: LocalDate = LocalDate.now(),
 
         val taskName: String = "",
@@ -80,11 +80,12 @@ class OneTimeTaskViewModel(
         val rule = convertToRule(input)
 
         viewModelScope.launch {
-            repository.add(rule)
+            repository.save(rule)
+
+            //_uiState.value = OneTimeTaskUiState() // 挙動確認後、不要なら削除
+            _saveCompleted.emit(Unit)
 
             Log.d("OneTimeSave", "Saved rule: $rule")
-
-            _saveCompleted.emit(Unit)
         }
     }
 
@@ -123,7 +124,7 @@ class OneTimeTaskViewModel(
             start.plusMinutes(input.durationMinutes.toLong())
 
         return HouseholdRequirementRule(
-            id = input.id ?: UUID.randomUUID().toString(),  // 修正
+            id = input.id ?: UUID.randomUUID().toString(),
             taskName = input.taskName,
             targetState = input.targetState,
             requiredCount = requiredCount,

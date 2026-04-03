@@ -10,9 +10,12 @@ import com.example.familyscheduler.domain.routine.repository.ChildRoutineReposit
 import com.example.familyscheduler.ui.utilities.EditingTarget
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
@@ -24,42 +27,51 @@ class ChildRoutineViewModel(
     private val overrideRepository: ChildOverrideRepository
 ) : ViewModel() {
 
-    private val _children = MutableStateFlow<List<ChildRoutineInput>>(emptyList())
-    val children = _children.asStateFlow()
+    data class ChildRoutineScreenState(
+        val routines: List<ChildRoutineInput> = emptyList(),
+        val overrides: Map<Pair<String, LocalDate>, ChildTodayRoutine> = emptyMap(),
+        val form: ChildRoutineUiState = ChildRoutineUiState()
+    )
 
-    private val _overrides =
-        MutableStateFlow<Map<Pair<String, LocalDate>, ChildTodayRoutine>>(emptyMap())
-
-    val overrides: StateFlow<Map<Pair<String, LocalDate>, ChildTodayRoutine>> =
-        _overrides
+    val childRoutines = repository.getAllFlow()
+    val overrides = overrideRepository.getAllFlow()
 
     private val _editingTarget = MutableStateFlow<EditingTarget?>(null)
     val editingTarget: StateFlow<EditingTarget?> = _editingTarget
 
-    init {
-        viewModelScope.launch {
-            _children.value = repository.getAll()
-            //_overrides.value = overrideRepository.getAll()    //←必要ですか？
-        }
-    }
+    private val _formState = MutableStateFlow(ChildRoutineUiState())
 
-    private val _uiState = MutableStateFlow(ChildRoutineUiState())
-    val uiState = _uiState.asStateFlow()
+    val uiState =
+        combine(
+            childRoutines,
+            overrides,
+            _formState
+        ) { routines, overrides, form ->
+            ChildRoutineScreenState(
+                routines = routines,
+                overrides = overrides,
+                form = form
+            )
+        }.stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5000),
+            ChildRoutineScreenState()
+        )
 
     private val _saveCompleted = MutableSharedFlow<Unit>()
     val saveCompleted = _saveCompleted.asSharedFlow()
 
     fun updateName(name: String) =
-        _uiState.update { it.copy(name = name) }
+        _formState.update { it.copy(name = name) }
 
     fun updateWakeUpTime(time: LocalTime) =
-        _uiState.update { it.copy(wakeUpTime = time) }
+        _formState.update { it.copy(wakeUpTime = time) }
 
     fun updateSleepTime(time: LocalTime) =
-        _uiState.update { it.copy(sleepTime = time) }
+        _formState.update { it.copy(sleepTime = time) }
 
     fun updateHasNursery(value: Boolean) =
-        _uiState.update {
+        _formState.update {
             it.copy(
                 hasNursery = value,
                 daysOfWeek = if (value) it.daysOfWeek else emptySet()
@@ -67,7 +79,7 @@ class ChildRoutineViewModel(
         }
 
     fun updateNurseryStart(time: LocalTime) {
-        _uiState.update { state ->
+        _formState.update { state ->
             state.copy(
                 nurseryStart = time,
                 nurseryStartEarliest =
@@ -85,13 +97,13 @@ class ChildRoutineViewModel(
     }
 
     fun updateNurseryStartEarliest(time: LocalTime) =
-        _uiState.update { it.copy(nurseryStartEarliest = time) }
+        _formState.update { it.copy(nurseryStartEarliest = time) }
 
     fun updateNurseryStartLatest(time: LocalTime) =
-        _uiState.update { it.copy(nurseryStartLatest = time) }
+        _formState.update { it.copy(nurseryStartLatest = time) }
 
     fun updateNurseryEnd(time: LocalTime) {
-        _uiState.update { state ->
+        _formState.update { state ->
             state.copy(
                 nurseryEnd = time,
                 nurseryEndEarliest =
@@ -109,13 +121,13 @@ class ChildRoutineViewModel(
     }
 
     fun updateNurseryEndEarliest(time: LocalTime) =
-        _uiState.update { it.copy(nurseryEndEarliest = time) }
+        _formState.update { it.copy(nurseryEndEarliest = time) }
 
     fun updateNurseryEndLatest(time: LocalTime) =
-        _uiState.update { it.copy(nurseryEndLatest = time) }
+        _formState.update { it.copy(nurseryEndLatest = time) }
 
     fun toggleDay(day: DayOfWeek) {
-        _uiState.update { state ->
+        _formState.update { state ->
             val newDays =
                 if (day in state.daysOfWeek)
                     state.daysOfWeek - day
@@ -128,19 +140,27 @@ class ChildRoutineViewModel(
         }
     }
 
+    fun isValid(form: ChildRoutineUiState): Boolean {
+        return if (form.hasNursery) {
+            form.name.isNotBlank() &&
+                    form.daysOfWeek.isNotEmpty()
+        } else {
+            form.name.isNotBlank()
+        }
+    }
+
     fun onSave() {
 
-        val routine = convertToChildRoutine(_uiState.value)
+        val routine = convertToChildRoutine(_formState.value)
 
         viewModelScope.launch {
 
-            repository.add(routine)
+            repository.save(routine)
+
+            _formState.value = ChildRoutineUiState() // ← 追加
+            _saveCompleted.emit(Unit)
 
             Log.d("RoutineSave", "Saved routine: $routine")
-
-            _children.value = repository.getAll()   //_children.update {it + routine}どっちがいい？
-
-            _saveCompleted.emit(Unit)
         }
     }
 
@@ -188,8 +208,8 @@ class ChildRoutineViewModel(
 
         val name: String = "",
 
-        val wakeUpTime: LocalTime = LocalTime.of(7, 0), //? = null,
-        val sleepTime: LocalTime = LocalTime.of(21, 0), //? = null,
+        val wakeUpTime: LocalTime = LocalTime.of(7, 0),
+        val sleepTime: LocalTime = LocalTime.of(21, 0),
 
         val hasNursery: Boolean = true,
 
@@ -202,26 +222,27 @@ class ChildRoutineViewModel(
                 DayOfWeek.FRIDAY
             ),
 
-        val nurseryStart: LocalTime = LocalTime.of(8, 0), //? = null,
+        val nurseryStart: LocalTime = LocalTime.of(8, 0),
         val nurseryStartEarliest: LocalTime? = null,
         val nurseryStartLatest: LocalTime? = null,
 
-        val nurseryEnd: LocalTime = LocalTime.of(17, 0), //? = null,
+        val nurseryEnd: LocalTime = LocalTime.of(17, 0),
         val nurseryEndEarliest: LocalTime? = null,
         val nurseryEndLatest: LocalTime? = null
     )
 
+    // 挙動確認後、削除
     fun resetUiState() {
-        _uiState.value = ChildRoutineUiState()
+        _formState.value = ChildRoutineUiState()
     }
 
     fun load(childName: String) {
 
         viewModelScope.launch {
 
-            val child = repository.getFromChildName(childName) ?: return@launch
+            val child = repository.getByChildName(childName).first() ?: return@launch
 
-            _uiState.update {
+            _formState.update {
                 ChildRoutineUiState(
                     name = child.name,
 
@@ -241,7 +262,6 @@ class ChildRoutineViewModel(
                     nurseryEndLatest = child.nurseryEndLatest
                 )
             }
-            //clearEditingTarget() //現在はComposeで関数呼び出し
         }
     }
 
@@ -255,7 +275,7 @@ class ChildRoutineViewModel(
     ) {
         viewModelScope.launch {
 
-            val current = resolveTodayRoutine(child, date, _overrides.value)
+            val current = resolveTodayRoutine(child, date, uiState.value.overrides)
 
             val next = current.next(child)
 
@@ -266,8 +286,6 @@ class ChildRoutineViewModel(
                 date,
                 next
             )
-
-            _overrides.value = overrideRepository.getAll()
         }
     }
 
@@ -312,8 +330,6 @@ class ChildRoutineViewModel(
 
             // UI通知（任意）
             //_deleteCompleted.emit(Unit)
-
-            _children.value = repository.getAll()
         }
     }
 }

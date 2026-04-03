@@ -3,6 +3,10 @@ package com.example.familyscheduler.domain.evaluation
 import android.util.Log
 import com.example.familyscheduler.domain.person.Person
 import com.example.familyscheduler.domain.requirement.HouseholdRequirement
+import com.example.familyscheduler.domain.requirement.RequirementModeToday
+import com.example.familyscheduler.domain.requirement.RequirementOverride
+import com.example.familyscheduler.domain.requirement.RequirementToggleOverride
+import com.example.familyscheduler.domain.requirement.TimeRangeHouseholdRequirement
 import com.example.familyscheduler.domain.slot.SlotState
 import com.example.familyscheduler.domain.slot.TimeSlot
 import com.example.familyscheduler.domain.time.TimeAxis
@@ -11,7 +15,8 @@ object AvailabilityEngine {
 
     fun recompute(
         originalSlots: List<TimeSlot>,
-        requirements: List<HouseholdRequirement>
+        requirements: List<HouseholdRequirement>,
+        overrides: List<RequirementOverride>
     ): AvailabilityResult {
 
         val workingSlots =
@@ -19,7 +24,8 @@ object AvailabilityEngine {
 
         assignHouseholdTasks(
             slots = workingSlots,
-            requirements = requirements
+            requirements = requirements,
+            overrides = overrides
         )
 
         assignRemainingUnassignedToFree(workingSlots)
@@ -37,6 +43,20 @@ object AvailabilityEngine {
     }
 
     fun assignHouseholdTasks(
+        slots: MutableList<TimeSlot>,
+        requirements: List<HouseholdRequirement>,
+        overrides: List<RequirementOverride>
+    ) {
+        internalAssign(slots, requirements)
+
+        applyReverseOverrides(
+            slots = slots,
+            requirements = requirements,
+            overrides = overrides
+        )
+    }
+
+    private fun internalAssign(
         slots: MutableList<TimeSlot>,
         requirements: List<HouseholdRequirement>?
     ) {
@@ -101,6 +121,75 @@ object AvailabilityEngine {
                 }
             }
         }
+    }
+
+    private fun applyReverseOverrides(
+        slots: MutableList<TimeSlot>,
+        requirements: List<HouseholdRequirement>,
+        overrides: List<RequirementOverride>
+    ) {
+        val reverseRuleIds = overrides
+            .filterIsInstance<RequirementToggleOverride>()
+            .filter { it.mode == RequirementModeToday.REVERSE }
+            .map { it.ruleId }
+            .toSet()
+
+        if (reverseRuleIds.isEmpty()) return
+
+        val slotsByIndex = slots.indices.groupBy { slots[it].index }
+
+        requirements
+            .filterIsInstance<TimeRangeHouseholdRequirement>()
+            .filter { it.sourceRuleId in reverseRuleIds }
+            .forEach { req ->
+
+                for (index in TimeAxis.indices) {
+
+                    if (!req.isRequiredAt(index)) continue
+
+                    val slotsAtIndex = slotsByIndex[index]
+                        .orEmpty()
+                        .map { i -> i to slots[i] }
+
+                    // ① 今の割当を取得
+                    val assigned = slotsAtIndex.filter { (_, slot) ->
+                        slot.person in req.allowedPersons &&
+                                slot.state == req.targetState &&
+                                req.name in slot.taskName
+                    }
+
+                    // ② 反転対象
+                    val assignedPersons = assigned.map { it.second.person }.toSet()
+                    val reversedPersons = req.allowedPersons - assignedPersons
+
+                    // ③ 一旦削除
+                    assigned.forEach { (i, slot) ->
+                        slots[i] = slot.copy(
+                            state = SlotState.UNASSIGNED,
+                            taskName = slot.taskName - req.name
+                        )
+                    }
+
+                    // ④ 強制assign（軽いガードのみ）
+                    reversedPersons.forEach { person ->
+
+                        val candidate = slotsAtIndex
+                            .firstOrNull { (_, slot) ->
+                                slot.person == person &&
+                                        slot.state.weight <= req.targetState.weight
+                            }
+
+                        if (candidate != null) {
+                            val (i, slot) = candidate
+
+                            slots[i] = slot.copy(
+                                state = req.targetState,
+                                taskName = slot.taskName + req.name
+                            )
+                        }
+                    }
+                }
+            }
     }
 
     private fun assignRemainingUnassignedToFree(

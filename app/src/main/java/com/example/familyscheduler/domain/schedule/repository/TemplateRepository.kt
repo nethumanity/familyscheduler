@@ -2,17 +2,17 @@ package com.example.familyscheduler.domain.schedule.repository
 
 import com.example.familyscheduler.domain.person.Person
 import com.example.familyscheduler.domain.schedule.DailyTemplate
+import kotlinx.coroutines.flow.Flow
 
 interface TemplateRepository {
 
-    suspend fun saveTemplate(template: DailyTemplate)
+    fun getAllFlow(): Flow<List<DailyTemplate>>
 
-    suspend fun getTemplates(): List<DailyTemplate>
+    fun getTemplateById(id: String): Flow<DailyTemplate?>
 
-    suspend fun getTemplatesForPerson(person: Person): List<DailyTemplate>
+    fun getTemplatesForPerson(person: Person): Flow<List<DailyTemplate>>
 
-    suspend fun getTemplateFromId(id: String): DailyTemplate?
+    suspend fun save(template: DailyTemplate)
 
     suspend fun delete(id: String)
-
 }

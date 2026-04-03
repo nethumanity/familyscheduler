@@ -83,7 +83,7 @@ fun MainScreen() {
     val householdRequirementRepository = remember { InMemoryHouseholdRequirementRepository() }
     val requirementOverrideRepository = remember { InMemoryRequirementOverrideRepository() }
     val childRepository = remember { InMemoryChildRoutineRepository() }
-    val overrideRepository = remember { InMemoryChildOverrideRepository() }
+    val childOverrideRepository = remember { InMemoryChildOverrideRepository() }
 
     val factory = TimelineViewModelFactory(
         templateRepository = templateRepository,
@@ -91,9 +91,8 @@ fun MainScreen() {
         householdRequirementRepository = householdRequirementRepository,
         requirementOverrideRepository = requirementOverrideRepository,
         childRoutineRepository = childRepository,
-        routineResolver = RoutineResolver(
-            overrideRepository = overrideRepository
-        ),
+        childOverrideRepository = childOverrideRepository,
+        routineResolver = RoutineResolver(),
         childRoutineBuilder = ChildRoutineBuilder(),
         childCareRuleConverter = ChildCareRuleConverter(
             capacityCalculator = CareCapacityCalculator(),
@@ -105,7 +104,7 @@ fun MainScreen() {
     val timelineViewModel: TimelineViewModel =
         viewModel(factory = factory)
     val childRoutineViewModel: ChildRoutineViewModel =
-        viewModel(factory = ChildRoutineViewModelFactory(childRepository, overrideRepository))
+        viewModel(factory = ChildRoutineViewModelFactory(childRepository, childOverrideRepository))
 
     var sheet by remember { mutableStateOf<MainSheet?>(null) }
     val sheetState = rememberModalBottomSheetState(
@@ -124,10 +123,10 @@ fun MainScreen() {
                     HeaderBar(
                         date = currentDate,
                         onPreviousDay = {
-                            timelineViewModel.moveToPreviousDay()   // changeDate(currentDate.minusDays(1))
+                            timelineViewModel.changeDate(currentDate.minusDays(1)) //挙動要確認
                         },
                         onNextDay = {
-                            timelineViewModel.moveToNextDay()   // changeDate(currentDate.plusDays(1))
+                            timelineViewModel.changeDate(currentDate.plusDays(1)) //挙動要確認
                         }
                     )
                 }
@@ -188,22 +187,23 @@ fun MainScreen() {
 
                     val viewModel = childRoutineViewModel
 
-                    LaunchedEffect(Unit) {
-                        val id = viewModel.editingTarget.value?.childRoutineId
+                    val editingTarget by viewModel.editingTarget.collectAsState()
+
+                    LaunchedEffect(editingTarget?.childRoutineId) { //元は、引数：Unit
+                        val id = editingTarget?.childRoutineId
 
                         if (id != null) {
                             viewModel.load(id)
                             viewModel.clearEditingTarget()
-                        } else {
-                            viewModel.resetUiState()
-                        }
+                        } //else if (viewModel.uiState.value.form.name.isEmpty()) { //いらない可能性を検証中
+                        //    viewModel.resetUiState()
+                        //}
                     }
 
                     ChildRoutineInputScreen(
                         viewModel = viewModel,
                         onBack = { navController.popBackStack() },
                         onSaved = {
-                            timelineViewModel.onChildRoutineChanged()
                             timelineViewModel.refreshGuideState()
                             navController.popBackStack("timeline", false)
                         }
@@ -223,15 +223,17 @@ fun MainScreen() {
                         )
 
                     val editingTarget by timelineViewModel.editingTarget.collectAsState()
+                    val uiState by timelineViewModel.uiState.collectAsState()
 
                     var selectedTab by remember { mutableStateOf(0) }
 
                     LaunchedEffect(editingTarget?.requirementId) {
                         val id = editingTarget?.requirementId ?: return@LaunchedEffect
 
-                        val rule = householdRequirementRepository.getFromId(id)
+                        val rule = uiState.rules.firstOrNull { it.id == id }
+                            ?: return@LaunchedEffect
 
-                        rule?.let {
+                        rule.let {
                             selectedTab = if (it.date != null) 0 else 1
 
                             when {
@@ -252,7 +254,6 @@ fun MainScreen() {
                             navController.popBackStack()
                         },
                         onSaved = {
-                            timelineViewModel.refreshAvailability()
                             navController.popBackStack("timeline", false)
                         }
                     )
@@ -283,13 +284,15 @@ fun MainScreen() {
                         )
 
                     val editingTarget by timelineViewModel.editingTarget.collectAsState()
+                    val uiState by timelineViewModel.uiState.collectAsState()
 
                     LaunchedEffect(editingTarget?.templateId) {
                         val target = editingTarget ?: return@LaunchedEffect
 
                         if (target.isTemplate()) {
-                            val template = templateRepository.getTemplateFromId(target.templateId!!)
-                            template?.let {
+                            val template = uiState.templates.firstOrNull { it.id == target.templateId }
+                                ?: return@LaunchedEffect
+                            template.let {
                                 templateEditViewModel.load(it)
                             }
                             timelineViewModel.clearEditingTarget()
@@ -300,7 +303,6 @@ fun MainScreen() {
                         viewModel = templateEditViewModel,
                         onSaved = {
                             timelineViewModel.dismissTemplateSheet()
-                            timelineViewModel.reloadCurrentDate()
                             timelineViewModel.refreshGuideState()
                             navController.popBackStack("timeline", false)
                         },
@@ -328,13 +330,13 @@ fun MainScreen() {
                                     sheet = null
                                     navController.navigate("child_input")
                                 },
-                                onToggle = { timelineViewModel.onChildRoutineChanged() },
+                                onToggle = {},
                                 onEditChildRoutine = { childName ->
                                     childRoutineViewModel.startEditChildRoutine(childName)
                                     sheet = null
                                     navController.navigate("child_input")
                                 },
-                                onDeleteChildRoutine = { timelineViewModel.onChildRoutineChanged() }
+                                onDeleteChildRoutine = {}
                             )
                         }
 
@@ -342,7 +344,7 @@ fun MainScreen() {
                             DailyOverviewSheet(
                                 viewModel = timelineViewModel,
                                 onWarningClick = { timelineViewModel.onAvailabilityWarningClick(it) },
-                                onToggle = { timelineViewModel.refreshAvailability() },
+                                onToggle = {},
                                 onEditRequirement = { ruleId ->
                                     timelineViewModel.startEditRequirement(ruleId)
                                     sheet = null

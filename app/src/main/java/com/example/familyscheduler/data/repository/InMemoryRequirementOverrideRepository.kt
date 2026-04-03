@@ -2,35 +2,57 @@ package com.example.familyscheduler.data.repository
 
 import com.example.familyscheduler.domain.requirement.RequirementOverride
 import com.example.familyscheduler.domain.requirement.repository.RequirementOverrideRepository
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
 import java.time.LocalDate
 
 class InMemoryRequirementOverrideRepository : RequirementOverrideRepository {
 
-    private val overrides = mutableListOf<RequirementOverride>()
+    private val _overrides = MutableStateFlow<List<RequirementOverride>>(emptyList())
 
-    override fun getOverrides(date: LocalDate): List<RequirementOverride> {
-        return overrides.filter { it.date == date }
+    override fun getAllFlow(): Flow<List<RequirementOverride>> {
+        return _overrides
     }
 
-    override fun getOverrides(ruleId: String, date: LocalDate): List<RequirementOverride> {
-        return overrides.filter { it.ruleId == ruleId && it.date == date }
+    //いらない？
+    override fun getOverrides(date: LocalDate): Flow<List<RequirementOverride>> {
+        return _overrides
+            .map { list ->
+                list.filter { it.date == date }
+            }
+            .distinctUntilChanged()
     }
 
-    override fun saveOverride(override: RequirementOverride) {
+    //いらない？
+    override fun getOverrides(ruleId: String, date: LocalDate): Flow<List<RequirementOverride>> {
+        return _overrides
+            .map { list ->
+                list.filter { it.ruleId == ruleId && it.date == date }
+            }
+            .distinctUntilChanged()
+    }
+
+    override suspend fun saveOverride(override: RequirementOverride) {
         // 同種overrideは置き換え
-        overrides.removeIf {
-            it.ruleId == override.ruleId &&
-                    it.date == override.date &&
-                    it::class == override::class
+        _overrides.update { old ->
+            val filtered = old.filterNot {
+                it.ruleId == override.ruleId &&
+                        it.date == override.date &&
+                        it::class == override::class
+            }
+            filtered + override
         }
-        overrides.add(override)
-    }
-
-    override fun getAll(): List<RequirementOverride> {
-        return overrides.toList()
     }
 
     override suspend fun deleteByRuleId(ruleId: String) {
-        overrides.removeAll { it.ruleId == ruleId }
+        _overrides.update { old ->
+            val filtered = old.filterNot {
+                it.ruleId == ruleId
+            }
+            filtered
+        }
     }
 }

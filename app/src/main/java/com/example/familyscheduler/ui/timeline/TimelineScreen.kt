@@ -9,7 +9,6 @@ import android.util.Log
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -68,13 +67,12 @@ fun TimelineScreen(
     onAddClick: (Person) -> Unit,
     onEditTemplate: (String, Person) -> Unit
 ) {
-    //val currentDate by viewModel.currentDate.collectAsState()
-    val dailyStates by viewModel.dailyStates.collectAsState()
-    val slots by viewModel.slots.collectAsState()
-    val evaluations by viewModel.evaluations.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
+
     val dialogState by viewModel.warningDialogState.collectAsState()
-    //val householdRequirements by viewModel.householdRequirements.collectAsState()
-    val templates by viewModel.templates.collectAsState()
+
+    val selectedPerson by viewModel.selectedPerson.collectAsState()
+    val templates by viewModel.templatesForSelectedPerson.collectAsState(emptyList())
 
     var editingSlot by remember { mutableStateOf<Pair<Int, Person>?>(null) }
     var menuPosition by remember { mutableStateOf<Offset?>(null) }
@@ -89,9 +87,9 @@ fun TimelineScreen(
                 detectHorizontalDragGestures(
                     onDragEnd = {
                         if (totalDrag > 200) {
-                            viewModel.moveToPreviousDay()
+                            viewModel.changeDate(uiState.date.minusDays(1))
                         } else if (totalDrag < -200) {
-                            viewModel.moveToNextDay()
+                            viewModel.changeDate(uiState.date.plusDays(1))
                         }
                         totalDrag = 0f
                     }
@@ -104,7 +102,7 @@ fun TimelineScreen(
             TimelineHeaderRow(
                 viewModel = viewModel,
                 persons = persons,
-                dailyStates = dailyStates,
+                dailyStates = uiState.dailyStates,
                 onDailyStateClick = { person ->
                     viewModel.showTemplateSheet(person)
                 }
@@ -118,7 +116,7 @@ fun TimelineScreen(
             val index = TimeAxis.displayStartIndex + offset
 
             val time = TimeAxis.all[index]
-            val rowSlots = slots.filter { it.index == index }
+            val rowSlots = uiState.slots.filter { it.index == index }
 
             Log.d(
                 "TimelineScreen",
@@ -134,7 +132,7 @@ fun TimelineScreen(
 
                         detectTapGestures(
                             onTap = {
-                                val evaluation = evaluations.find { it.index == index } //修正
+                                val evaluation = uiState.evaluations.find { it.index == index } //O(n2)問題
 
                                 if (evaluation?.state == AvailabilityState.WARN) {
                                     viewModel.onAvailabilityWarningClick(index)
@@ -167,7 +165,7 @@ fun TimelineScreen(
                     )
 
                     //val evaluation = evaluations.getOrNull(index)
-                    val evaluation = evaluations.find { it.index == index }
+                    val evaluation = uiState.evaluations.find { it.index == index }
 
                     if (evaluation?.state == AvailabilityState.WARN) {
                         Spacer(modifier = Modifier.height(2.dp))
@@ -243,7 +241,7 @@ fun TimelineScreen(
     // DailyTemplate変更シート
     // ============================
 
-    viewModel.editingTemplateFor?.let { person ->
+    selectedPerson?.let { person ->
 
         ModalBottomSheet(
             onDismissRequest = {
@@ -313,7 +311,7 @@ fun TimelineScreen(
 
     dialogState?.let { state ->
 
-        val evaluation = evaluations.find { it.index == state.index }
+        val evaluation = uiState.evaluations.find { it.index == state.index }
 
         WarningDialog(
             index = state.index,

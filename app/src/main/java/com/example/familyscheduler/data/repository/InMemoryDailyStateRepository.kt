@@ -3,25 +3,34 @@ package com.example.familyscheduler.data.repository
 import com.example.familyscheduler.domain.person.Person
 import com.example.familyscheduler.domain.schedule.DailyState
 import com.example.familyscheduler.domain.schedule.repository.DailyStateRepository
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
 import java.time.LocalDate
 
 class InMemoryDailyStateRepository : DailyStateRepository {
 
-    private val storage =
-        mutableMapOf<Pair<LocalDate, Person>, DailyState>()
+    private val _states = MutableStateFlow<Map<Pair<LocalDate, Person>, DailyState>>(emptyMap())
+
+    override fun getAllFlow(): Flow<Map<Pair<LocalDate, Person>, DailyState>> {
+        return _states
+    }
+
+    // いらない？
+    override fun getByDate(date: LocalDate): Flow<List<DailyState>> {
+        return _states
+            .map { map ->
+                map
+                    .filterKeys { (d, _) -> d == date }
+                    .values
+                    .toList()
+            }
+    }
 
     override suspend fun save(state: DailyState) {
-        storage[state.date to state.person] = state
-    }
-
-    override suspend fun get(date: LocalDate): List<DailyState> {
-        return storage
-            .filterKeys { it.first == date }
-            .values
-            .toList()
-    }
-
-    override suspend fun get(date: LocalDate, person: Person): DailyState? {
-        return storage[date to person]
+        _states.update { old ->
+            old + ((state.date to state.person) to state)
+        }
     }
 }

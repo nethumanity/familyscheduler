@@ -1,64 +1,59 @@
 package com.example.familyscheduler.data.repository
 
 import com.example.familyscheduler.domain.requirement.HouseholdRequirementRule
-import com.example.familyscheduler.domain.requirement.RequirementSource
 import com.example.familyscheduler.domain.requirement.repository.HouseholdRequirementRepository
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
 import java.time.LocalDate
 
-class InMemoryHouseholdRequirementRepository :
-    HouseholdRequirementRepository {
+class InMemoryHouseholdRequirementRepository : HouseholdRequirementRepository {
 
-    private val storage =
-        mutableListOf<HouseholdRequirementRule>()
+    private val _rules = MutableStateFlow<List<HouseholdRequirementRule>>(emptyList())
 
-    override suspend fun getByDate(
+    override fun getAllFlow(): Flow<List<HouseholdRequirementRule>> {
+        return _rules
+    }
+
+    // いらない？
+    override fun getByDate(
         date: LocalDate
-    ): List<HouseholdRequirementRule> {
-
-        return storage.filter {
-            it.isActiveOn(date)
-        }
+    ): Flow<List<HouseholdRequirementRule>> {
+        return _rules
+            .map { list ->
+                list.filter { rule ->
+                    rule.isActiveOn(date)
+                }
+            }
     }
 
-    override suspend fun getFromId(
+    // 編集画面用（いらない？）
+    override fun getById(
         id: String
-    ): HouseholdRequirementRule? {
-
-        return storage.firstOrNull { it.id == id }
+    ): Flow<HouseholdRequirementRule?> {
+        return _rules
+            .map { list ->
+                list.firstOrNull { it.id == id }
+            }
     }
 
-    override suspend fun getAll(): List<HouseholdRequirementRule> {
-        return storage.toList()
-    }
-
-    override suspend fun add(
+    override suspend fun save(
         rule: HouseholdRequirementRule
     ) {
-        val index = storage.indexOfFirst { it.id == rule.id }
+        _rules.update { old ->
+            val filtered = old.filterNot { it.id == rule.id }
 
-        if (index >= 0) {
-            // 更新
-            storage[index] = rule
-        } else {
-            // 新規追加
-            storage.add(rule)
+            filtered + rule
         }
-    }
-
-    override suspend fun saveAll(
-        rules: List<HouseholdRequirementRule>
-    ) {
-        storage.addAll(rules)
     }
 
     override suspend fun delete(id: String) {
-        storage.removeAll { it.id == id }
-    }
-
-    override suspend fun clearChildRoutineRules() {
-
-        storage.removeAll {
-            it.source == RequirementSource.CHILD_ROUTINE
+        _rules.update { old ->
+            val filtered = old.filterNot {
+                it.id == id
+            }
+            filtered
         }
     }
 }

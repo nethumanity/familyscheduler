@@ -1,29 +1,27 @@
 package com.example.familyscheduler.domain.routine
 
-import com.example.familyscheduler.domain.routine.repository.ChildOverrideRepository
 import java.time.DayOfWeek
 import java.time.LocalDate
 
-class RoutineResolver(
-    private val overrideRepository: ChildOverrideRepository
-) {
+class RoutineResolver {
 
     fun resolve(
         inputs: List<ChildRoutineInput>,
-        date: LocalDate
+        date: LocalDate,
+        childOverrides: Map<Pair<String, LocalDate>, ChildTodayRoutine>
     ): List<ResolvedChildRoutine> {
         return inputs.map { input ->
-            resolveSingle(input, date)
+            resolveSingle(input, date, childOverrides)
         }
     }
 
     private fun resolveSingle(
         input: ChildRoutineInput,
-        date: LocalDate
+        date: LocalDate,
+        childOverrides: Map<Pair<String, LocalDate>, ChildTodayRoutine>
     ): ResolvedChildRoutine {
 
-        val override =
-            overrideRepository.getOverride(input.name, date)
+        val override = childOverrides[input.name to date]
 
         val todayRoutine =
             override ?: defaultRoutine(input, date.dayOfWeek)
