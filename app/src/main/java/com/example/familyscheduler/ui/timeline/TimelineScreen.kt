@@ -9,7 +9,7 @@ import android.util.Log
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -26,10 +26,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -271,21 +274,37 @@ fun TimelineScreen(
 
                 items(templates) { template ->
 
-                    ListItem(
-                        headlineContent = {
-                            Text(
-                                text = template.name,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        },
-                        modifier = Modifier.combinedClickable(
-                            onClick = {
-                                viewModel.applyTemplate(person, template)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth(),
+                            //.padding(vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        ListItem(
+                            headlineContent = {
+                                Text(
+                                    text = template.name,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
                             },
-                            onLongClick = { expandedMenuId = template.id }
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable { viewModel.applyTemplate(person, template) }
+                                .padding(end = 8.dp), // ← ケバブとの距離
                         )
-                    )
+
+                        IconButton(
+                            onClick = { expandedMenuId = template.id },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = "menu",
+                                tint = Color.LightGray
+                            )
+                        }
+                    }
 
                     DropdownMenu(
                         expanded = expandedMenuId == template.id,

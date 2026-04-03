@@ -33,9 +33,7 @@ fun ChildListSheet(
     viewModel: ChildRoutineViewModel,
     currentDate: LocalDate,
     onAddClick: () -> Unit,
-    onToggle: () -> Unit,
-    onEditChildRoutine: (String) -> Unit,
-    onDeleteChildRoutine: () -> Unit
+    onEditChildRoutine: (String) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -84,9 +82,8 @@ fun ChildListSheet(
                     routine = todayRoutine,
                     onToggle = {
                         viewModel.toggleTodayRoutine(child, currentDate)
-                        onToggle()
                     },
-                    onExpandMenu = { expandedMenuId = child.name }
+                    onMenuClick = { expandedMenuId = child.name }
                 )
 
                 DropdownMenu(
@@ -105,7 +102,6 @@ fun ChildListSheet(
                         onClick = {
                             expandedMenuId = null
                             viewModel.deleteChildRoutine(child.name)
-                            onDeleteChildRoutine()
                         }
                     )
                 }

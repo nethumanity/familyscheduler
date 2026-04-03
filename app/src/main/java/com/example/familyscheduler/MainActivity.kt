@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
@@ -21,6 +22,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
@@ -50,6 +52,7 @@ import com.example.familyscheduler.ui.theme.FamilySchedulerTheme
 import com.example.familyscheduler.ui.timeline.FooterBar
 import com.example.familyscheduler.ui.timeline.HeaderBar
 import com.example.familyscheduler.ui.timeline.TimelineScreen
+import com.example.familyscheduler.ui.utilities.UiEvent
 import com.example.familyscheduler.viewmodel.ChildRoutineViewModel
 import com.example.familyscheduler.viewmodel.Factory.ChildRoutineViewModelFactory
 import com.example.familyscheduler.viewmodel.Factory.OneTimeTaskViewModelFactory
@@ -60,6 +63,7 @@ import com.example.familyscheduler.viewmodel.OneTimeTaskViewModel
 import com.example.familyscheduler.viewmodel.TemplateEditViewModel
 import com.example.familyscheduler.viewmodel.TimelineViewModel
 import com.example.familyscheduler.viewmodel.WeeklyTaskViewModel
+import kotlinx.coroutines.flow.merge
 import java.time.LocalDate
 
 class MainActivity : ComponentActivity() {
@@ -119,19 +123,25 @@ fun MainScreen() {
     val currentDate by timelineViewModel.currentDate.collectAsState()
 
     LaunchedEffect(Unit) {
-        timelineViewModel.events.collect { event ->
+        merge(
+            timelineViewModel.events,
+            childRoutineViewModel.events
+        ).collect { event ->
 
             when (event) {
 
-                is TimelineViewModel.UiEvent.ShowUndoDeleteRequirement -> {
+                is UiEvent.ShowUndoDelete -> {
+
+                    snackbarHostState.currentSnackbarData?.dismiss()
 
                     val result = snackbarHostState.showSnackbar(
-                        message = "削除しました",
-                        actionLabel = "元に戻す"
+                        message = event.message,
+                        actionLabel = "元に戻す",
+                        duration = SnackbarDuration.Short
                     )
 
                     if (result == SnackbarResult.ActionPerformed) {
-                        timelineViewModel.undoDeleteRequirement(event.rule)
+                        event.onUndo()
                     }
                 }
             }
@@ -184,9 +194,7 @@ fun MainScreen() {
                     navController.navigate("settings")
                 }
             )
-        },
-
-        snackbarHost = { SnackbarHost(snackbarHostState) }
+        }
 
     ) { padding ->
 
@@ -356,20 +364,17 @@ fun MainScreen() {
                                     sheet = null
                                     navController.navigate("child_input")
                                 },
-                                onToggle = {},
                                 onEditChildRoutine = { childName ->
                                     childRoutineViewModel.startEditChildRoutine(childName)
                                     sheet = null
                                     navController.navigate("child_input")
-                                },
-                                onDeleteChildRoutine = {}
+                                }
                             )
                         }
 
                         MainSheet.DAILY_OVERVIEW -> {
                             DailyOverviewSheet(
                                 viewModel = timelineViewModel,
-                                onToggle = {},
                                 onEditRequirement = { ruleId ->
                                     timelineViewModel.startEditRequirement(ruleId)
                                     sheet = null
@@ -380,6 +385,11 @@ fun MainScreen() {
                     }
                 }
             }
+
+            SnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier.align(Alignment.BottomCenter)
+            )
         }
     }
 }

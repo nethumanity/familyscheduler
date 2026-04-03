@@ -37,7 +37,6 @@ import com.example.familyscheduler.viewmodel.TimelineViewModel
 @Composable
 fun DailyOverviewSheet(
     viewModel: TimelineViewModel,
-    onToggle: () -> Unit,
     onEditRequirement: (String) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -153,11 +152,8 @@ fun DailyOverviewSheet(
                             .filterIsInstance<TimeRangeHouseholdRequirement>()
                             .firstOrNull { it.sourceRuleId == req.id }
                     )
-                    onToggle()
                 },
-                onLongClick = {     //ロングタップでのメニュー起動は廃止する
-                    expandedMenuId = req.id
-                }
+                onMenuClick = { expandedMenuId = req.id }
             )
 
             DropdownMenu(
@@ -173,7 +169,7 @@ fun DailyOverviewSheet(
                 )
                 DropdownMenuItem(
                     text = { Text("削除") },
-                    onClick = {                             // タップ時、元に戻すためのSnackBarを出したい
+                    onClick = {
                         expandedMenuId = null
                         viewModel.deleteRequirement(req.id)
                     }

@@ -3,11 +3,13 @@ package com.example.familyscheduler.viewmodel
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.familyscheduler.domain.requirement.HouseholdRequirementRule
 import com.example.familyscheduler.domain.routine.ChildRoutineInput
 import com.example.familyscheduler.domain.routine.ChildTodayRoutine
 import com.example.familyscheduler.domain.routine.repository.ChildOverrideRepository
 import com.example.familyscheduler.domain.routine.repository.ChildRoutineRepository
 import com.example.familyscheduler.ui.utilities.EditingTarget
+import com.example.familyscheduler.ui.utilities.UiEvent
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -15,6 +17,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -35,6 +38,9 @@ class ChildRoutineViewModel(
 
     val childRoutines = repository.getAllFlow()
     val overrides = overrideRepository.getAllFlow()
+
+    private val _events = MutableSharedFlow<UiEvent>()
+    val events = _events.asSharedFlow()
 
     private val _editingTarget = MutableStateFlow<EditingTarget?>(null)
     val editingTarget: StateFlow<EditingTarget?> = _editingTarget
@@ -314,6 +320,11 @@ class ChildRoutineViewModel(
     }
 
     fun deleteChildRoutine(childName: String) {
+
+        val input = uiState.value.routines
+            .find { it.name == childName }
+            ?: return
+
         viewModelScope.launch {
             overrideRepository.deleteByChildName(childName)
             repository.delete(childName)
@@ -323,8 +334,24 @@ class ChildRoutineViewModel(
                 _editingTarget.value = null
             }
 
+            _events.emit(
+                UiEvent.ShowUndoDelete(
+                    message = "削除しました",
+                    onUndo = {
+                        undoDeleteChildRoutine(input)
+                    }
+                )
+            )
+
             // UI通知（任意）
             //_deleteCompleted.emit(Unit)
+        }
+    }
+
+    fun undoDeleteChildRoutine(input: ChildRoutineInput) {
+
+        viewModelScope.launch {
+            repository.save(input)
         }
     }
 }

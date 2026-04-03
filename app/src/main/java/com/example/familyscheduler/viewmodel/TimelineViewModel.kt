@@ -37,6 +37,7 @@ import com.example.familyscheduler.domain.slot.TimeSlot
 import com.example.familyscheduler.seeder.SampleDataSeeder
 import com.example.familyscheduler.ui.utilities.EditingTarget
 import com.example.familyscheduler.ui.utilities.GuideState
+import com.example.familyscheduler.ui.utilities.UiEvent
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -58,12 +59,6 @@ class TimelineViewModel(
     private val childCareRuleConverter: ChildCareRuleConverter,
     private val requirementBuilder: RequirementBuilder
 ) : ViewModel() {
-
-    sealed class UiEvent {
-        data class ShowUndoDeleteRequirement(
-            val rule: HouseholdRequirementRule
-        ) : UiEvent()
-    }
 
     private val _events = MutableSharedFlow<UiEvent>()
     val events = _events.asSharedFlow()
@@ -428,7 +423,7 @@ class TimelineViewModel(
         )
     }
 
-    fun deleteRequirement(ruleId: String) {
+    fun deleteRequirement(ruleId: String) { //★
 
         val rule = _uiState.value.rules
             .find { it.id == ruleId }
@@ -443,7 +438,14 @@ class TimelineViewModel(
                 _editingTarget.value = null
             }
 
-            _events.emit(UiEvent.ShowUndoDeleteRequirement(rule))
+            _events.emit(
+                UiEvent.ShowUndoDelete(
+                    message = "削除しました",
+                    onUndo = {
+                        undoDeleteRequirement(rule)
+                    }
+                )
+            )
 
             // UI通知（任意）
             //_deleteCompleted.emit(Unit)
@@ -538,6 +540,11 @@ class TimelineViewModel(
     }
 
     fun deleteTemplate(templateId: String, person:Person) {
+
+        val template = uiState.value.templates
+            .find { it.id == templateId }
+            ?: return
+
         viewModelScope.launch {
             templateRepository.delete(templateId)
 
@@ -546,8 +553,24 @@ class TimelineViewModel(
                 _editingTarget.value = null
             }
 
+            _events.emit(
+                UiEvent.ShowUndoDelete(
+                    message = "削除しました",
+                    onUndo = {
+                        undoDeleteTemplate(template)
+                    }
+                )
+            )
+
             // UI通知（任意）
             //_deleteCompleted.emit(Unit)
+        }
+    }
+
+    fun undoDeleteTemplate(template: DailyTemplate) {
+
+        viewModelScope.launch {
+            templateRepository.save(template)
         }
     }
 
