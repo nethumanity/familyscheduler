@@ -17,8 +17,9 @@ class InMemoryRequirementOverrideRepository : RequirementOverrideRepository {
         return _overrides
     }
 
-    //いらない？
-    override fun getOverrides(date: LocalDate): Flow<List<RequirementOverride>> {
+    //いらない？使い方は↓
+    //val overridesForDate = currentDate.flatMapLatest { date -> repository.getByDate(date) }
+    override fun getByDate(date: LocalDate): Flow<List<RequirementOverride>> {
         return _overrides
             .map { list ->
                 list.filter { it.date == date }

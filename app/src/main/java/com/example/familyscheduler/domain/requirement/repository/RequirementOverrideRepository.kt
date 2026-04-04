@@ -8,7 +8,7 @@ interface RequirementOverrideRepository {
 
     fun getAllFlow(): Flow<List<RequirementOverride>>
 
-    fun getOverrides(date: LocalDate): Flow<List<RequirementOverride>>
+    fun getByDate(date: LocalDate): Flow<List<RequirementOverride>>
 
     fun getOverrides(ruleId: String, date: LocalDate): Flow<List<RequirementOverride>>
 

@@ -17,7 +17,7 @@ class InMemoryChildOverrideRepository: ChildOverrideRepository {
         return _childOverrides
     }
 
-    // 編集画面用（いらない？）
+    // いらない？
     override fun getOverride(
         childName: String,
         date: LocalDate

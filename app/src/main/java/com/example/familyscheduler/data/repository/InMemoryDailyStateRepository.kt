@@ -17,7 +17,9 @@ class InMemoryDailyStateRepository : DailyStateRepository {
         return _states
     }
 
-    // いらない？
+    // いらない？使い方は↓
+    //currentDate.flatMapLatest { date ->
+    //dailyStateRepository.getByDate(date)
     override fun getByDate(date: LocalDate): Flow<List<DailyState>> {
         return _states
             .map { map ->
