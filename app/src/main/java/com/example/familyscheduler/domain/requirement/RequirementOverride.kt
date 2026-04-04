@@ -16,6 +16,5 @@ data class RequirementToggleOverride(
 data class RequirementShiftOverride(
     override val ruleId: String,
     override val date: LocalDate,
-    //val person: Person,
     val deltaSteps: Int
 ) : RequirementOverride

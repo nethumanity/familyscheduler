@@ -1,0 +1,23 @@
+package com.example.familyscheduler.data.local.entity
+
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+
+@Entity(tableName = "child_routines")
+data class ChildRoutineEntity(
+
+    @PrimaryKey val name: String,
+
+    val wakeUpTime: String,
+    val sleepTime: String,
+
+    val daysOfWeek: String, // CSV
+
+    val nurseryStart: String,
+    val nurseryStartEarliest: String,
+    val nurseryStartLatest: String,
+
+    val nurseryEnd: String,
+    val nurseryEndEarliest: String,
+    val nurseryEndLatest: String
+)

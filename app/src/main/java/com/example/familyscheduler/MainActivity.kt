@@ -24,17 +24,20 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.example.familyscheduler.data.repository.InMemoryChildOverrideRepository
-import com.example.familyscheduler.data.repository.InMemoryChildRoutineRepository
-import com.example.familyscheduler.data.repository.InMemoryDailyStateRepository
-import com.example.familyscheduler.data.repository.InMemoryHouseholdRequirementRepository
-import com.example.familyscheduler.data.repository.InMemoryRequirementOverrideRepository
-import com.example.familyscheduler.data.repository.InMemoryTemplateRepository
+import androidx.room.Room
+import com.example.familyscheduler.data.local.AppDatabase
+import com.example.familyscheduler.data.repository.RoomChildOverrideRepository
+import com.example.familyscheduler.data.repository.RoomChildRoutineRepository
+import com.example.familyscheduler.data.repository.RoomDailyStateRepository
+import com.example.familyscheduler.data.repository.RoomHouseholdRequirementRepository
+import com.example.familyscheduler.data.repository.RoomRequirementOverrideRepository
+import com.example.familyscheduler.data.repository.RoomTemplateRepository
 import com.example.familyscheduler.domain.person.Person
 import com.example.familyscheduler.domain.requirement.RequirementBuilder
 import com.example.familyscheduler.domain.routine.CareCapacityCalculator
@@ -85,12 +88,21 @@ fun MainScreen() {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
 
-    val templateRepository = remember { InMemoryTemplateRepository() }
-    val dailyStateRepository = remember { InMemoryDailyStateRepository() }
-    val householdRequirementRepository = remember { InMemoryHouseholdRequirementRepository() }
-    val requirementOverrideRepository = remember { InMemoryRequirementOverrideRepository() }
-    val childRepository = remember { InMemoryChildRoutineRepository() }
-    val childOverrideRepository = remember { InMemoryChildOverrideRepository() }
+    val context = LocalContext.current
+    val db = remember {
+        Room.databaseBuilder(
+            context,
+            AppDatabase::class.java,
+            "app-db"
+        ).build()
+    }
+
+    val templateRepository = remember { RoomTemplateRepository(db.templateDao()) }
+    val dailyStateRepository = remember { RoomDailyStateRepository(db.dailyStateDao()) }
+    val householdRequirementRepository = remember { RoomHouseholdRequirementRepository(db.householdRequirementDao()) }
+    val requirementOverrideRepository = remember { RoomRequirementOverrideRepository(db.requirementOverrideDao()) }
+    val childRepository = remember { RoomChildRoutineRepository(db.childRoutineDao()) }
+    val childOverrideRepository = remember { RoomChildOverrideRepository(db.childOverrideDao()) }
 
     val factory = TimelineViewModelFactory(
         templateRepository = templateRepository,
@@ -238,7 +250,6 @@ fun MainScreen() {
                         viewModel = viewModel,
                         onBack = { navController.popBackStack() },
                         onSaved = {
-                            timelineViewModel.refreshGuideState()
                             navController.popBackStack("timeline", false)
                         }
                     )
@@ -337,7 +348,6 @@ fun MainScreen() {
                         viewModel = templateEditViewModel,
                         onSaved = {
                             timelineViewModel.dismissTemplateSheet()
-                            timelineViewModel.refreshGuideState()
                             navController.popBackStack("timeline", false)
                         },
                         onBack = {

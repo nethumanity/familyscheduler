@@ -101,7 +101,7 @@ class TimelineViewModel(
     )
     val uiState: StateFlow<TimelineUiState> = _uiState
 
-    private val ENABLE_SAMPLE_DATA = true   //falseでサンプル注入なし
+    private val ENABLE_SAMPLE_DATA = false   //falseでサンプル注入なし
 
     private val _warningDialogState =
         MutableStateFlow<WarningDialogState?>(null)
@@ -118,6 +118,29 @@ class TimelineViewModel(
     val editingTarget: StateFlow<EditingTarget?> = _editingTarget
 
     init {
+        // -------------------------------
+        // ① ガイド表示の要否
+        // -------------------------------
+        viewModelScope.launch {
+            uiState.collect { state ->
+                _guideState.update { current ->
+                    GuideState(
+                        showFatherHint =
+                            current.showFatherHint &&
+                                    state.templates.none { it.person == Person.FATHER },
+
+                        showMotherHint =
+                            current.showMotherHint &&
+                                    state.templates.none { it.person == Person.MOTHER },
+
+                        showChildHint =
+                            current.showChildHint &&
+                                    state.childRoutines.isEmpty()
+                    )
+                }
+            }
+        }
+
         // -------------------------------
         // ① 初期データ投入（必要なら）
         // -------------------------------
@@ -581,27 +604,6 @@ class TimelineViewModel(
     // 日付変更
     fun changeDate(date: LocalDate) {
         _currentDate.value = date
-    }
-
-    fun refreshGuideState() {
-        val templates = _uiState.value.templates
-        val childRoutines = _uiState.value.childRoutines
-
-        _guideState.update { current ->
-            GuideState(
-                showFatherHint =
-                    current.showFatherHint &&
-                            templates.none { it.person == Person.FATHER },
-
-                showMotherHint =
-                    current.showMotherHint &&
-                            templates.none { it.person == Person.MOTHER },
-
-                showChildHint =
-                    current.showChildHint &&
-                            childRoutines.isEmpty()
-            )
-        }
     }
 
     // 警告→提案→実行：編集機能（今後の強化ポイント）

@@ -7,5 +7,5 @@ data class TimeSlot(
     val person: Person,
     val state: SlotState,
     val flexWindow: FlexWindowParameters,   //複数の予定に対しひとつのflexWindow問題
-    val taskName: List<String>              //String?→Stringを検証中
+    val taskName: List<String>
 )
