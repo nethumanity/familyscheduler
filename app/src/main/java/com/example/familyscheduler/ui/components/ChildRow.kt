@@ -54,8 +54,8 @@ fun ChildRow(
                     ChildTodayRoutine.NURSERY -> "登園"
                     ChildTodayRoutine.HOME -> "在宅"
                     ChildTodayRoutine.NONE -> "保育なし"
-                },
-                color = Color.DarkGray
+                }
+                //color = Color.DarkGray
             )
         }
 

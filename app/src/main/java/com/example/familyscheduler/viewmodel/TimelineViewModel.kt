@@ -326,8 +326,9 @@ class TimelineViewModel(
             childCareRuleConverter.convert(blocks, date)
 
         val mergedRules =
-            rules.filter { it.source != RequirementSource.CHILD_ROUTINE } +
-                    childRules
+            (rules.filter { it.source != RequirementSource.CHILD_ROUTINE }
+                .filter { it.isActiveOn(date) } // getByDateでRule取得するなら不要
+                    ) + childRules
 
         // ③ Overrideフィルタ
         val overridesForDate =

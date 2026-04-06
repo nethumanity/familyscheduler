@@ -50,6 +50,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -261,7 +262,9 @@ fun TimelineScreen(
             ) {
                 Text(
                     text = "${person.label} のテンプレート",
-                    style = MaterialTheme.typography.titleMedium,
+                    //style = MaterialTheme.typography.titleMedium,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(16.dp)
                 )
 
