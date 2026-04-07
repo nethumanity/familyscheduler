@@ -108,9 +108,6 @@ class TimelineViewModel(
     val warningDialogState: StateFlow<WarningDialogState?> =
         _warningDialogState
 
-    private val _selectedPerson = MutableStateFlow<Person?>(null)
-    val selectedPerson: StateFlow<Person?> = _selectedPerson
-
     private val _guideState = MutableStateFlow(GuideState())
     val guideState: StateFlow<GuideState> = _guideState
 
@@ -517,24 +514,6 @@ class TimelineViewModel(
         }
     }
 
-    fun showTemplateSheet(person: Person) {
-        _selectedPerson.value = person
-    }
-
-    fun dismissTemplateSheet() {
-        _selectedPerson.value = null
-    }
-
-    val templatesForSelectedPerson =
-        combine(
-            templateRepository.getAllFlow(),
-            _selectedPerson
-        ) { templates, person ->
-
-            if (person == null) emptyList()
-            else templates.filter { it.person == person }
-        }
-
     fun applyTemplate(person: Person, template: DailyTemplate) {
 
         viewModelScope.launch {
@@ -549,8 +528,6 @@ class TimelineViewModel(
             )
 
             dailyStateRepository.save(state)
-
-            dismissTemplateSheet()
         }
     }
 
@@ -563,7 +540,7 @@ class TimelineViewModel(
         )
     }
 
-    fun deleteTemplate(templateId: String, person:Person) {
+    fun deleteTemplate(templateId: String) {
 
         val template = uiState.value.templates
             .find { it.id == templateId }

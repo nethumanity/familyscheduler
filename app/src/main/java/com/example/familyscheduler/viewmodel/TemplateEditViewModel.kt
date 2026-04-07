@@ -58,9 +58,15 @@ class TemplateEditViewModel(
         val sleepStart: LocalTime = LocalTime.of(22,0),
         val sleepEnd: LocalTime = LocalTime.of(6,0),
 
-        val additionalSchedules: List<ScheduleTemplate> = emptyList(),
+        val additionalSchedules: List<AdditionalScheduleUi> = emptyList(),
 
         val overlaps: List<Pair<ScheduleTemplate, ScheduleTemplate>> = emptyList()
+    )
+
+    data class AdditionalScheduleUi(
+        val type: ScheduleType,
+        val start: LocalTime,
+        val end: LocalTime
     )
 
     private val _uiState =
@@ -70,6 +76,11 @@ class TemplateEditViewModel(
 
     private val _saveCompleted = MutableSharedFlow<Unit>()
     val saveCompleted = _saveCompleted.asSharedFlow()
+
+    private fun TemplateEditUiState.recompute(): TemplateEditUiState {
+        val all = buildAllSchedules(this)
+        return copy(overlaps = all.findOverlaps())
+    }
 
     fun updateTemplateName(name: String) =
         _uiState.update { it.copy(templateName = name) }
@@ -169,14 +180,19 @@ class TemplateEditViewModel(
 
     fun addAdditionalSchedule() {
 
-        val newSchedule = ScheduleTemplate(
-
+//        val newSchedule = ScheduleTemplate(
+//
+//            type = ScheduleType.WORK,
+//
+//            timeRange = TimeRange(
+//                LocalTime.of(14,0),
+//                LocalTime.of(15,0)
+//            )
+//        )
+        val newSchedule = AdditionalScheduleUi(
             type = ScheduleType.WORK,
-
-            timeRange = TimeRange(
-                LocalTime.of(14,0),
-                LocalTime.of(15,0)
-            )
+            start = LocalTime.of(14,0),
+            end = LocalTime.of(15,0)
         )
 
         _uiState.update { old ->
@@ -244,12 +260,12 @@ class TemplateEditViewModel(
             val oldItem = list[index]
 
             list[index] =
-                oldItem.copy(
-                    timeRange = TimeRange(
-                        time,
-                        oldItem.timeRange.end
-                    )
-                )
+                oldItem.copy(start = time)
+//                    timeRange = TimeRange(
+//                        time,
+//                        oldItem.timeRange.end
+//                    )
+//                )
 
             val newState = old.copy(
                 additionalSchedules = list
@@ -271,12 +287,12 @@ class TemplateEditViewModel(
             val oldItem = list[index]
 
             list[index] =
-                oldItem.copy(
-                    timeRange = TimeRange(
-                        oldItem.timeRange.start,
-                        time
-                    )
-                )
+                oldItem.copy(end = time)
+//                    timeRange = TimeRange(
+//                        oldItem.timeRange.start,
+//                        time
+//                    )
+//                )
 
             val newState = old.copy(
                 additionalSchedules = list
@@ -290,17 +306,28 @@ class TemplateEditViewModel(
 
     private fun buildAllSchedules(ui: TemplateEditUiState): List<ScheduleTemplate> {
         return buildList {
+            fun addIfValid(type: ScheduleType, start: LocalTime, end: LocalTime) {
+                TimeRange.createOrNull(start, end)
+                    ?.let { add(ScheduleTemplate(type, it)) }
+            }
             if (!ui.noWork) {
-                add(ScheduleTemplate(ScheduleType.WORK, TimeRange(ui.workStart, ui.workEnd)))
+                addIfValid(ScheduleType.WORK, ui.workStart, ui.workEnd)
             }
             if (!ui.noGoCommute) {
-                add(ScheduleTemplate(ScheduleType.COMMUTE_GO, TimeRange(ui.goCommuteStart, ui.goCommuteEnd)))
+                addIfValid(ScheduleType.COMMUTE_GO, ui.goCommuteStart, ui.goCommuteEnd)
             }
             if (!ui.noBackCommute) {
-                add(ScheduleTemplate(ScheduleType.COMMUTE_BACK, TimeRange(ui.backCommuteStart, ui.backCommuteEnd)))
+                addIfValid(ScheduleType.COMMUTE_BACK, ui.backCommuteStart, ui.backCommuteEnd)
             }
-            add(ScheduleTemplate(ScheduleType.SLEEP, TimeRange(ui.sleepStart, ui.sleepEnd)))
-            addAll(ui.additionalSchedules)
+            addIfValid(ScheduleType.SLEEP, ui.sleepStart, ui.sleepEnd)
+            addAll(
+                ui.additionalSchedules.mapNotNull {
+                    TimeRange.createOrNull(it.start, it.end)
+                        ?.let { range ->
+                            ScheduleTemplate(it.type, range)
+                        }
+                }
+            )
         }
     }
 
@@ -336,44 +363,51 @@ class TemplateEditViewModel(
                     RepeatRule.None
             }
 
-        val rawList = buildList {
+        val rawList = buildAllSchedules(ui) //buildList {
 
-            if (!ui.noWork) {
-                add(
-                    ScheduleTemplate(
-                        type = ScheduleType.WORK,
-                        timeRange = TimeRange(ui.workStart, ui.workEnd)
-                    )
-                )
-            }
-
-            if (!ui.noGoCommute) {
-                add(
-                    ScheduleTemplate(
-                        type = ScheduleType.COMMUTE_GO,
-                        timeRange = TimeRange(ui.goCommuteStart, ui.goCommuteEnd)
-                    )
-                )
-            }
-
-            if (!ui.noBackCommute) {
-                add(
-                    ScheduleTemplate(
-                        type = ScheduleType.COMMUTE_BACK,
-                        timeRange = TimeRange(ui.backCommuteStart, ui.backCommuteEnd)
-                    )
-                )
-            }
-
-            add(
-                ScheduleTemplate(
-                    type = ScheduleType.SLEEP,
-                    timeRange = TimeRange(ui.sleepStart, ui.sleepEnd)
-                )
-            )
-
-            addAll(ui.additionalSchedules)
-        }
+//            if (!ui.noWork) {
+//                add(
+//                    ScheduleTemplate(
+//                        type = ScheduleType.WORK,
+//                        timeRange = TimeRange(ui.workStart, ui.workEnd)
+//                    )
+//                )
+//            }
+//
+//            if (!ui.noGoCommute) {
+//                add(
+//                    ScheduleTemplate(
+//                        type = ScheduleType.COMMUTE_GO,
+//                        timeRange = TimeRange(ui.goCommuteStart, ui.goCommuteEnd)
+//                    )
+//                )
+//            }
+//
+//            if (!ui.noBackCommute) {
+//                add(
+//                    ScheduleTemplate(
+//                        type = ScheduleType.COMMUTE_BACK,
+//                        timeRange = TimeRange(ui.backCommuteStart, ui.backCommuteEnd)
+//                    )
+//                )
+//            }
+//
+//            add(
+//                ScheduleTemplate(
+//                    type = ScheduleType.SLEEP,
+//                    timeRange = TimeRange(ui.sleepStart, ui.sleepEnd)
+//                )
+//            )
+//
+//            addAll(
+//                ui.additionalSchedules.mapNotNull {
+//                    TimeRange.createOrNull(it.start, it.end)
+//                        ?.let { range ->
+//                            ScheduleTemplate(it.type, range)
+//                        }
+//                }
+//            )
+//        }
 
         val schedules =
             TemplateNormalizer.normalize(rawList)
@@ -457,7 +491,13 @@ class TemplateEditViewModel(
             sleepEnd = sleepEnd,
 
             // 追加
-            additionalSchedules = additional
+            additionalSchedules = additional.map {
+                AdditionalScheduleUi(
+                    type = it.type,
+                    start = it.timeRange.start,
+                    end = it.timeRange.end
+                )
+            }
         )
     }
 

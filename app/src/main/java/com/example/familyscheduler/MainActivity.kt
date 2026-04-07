@@ -6,6 +6,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
@@ -47,6 +48,7 @@ import com.example.familyscheduler.domain.routine.RoutineResolver
 import com.example.familyscheduler.ui.components.ChildListSheet
 import com.example.familyscheduler.ui.components.DailyOverviewSheet
 import com.example.familyscheduler.ui.components.SettingsScreen
+import com.example.familyscheduler.ui.components.TemplateSheet
 import com.example.familyscheduler.ui.inputs.AddTaskScreen
 import com.example.familyscheduler.ui.inputs.ChildRoutineInputScreen
 import com.example.familyscheduler.ui.inputs.ScheduleInputScreen
@@ -130,7 +132,7 @@ fun MainScreen() {
         skipPartiallyExpanded = true
     )
 
-    val snackbarHostState = remember { SnackbarHostState() }
+    val sheetSnackbarHostState = remember { SnackbarHostState() }
 
     val currentDate by timelineViewModel.currentDate.collectAsState()
 
@@ -144,9 +146,9 @@ fun MainScreen() {
 
                 is UiEvent.ShowUndoDelete -> {
 
-                    snackbarHostState.currentSnackbarData?.dismiss()
+                    sheetSnackbarHostState.currentSnackbarData?.dismiss()
 
-                    val result = snackbarHostState.showSnackbar(
+                    val result = sheetSnackbarHostState.showSnackbar(
                         message = event.message,
                         actionLabel = "元に戻す",
                         duration = SnackbarDuration.Short
@@ -221,12 +223,8 @@ fun MainScreen() {
 
                     TimelineScreen(
                         viewModel = timelineViewModel,
-                        onAddClick = { person ->
-                            navController.navigate("schedule_input/${person.name}")
-                        },
-                        onEditTemplate = { templateId, person ->
-                            timelineViewModel.startEditTemplate(templateId)
-                            navController.navigate("schedule_input/${person.name}")
+                        onOpenTemplateSheet = { person ->
+                            sheet = MainSheet.TEMPLATE(person)
                         }
                     )
                 }
@@ -347,7 +345,6 @@ fun MainScreen() {
                     ScheduleInputScreen(
                         viewModel = templateEditViewModel,
                         onSaved = {
-                            timelineViewModel.dismissTemplateSheet()
                             navController.popBackStack("timeline", false)
                         },
                         onBack = {
@@ -363,43 +360,69 @@ fun MainScreen() {
                     sheetState = sheetState,
                     onDismissRequest = { sheet = null }
                 ) {
+                    Box(
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        when (it) {
 
-                    when (it) {
+                            MainSheet.CHILD -> {
+                                ChildListSheet(
+                                    viewModel = childRoutineViewModel,
+                                    currentDate = currentDate,
+                                    onAddClick = {
+                                        sheet = null
+                                        navController.navigate("child_input")
+                                    },
+                                    onEditChildRoutine = { childName ->
+                                        childRoutineViewModel.startEditChildRoutine(childName)
+                                        sheet = null
+                                        navController.navigate("child_input")
+                                    }
+                                )
+                            }
 
-                        MainSheet.CHILD -> {
-                            ChildListSheet(
-                                viewModel = childRoutineViewModel,
-                                currentDate = currentDate,
-                                onAddClick = {
-                                    sheet = null
-                                    navController.navigate("child_input")
-                                },
-                                onEditChildRoutine = { childName ->
-                                    childRoutineViewModel.startEditChildRoutine(childName)
-                                    sheet = null
-                                    navController.navigate("child_input")
-                                }
-                            )
+                            MainSheet.DAILY_OVERVIEW -> {
+                                DailyOverviewSheet(
+                                    viewModel = timelineViewModel,
+                                    onEditRequirement = { ruleId ->
+                                        timelineViewModel.startEditRequirement(ruleId)
+                                        sheet = null
+                                        navController.navigate("add_task")
+                                    }
+                                )
+                            }
+
+                            is MainSheet.TEMPLATE -> {
+                                TemplateSheet(
+                                    viewModel = timelineViewModel,
+                                    person = it.person,
+                                    onAddClick = { person ->
+                                        sheet = null
+                                        navController.navigate("schedule_input/${person.name}")
+                                    },
+                                    onEditTemplate = { templateId, person ->
+                                        timelineViewModel.startEditTemplate(templateId)
+                                        sheet = null
+                                        navController.navigate("schedule_input/${person.name}")
+                                    },
+                                    onDeleteTemplate = { templateId ->
+                                        timelineViewModel.deleteTemplate(templateId)
+                                    },
+                                    onApplyTemplate = { template ->
+                                        timelineViewModel.applyTemplate(it.person, template)
+                                        sheet = null
+                                    }
+                                )
+                            }
                         }
 
-                        MainSheet.DAILY_OVERVIEW -> {
-                            DailyOverviewSheet(
-                                viewModel = timelineViewModel,
-                                onEditRequirement = { ruleId ->
-                                    timelineViewModel.startEditRequirement(ruleId)
-                                    sheet = null
-                                    navController.navigate("add_task")
-                                }
-                            )
-                        }
+                        SnackbarHost(
+                            hostState = sheetSnackbarHostState,
+                            modifier = Modifier.align(Alignment.BottomCenter)
+                        )
                     }
                 }
             }
-
-            SnackbarHost(
-                hostState = snackbarHostState,
-                modifier = Modifier.align(Alignment.BottomCenter)
-            )
         }
     }
 }

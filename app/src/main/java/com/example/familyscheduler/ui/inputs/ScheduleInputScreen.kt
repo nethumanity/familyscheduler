@@ -335,7 +335,7 @@ fun ScheduleInputScreen(
                         state.backCommuteStart != state.backCommuteEnd &&
                         state.sleepStart != state.sleepEnd &&
                         state.additionalSchedules.all {
-                            it.timeRange.start != it.timeRange.end
+                            it.start != it.end
                         }
 
             Button(

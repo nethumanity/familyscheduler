@@ -53,14 +53,16 @@ data class HouseholdRequirementRule(
         )
     }
 
+    // 最上位（or 次点）のpriorityにrequiredCount, allowedPersonsの組合せを入れるべきかもしれない
+    // Count = 2, PersonsSize = 2, Count = 1, PersonsSize = 1 > Count = 1, PersonsSize = 2
     fun prioritySeed(startIndex: Int, endIndex: Int): Long {
         val length = endIndex - startIndex
         val flex = flexWindowSlots.backward + flexWindowSlots.forward
 
-        return targetState.weight * 1_000_000L +
+        return targetState.weight * 1_000_000L +                         // WORK > CHILDCARE > LIFE
                 (if (date != null) 100_000 else 0) +
-                (if (source == RequirementSource.USER) 10_000 else 0) +
-                ((1000 - length) * 100L) +
+                (if (source == RequirementSource.USER) 10_000 else 0) +  // あまり意味はない
+                ((1000 - length) * 100L) +                               // 逆がいい気もするが、試しながら考える
                 ((100 - flex) * 10L) +
                 createdAt
     }

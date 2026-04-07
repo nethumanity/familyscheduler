@@ -73,14 +73,14 @@ fun AdditionalScheduleSection(
 
                 TimeDropdownPicker(
                     label = "開始",
-                    selectedTime = schedule.timeRange.start
+                    selectedTime = schedule.start
                 ) {
                     viewModel.updateAdditionalStart(index, it)
                 }
 
                 TimeDropdownPicker(
                     label = "終了",
-                    selectedTime = schedule.timeRange.end
+                    selectedTime = schedule.end
                 ) {
                     viewModel.updateAdditionalEnd(index, it)
                 }
