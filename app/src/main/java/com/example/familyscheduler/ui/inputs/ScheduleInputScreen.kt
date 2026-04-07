@@ -328,15 +328,7 @@ fun ScheduleInputScreen(
         item {
             Spacer(Modifier.height(8.dp))
 
-            val isValid =                           // VMに関数として持っていく
-                state.templateName.isNotBlank() &&
-                        state.workStart != state.workEnd &&
-                        state.goCommuteStart != state.goCommuteEnd &&
-                        state.backCommuteStart != state.backCommuteEnd &&
-                        state.sleepStart != state.sleepEnd &&
-                        state.additionalSchedules.all {
-                            it.start != it.end
-                        }
+            val isValid = viewModel.isValid(state)
 
             Button(
 
