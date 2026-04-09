@@ -76,8 +76,10 @@ class TimelineViewModel(
         val overrides: List<RequirementOverride>,
         val childRoutines: List<ChildRoutineInput>,
         val slots: List<TimeSlot>,
+        val slotsByIndex: Map<Int, List<TimeSlot>>,
+        val slotsByPersonIndex: Map<Pair<Person, Int>, TimeSlot>,
         val evaluations: List<AvailabilityEvaluation>,
-        val evaluationsByIndex: Map<Int, AvailabilityEvaluation>, // ←追加
+        val evaluationsByIndex: Map<Int, AvailabilityEvaluation>,
         val requirements: List<HouseholdRequirement>,
         val rules: List<HouseholdRequirementRule>,
     )
@@ -93,6 +95,8 @@ class TimelineViewModel(
             overrides = emptyList(),
             childRoutines = emptyList(),
             slots = emptyList(),
+            slotsByIndex = emptyMap(),
+            slotsByPersonIndex = emptyMap(),
             evaluations = emptyList(),
             evaluationsByIndex = emptyMap(),
             requirements = emptyList(),
@@ -346,8 +350,9 @@ class TimelineViewModel(
                 overrides = overridesForDate
             )
 
-        val evaluationsByIndex =
-            result.evaluations.associateBy { it.index }
+        val slotsByIndex = result.slots.groupBy { it.index }
+        val slotsByPersonIndex = result.slots.associateBy { it.person to it.index }
+        val evaluationsByIndex = result.evaluations.associateBy { it.index }
 
         return TimelineUiState(
             date = date,
@@ -356,6 +361,8 @@ class TimelineViewModel(
             overrides = overridesForDate,
             childRoutines = routines,
             slots = result.slots,
+            slotsByIndex = slotsByIndex,
+            slotsByPersonIndex = slotsByPersonIndex,
             evaluations = result.evaluations,
             evaluationsByIndex = evaluationsByIndex,
             requirements = requirements,
@@ -370,14 +377,15 @@ class TimelineViewModel(
             .firstOrNull { it.sourceRuleId == ruleId }
             ?: return emptyList()
 
-        return _uiState.value.slots
+        val slotsAtIndex = _uiState.value.slotsByIndex[req.startIndex].orEmpty()
+
+        return slotsAtIndex
             .filter {
-                it.index == req.startIndex &&
-                        it.state == req.targetState &&
+                it.state == req.targetState &&
                         it.person in req.allowedPersons &&
                         req.name in it.taskName
             }
-            .mapNotNull { it.person }
+            .map { it.person }
     }
 
     //編集機能（状態変更）
@@ -398,11 +406,11 @@ class TimelineViewModel(
 
             val reverseAssignable =
                 if (req != null && reversedPerson.size == 1) // req != nullの代わりに↓を有効にしてもいい
-                    AvailabilityEngine.canAssign(
-                        reversedPerson.single(),
-                        req.startIndex, //?: TimeAxis.indexOf(rule.timeRange.start),
-                        _uiState.value.slots,
-                        rule.targetState
+                    canAssignInVm(
+                        person = reversedPerson.single(),
+                        index = req.startIndex, //?: TimeAxis.indexOf(rule.timeRange.start),
+                        slotsByPersonIndex = _uiState.value.slotsByPersonIndex,
+                        requiredState = rule.targetState
                     )
                 else false
 
@@ -435,6 +443,16 @@ class TimelineViewModel(
         return RequirementModeToday.AUTO
     }
 
+    fun canAssignInVm(
+        person: Person,
+        index: Int,
+        slotsByPersonIndex: Map<Pair<Person, Int>, TimeSlot>,
+        requiredState: SlotState
+    ): Boolean {
+        val slot = slotsByPersonIndex[person to index] ?: return false
+        return slot.state.weight <= requiredState.weight
+    }
+
     fun startEditRequirement(ruleId: String) {
 
         if (_editingTarget.value != null) return
@@ -444,7 +462,7 @@ class TimelineViewModel(
         )
     }
 
-    fun deleteRequirement(ruleId: String) { //★
+    fun deleteRequirement(ruleId: String) {
 
         val rule = _uiState.value.rules
             .find { it.id == ruleId }

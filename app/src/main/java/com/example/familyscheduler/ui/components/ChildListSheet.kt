@@ -35,12 +35,12 @@ fun ChildListSheet(
     onAddClick: () -> Unit,
     onEditChildRoutine: (String) -> Unit
 ) {
+    // リファクタ候補：MainScreenからchildren, overridesを引数で受け取る
     val uiState by viewModel.uiState.collectAsState()
 
     val children = uiState.routines
     val overrides = uiState.overrides
 
-    var menuPosition by remember { mutableStateOf<Offset?>(null) }
     var expandedMenuId by remember { mutableStateOf<String?>(null) }
 
     Column(

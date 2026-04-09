@@ -44,6 +44,7 @@ fun TemplateSheet(
     onDeleteTemplate: (String) -> Unit,
     onApplyTemplate: (DailyTemplate) -> Unit
 ) {
+    // リファクタ候補：MainScreenからtemplatesを引数で受け取る
     val uiState by viewModel.uiState.collectAsState()
 
     val templates = uiState.templates

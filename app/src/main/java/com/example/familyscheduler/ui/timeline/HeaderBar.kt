@@ -19,6 +19,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.familyscheduler.R
 import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 @Composable
 fun HeaderBar(
@@ -26,6 +28,11 @@ fun HeaderBar(
     onPreviousDay: () -> Unit,
     onNextDay: () -> Unit
 ) {
+    val formatter = DateTimeFormatter.ofPattern(
+        "MM/dd (E)",
+        Locale.JAPANESE
+    )
+
     Surface(shadowElevation = 4.dp) {
         Row(
             modifier = Modifier
@@ -43,14 +50,13 @@ fun HeaderBar(
                     Icon(
                         painter = painterResource(R.drawable.ic_previousday),
                         contentDescription = "PreviousDay",
-                        //tint = Color.Red,
                         modifier = Modifier.size(24.dp)
                     )
                 }
             )
 
             Text(
-                text = date.toString(),
+                text = date.format(formatter),
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -62,7 +68,6 @@ fun HeaderBar(
                     Icon(
                         painter = painterResource(R.drawable.ic_nextday),
                         contentDescription = "NextDay",
-                        //tint = Color.Red,
                         modifier = Modifier.size(24.dp)
                     )}
             )

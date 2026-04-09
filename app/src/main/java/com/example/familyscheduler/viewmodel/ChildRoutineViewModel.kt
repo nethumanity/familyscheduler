@@ -195,7 +195,7 @@ class ChildRoutineViewModel(
                 .coerceAtLeast(end)
 
         return ChildRoutineInput(
-            name = state.name,
+            name = state.name.trim(),
             wakeUpTime = wakeUp,
             sleepTime = sleep,
             daysOfWeek = if (state.hasNursery) state.daysOfWeek else emptySet(),

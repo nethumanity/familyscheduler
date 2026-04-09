@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
@@ -24,7 +26,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.familyscheduler.domain.time.TimeDropdownPicker
@@ -41,6 +45,8 @@ fun ChildRoutineInputScreen(
     val uiState by viewModel.uiState.collectAsState()
 
     val form = uiState.form
+
+    val focusManager = LocalFocusManager.current
 
     LazyColumn (
         modifier = Modifier
@@ -64,10 +70,21 @@ fun ChildRoutineInputScreen(
         item {
             OutlinedTextField(
                 value = form.name,
-                onValueChange = viewModel::updateName,
-                modifier = Modifier.fillMaxWidth(),
+                onValueChange = {
+                    viewModel.updateName(it.replace("\n", ""))
+                                }, //viewModel::updateName(it.replace("\n", "") },
                 label = { Text("名前")},
-                placeholder = { Text("例：○○さん、長男、次女", color = Color.Gray) }
+                placeholder = { Text(text = "例：○○さん、長男、次女", color = Color.Gray) },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(
+                    imeAction = ImeAction.Done
+                ),
+                keyboardActions = KeyboardActions(
+                    onDone = {
+                        focusManager.clearFocus()
+                    }
+                ),
+                modifier = Modifier.fillMaxWidth()
             )
         }
         item {

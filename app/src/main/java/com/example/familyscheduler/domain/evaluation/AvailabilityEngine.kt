@@ -1,6 +1,5 @@
 package com.example.familyscheduler.domain.evaluation
 
-import android.util.Log
 import com.example.familyscheduler.domain.person.Person
 import com.example.familyscheduler.domain.requirement.HouseholdRequirement
 import com.example.familyscheduler.domain.requirement.RequirementModeToday
@@ -13,6 +12,11 @@ import com.example.familyscheduler.domain.time.TimeAxis
 
 object AvailabilityEngine {
 
+    data class SlotIndex(
+        val byIndex: Map<Int, List<Int>>,
+        val byPersonIndex: Map<Pair<Person, Int>, Int>
+    )
+
     fun recompute(
         originalSlots: List<TimeSlot>,
         requirements: List<HouseholdRequirement>,
@@ -22,8 +26,11 @@ object AvailabilityEngine {
         val workingSlots =
             originalSlots.map { it.copy() }.toMutableList()
 
+        val index = buildSlotIndex(workingSlots)
+
         assignHouseholdTasks(
             slots = workingSlots,
+            slotIndex = index,
             requirements = requirements,
             overrides = overrides
         )
@@ -33,6 +40,7 @@ object AvailabilityEngine {
         val evaluations =
             evaluateAvailability(
                 slots = workingSlots,
+                slotIndex = index,
                 requirements = requirements
             )
 
@@ -42,15 +50,33 @@ object AvailabilityEngine {
         )
     }
 
+    fun buildSlotIndex(slots: List<TimeSlot>): SlotIndex {
+        val byIndex = slots.indices.groupBy { slots[it].index }
+
+        val byPersonIndex =
+            slots.indices.associateBy { i ->
+                slots[i].person to slots[i].index
+            }
+
+        return SlotIndex(byIndex, byPersonIndex)
+    }
+
     fun assignHouseholdTasks(
         slots: MutableList<TimeSlot>,
+        slotIndex: SlotIndex,
         requirements: List<HouseholdRequirement>,
         overrides: List<RequirementOverride>
     ) {
-        internalAssign(slots, requirements)
+
+        internalAssign(
+            slots = slots,
+            slotIndex = slotIndex,
+            requirements = requirements
+        )
 
         applyReverseOverrides(
             slots = slots,
+            slotIndex = slotIndex,
             requirements = requirements,
             overrides = overrides
         )
@@ -58,6 +84,7 @@ object AvailabilityEngine {
 
     private fun internalAssign(
         slots: MutableList<TimeSlot>,
+        slotIndex: SlotIndex,
         requirements: List<HouseholdRequirement>?
     ) {
         if (requirements.isNullOrEmpty()) return
@@ -66,55 +93,42 @@ object AvailabilityEngine {
             it.prioritySeed
         }
 
-        //val slotsByIndex = slots.withIndex().groupBy { it.value.index }
-        val slotsByIndex = slots.indices.groupBy { slots[it].index }
-
         for (req in orderedReqs) {
             for (index in TimeAxis.indices) {
                 if (!req.isRequiredAt(index)) continue
 
-                //val slotsAtIndex = slots.filter { it.index == index }
-                //val slotsAtIndex = slotsByIndex[index].orEmpty() //O(n2)対応
-                val slotsAtIndex = slotsByIndex[index]
-                    .orEmpty()
-                    .map { i -> i to slots[i] } // ← 毎回最新
+                val indicesAtIndex = slotIndex.byIndex[index].orEmpty()
 
-                val alreadySatisfiedSlots =
-                    slotsAtIndex.filter { (_, slot) ->
+                val alreadySatisfied =
+                    indicesAtIndex.filter { i ->
+                        val slot = slots[i]
                         slot.person in req.allowedPersons &&
                                 slot.state == req.targetState
                     }
 
-                val alreadySatisfied = alreadySatisfiedSlots.size
-
-                Log.d ("taskNameIssue", "alreadySatisfiedSlots size = ${alreadySatisfiedSlots.size}")
-
-                for ((i, slot) in alreadySatisfiedSlots) {
-                    val newTask = (slot.taskName + req.name).distinct()
-
-                    Log.d("taskNameIssue", "Before: ${slot.taskName}")
-                    Log.d("taskNameIssue", "After: $newTask")
-
-                    slots[i] = slot.copy(taskName = newTask)
+                for (i in alreadySatisfied) {
+                    val slot = slots[i]
+                    slots[i] = slot.copy(
+                        taskName = slot.taskName + req.name
+                    )
                 }
 
-                var remaining = req.requiredCount - alreadySatisfied
+                var remaining = req.requiredCount - alreadySatisfied.size
                 if (remaining <= 0) continue
 
                 val candidates =
-                    slotsAtIndex.filter { (_, slot) ->
-                            slot.person in req.allowedPersons &&
-                                    slot.state == SlotState.UNASSIGNED
-                        }
-                        //.sortedBy { it.person }   //誰から割り当てるかが未定義
+                    indicesAtIndex.filter { i ->
+                        val slot = slots[i]
+                        slot.person in req.allowedPersons &&
+                                slot.state == SlotState.UNASSIGNED
+                    } //.sortedBy { it.person }   //必要に応じて、誰から割り当てるかを実装
 
-                for ((i, slot) in candidates) {
+                for (i in candidates) {
                     if (remaining <= 0) break
 
-                    //val i = slots.indexOf(slot)
+                    val slot = slots[i]
                     slots[i] = slot.copy(
                         state = req.targetState,
-                        //flexWindow = req.flexWindowSlots, //複数の予定に対しひとつのflexWindow問題
                         taskName = slot.taskName + req.name
                     )
                     remaining--
@@ -125,6 +139,7 @@ object AvailabilityEngine {
 
     private fun applyReverseOverrides(
         slots: MutableList<TimeSlot>,
+        slotIndex: SlotIndex,
         requirements: List<HouseholdRequirement>,
         overrides: List<RequirementOverride>
     ) {
@@ -136,8 +151,6 @@ object AvailabilityEngine {
 
         if (reverseRuleIds.isEmpty()) return
 
-        val slotsByIndex = slots.indices.groupBy { slots[it].index }
-
         requirements
             .filterIsInstance<TimeRangeHouseholdRequirement>()
             .filter { it.sourceRuleId in reverseRuleIds }
@@ -147,23 +160,24 @@ object AvailabilityEngine {
 
                     if (!req.isRequiredAt(index)) continue
 
-                    val slotsAtIndex = slotsByIndex[index]
-                        .orEmpty()
-                        .map { i -> i to slots[i] }
+                    val indicesAtIndex = slotIndex.byIndex[index].orEmpty()
 
                     // ① 今の割当を取得
-                    val assigned = slotsAtIndex.filter { (_, slot) ->
-                        slot.person in req.allowedPersons &&
-                                slot.state == req.targetState &&
-                                req.name in slot.taskName
+                    val assigned =
+                        indicesAtIndex.filter { i ->
+                            val slot = slots[i]
+                            slot.person in req.allowedPersons &&
+                                    slot.state == req.targetState &&
+                                    req.name in slot.taskName
                     }
 
                     // ② 反転対象
-                    val assignedPersons = assigned.map { it.second.person }.toSet()
+                    val assignedPersons = assigned.map { i -> slots[i].person }.toSet()
                     val reversedPersons = req.allowedPersons - assignedPersons
 
                     // ③ 一旦削除
-                    assigned.forEach { (i, slot) ->
+                    assigned.forEach { i ->
+                        val slot = slots[i]
                         slots[i] = slot.copy(
                             state = SlotState.UNASSIGNED,
                             taskName = slot.taskName - req.name
@@ -173,16 +187,18 @@ object AvailabilityEngine {
                     // ④ 強制assign（軽いガードのみ）
                     reversedPersons.forEach { person ->
 
-                        val candidate = slotsAtIndex
-                            .firstOrNull { (_, slot) ->
+                        val candidate =
+                            indicesAtIndex
+                            .firstOrNull { i ->
+                                val slot = slots[i]
                                 slot.person == person &&
                                         slot.state.weight <= req.targetState.weight
                             }
 
                         if (candidate != null) {
-                            val (i, slot) = candidate
+                            val slot = slots[candidate]
 
-                            slots[i] = slot.copy(
+                            slots[candidate] = slot.copy(
                                 state = req.targetState,
                                 taskName = slot.taskName + req.name
                             )
@@ -208,15 +224,14 @@ object AvailabilityEngine {
 
     fun evaluateAvailability(
         slots: List<TimeSlot>,
+        slotIndex: SlotIndex,
         requirements: List<HouseholdRequirement>
     ): List<AvailabilityEvaluation> {
 
-        val slotsByIndex = slots.groupBy { it.index }
-
         return TimeAxis.indices.mapNotNull { index ->
 
-            //val slotsAtIndex = slots.filter { it.index == index }   //O(n2)問題に対応
-            val slotsAtIndex = slotsByIndex[index].orEmpty()
+            val slotsAtIndex = slotIndex.byIndex[index].orEmpty().map { slots[it] }
+
             val activeReqs = requirements.filter { it.isRequiredAt(index) }
 
             if (activeReqs.isEmpty()) return@mapNotNull null
@@ -259,7 +274,8 @@ object AvailabilityEngine {
                 flexResolveProposalsAt(
                     index = index,
                     slots = slots,
-                    requirements = activeReqs, //GPTの推奨はrequirements,
+                    slotIndex = slotIndex,
+                    requirements = activeReqs, //GPTの推奨はrequirements,関数内でインデックスフィルター
                     reasons = reasons
                 )
 
@@ -287,17 +303,15 @@ object AvailabilityEngine {
         )
     }
 
-    fun flexResolveProposalsAt(     //このblockは動かす候補になるか？
+    fun flexResolveProposalsAt(     //このblockは動かす候補になるか？（インデックスフィルターなし）
         index: Int,
         slots: List<TimeSlot>,
+        slotIndex: SlotIndex,
         requirements: List<HouseholdRequirement>,
         reasons: List<MissingReason>
     ): List<FlexResolveProposal> {
 
-        //val activeReqs = requirements.filter { it.isRequiredAt(index) }
-
         val hasFlexRequirement =
-            //activeReqs.any {
             requirements.any {
                 it.flexWindowSlots.backward != 0 ||
                         it.flexWindowSlots.forward != 0
@@ -310,6 +324,7 @@ object AvailabilityEngine {
                 generateFlexResolveProposalsForReason(
                     index = index,
                     slots = slots,
+                    slotIndex = slotIndex,
                     requirements = requirements,
                     reason = reason
                 )
@@ -321,6 +336,7 @@ object AvailabilityEngine {
     fun generateFlexResolveProposalsForReason(  //どこに動かせば解決しそうか？
         index: Int,
         slots: List<TimeSlot>,
+        slotIndex: SlotIndex,
         requirements: List<HouseholdRequirement>,
         reason: MissingReason
     ): List<FlexResolveProposal> {
@@ -339,7 +355,13 @@ object AvailabilityEngine {
             if (candidateIndex !in TimeAxis.all.indices) return@flatMap emptyList()
 
             val validPersons = persons.filter {
-                canAssign(it, candidateIndex, slots, requirement.targetState)
+                canAssign(
+                    person = it,
+                    candidateIndex = candidateIndex,
+                    slots =slots,
+                    slotIndex = slotIndex,
+                    requiredState = requirement.targetState
+                )
             }
 
             when {
@@ -380,13 +402,13 @@ object AvailabilityEngine {
         person: Person,
         candidateIndex: Int,
         slots: List<TimeSlot>,
+        slotIndex: SlotIndex,
         requiredState: SlotState
     ): Boolean {
-        val slotsByPersonIndex = slots.associateBy { it.person to it.index }
-        //val slot = slots.find { it.person == person && it.index == candidateIndex }
-        val slot = slotsByPersonIndex[person to candidateIndex]  //O(n2)対応
+        val i = slotIndex.byPersonIndex[person to candidateIndex]
             ?: return false
 
+        val slot = slots[i]
         val candidatePriority = slot.state.weight
         val reqPriority = requiredState.weight
 

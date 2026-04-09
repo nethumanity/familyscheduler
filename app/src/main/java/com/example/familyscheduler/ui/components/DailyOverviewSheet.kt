@@ -21,8 +21,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.familyscheduler.domain.evaluation.AvailabilityEvaluation
 import com.example.familyscheduler.domain.evaluation.AvailabilityState
@@ -39,9 +39,9 @@ fun DailyOverviewSheet(
     viewModel: TimelineViewModel,
     onEditRequirement: (String) -> Unit
 ) {
+    // リファクタ候補：MainScreenからuiStateを引数で受け取る
     val uiState by viewModel.uiState.collectAsState()
 
-    var menuPosition by remember { mutableStateOf<Offset?>(null) }
     var expandedMenuId by remember { mutableStateOf<String?>(null) }
 
     fun indexToTime(index: Int): String {
@@ -98,7 +98,7 @@ fun DailyOverviewSheet(
                                 index = eval.index,
                                 reasonIndex = i
                                 )
-                            } //onWarningClick(eval.index, i) }
+                            }
                             .padding(vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -115,10 +115,30 @@ fun DailyOverviewSheet(
                             reason.requirementName
                         }
 
-                        Text(nameText)
-                        Spacer(Modifier.weight(1f))
+                        Text(
+                            text = nameText,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f)
+                        )
+
                         Text("${blockText}　提案：${eval.flexProposals.size}")
                     }
+
+                    /* 実装予定
+                    Box(
+                        modifier = Modifier.size(32.dp), // ← Iconと同じサイズ
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (eval.flexProposals.isNotEmpty()) { //このままだとreasonに紐づかない
+                            Icon(
+                                painter = painterResource(R.drawable.ic_proposal),
+                                contentDescription = "Proposal",
+                                tint = Color.Yellow,
+                                modifier = Modifier.matchParentSize()
+                            )
+                        }
+                    } */
                 }
             }
         }
@@ -156,6 +176,7 @@ fun DailyOverviewSheet(
                 onMenuClick = { expandedMenuId = req.id }
             )
 
+            // Menu出現位置をRequirementRowに合わせることはできますか？また、offsetで位置を（右端に）ずらせますか？
             DropdownMenu(
                 expanded = expandedMenuId == req.id,
                 onDismissRequest = { expandedMenuId = null }

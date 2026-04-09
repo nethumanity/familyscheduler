@@ -282,7 +282,7 @@ class TemplateEditViewModel(
             DailyTemplate(
                 id = ui.id ?: UUID.randomUUID().toString(),
                 person = ui.person,
-                name = ui.templateName,
+                name = ui.templateName.trim(),
                 schedules = schedules,
                 repeatRule = repeatRule
             )

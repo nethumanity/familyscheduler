@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.FilterChip
@@ -26,7 +28,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.familyscheduler.domain.person.Person
@@ -42,6 +46,8 @@ fun ScheduleInputScreen(
     onBack: () -> Unit
 ) {
     val state by viewModel.uiState.collectAsState()
+
+    val focusManager = LocalFocusManager.current
 
     LazyColumn(
 
@@ -103,9 +109,20 @@ fun ScheduleInputScreen(
 
             OutlinedTextField(
                 value = state.templateName,
-                onValueChange = { viewModel.updateTemplateName(it) },
+                onValueChange = {
+                    viewModel.updateTemplateName(it.replace("\n", ""))
+                                },
                 label = { Text("スケジュール名") },
-                placeholder = { Text("例：出勤 / 在宅 / 休暇") },
+                placeholder = { Text(text = "例：出勤 / 在宅 / 休暇", color = Color.Gray) },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(
+                    imeAction = ImeAction.Done
+                ),
+                keyboardActions = KeyboardActions(
+                    onDone = {
+                        focusManager.clearFocus()
+                    }
+                ),
                 modifier = Modifier.fillMaxWidth()
             )
         }

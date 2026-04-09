@@ -124,7 +124,7 @@ class OneTimeTaskViewModel(
 
         return HouseholdRequirementRule(
             id = input.id ?: UUID.randomUUID().toString(),
-            taskName = input.taskName,
+            taskName = input.taskName.trim(),
             targetState = input.targetState,
             requiredCount = requiredCount,
             allowedPersons = allowedPersons,

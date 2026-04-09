@@ -115,23 +115,28 @@ fun TimelineScreen(
                         detectTapGestures(
                             onTap = {
                                 val evaluation = uiState.evaluationsByIndex[index]
-                                //uiState.evaluations.find { it.index == index } //O(n2)問題
 
                                 if (evaluation?.state == AvailabilityState.WARN) {
                                     viewModel.onAvailabilityWarningClick(index, 0)
                                 }
                             },
                             onLongPress = { offset ->
+                                val timeColumnWidthPx = 64.dp.toPx()
+
+                                if (offset.x < timeColumnWidthPx)
+                                    return@detectTapGestures
+
                                 val columnWidth =
-                                    (size.width - 64.dp.toPx()) / persons.size
+                                    (size.width - timeColumnWidthPx) / persons.size
 
                                 val columnIndex =
-                                    ((offset.x - 64.dp.toPx()) / columnWidth).toInt()
+                                    ((offset.x - timeColumnWidthPx) / columnWidth)
+                                        .toInt()
+                                        .coerceIn(0, persons.lastIndex)
 
-                                val person = persons.getOrNull(columnIndex)
-                                if (person != null) {
-                                    editingSlot = index to person
-                                }
+                                val person = persons[columnIndex]
+
+                                editingSlot = index to person
                             }
                         )
                     }
@@ -147,8 +152,6 @@ fun TimelineScreen(
                         fontSize = 12.sp
                     )
 
-                    //val evaluation = evaluations.getOrNull(index)
-                    //val evaluation = uiState.evaluations.find { it.index == index }
                     val evaluation = uiState.evaluationsByIndex[index]
 
                     if (evaluation?.state == AvailabilityState.WARN) {
@@ -219,7 +222,6 @@ fun TimelineScreen(
 
     dialogState?.let { state ->
 
-        //val evaluation = uiState.evaluations.find { it.index == state.index }
         val evaluation = uiState.evaluationsByIndex[state.index]
 
         WarningDialog(
