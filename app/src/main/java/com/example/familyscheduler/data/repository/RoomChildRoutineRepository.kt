@@ -18,8 +18,8 @@ class RoomChildRoutineRepository(
     }
 
     // 編集画面用
-    override fun getByChildName(childName: String): Flow<ChildRoutineInput?> {
-        return dao.getByName(childName).map {
+    override fun getByChildId(childId: String): Flow<ChildRoutineInput?> {
+        return dao.getByChildId(childId).map {
             it?.let { ChildRoutineMapper.toDomain(it) }
         }
     }
@@ -28,7 +28,7 @@ class RoomChildRoutineRepository(
         dao.insert(ChildRoutineMapper.toEntity(input))
     }
 
-    override suspend fun delete(name: String) {
-        dao.delete(name)
+    override suspend fun delete(childId: String) {
+        dao.delete(childId)
     }
 }

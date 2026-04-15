@@ -1,19 +1,22 @@
 package com.example.familyscheduler.domain.evaluation
 
 import com.example.familyscheduler.domain.person.Person
+import com.example.familyscheduler.domain.requirement.RequirementSource
 import com.example.familyscheduler.domain.slot.SlotState
 import com.example.familyscheduler.domain.slot.TimeSlot
 import kotlin.math.abs
 
 data class FlexResolveProposal(
+    val type: ProposalType,
     val sourceRuleId: String,
-    val requirementName: String,    //絞り込み条件を確認
-    val persons: List<Person>,      //Personから変更、Set?
+    val requirementSource: RequirementSource,
+    val requirementName: String,
+    val persons: List<Person>,
     val initialIndex: Int,
     val candidateIndex: Int,
     val targetState: SlotState
 ) {
-    fun score(slots: List<TimeSlot>): Int {     //検証中
+    fun score(slots: List<TimeSlot>): Int {
         val candidateSlot = slots.find {
             it.person in persons && it.index == candidateIndex
         } ?: return Int.MAX_VALUE

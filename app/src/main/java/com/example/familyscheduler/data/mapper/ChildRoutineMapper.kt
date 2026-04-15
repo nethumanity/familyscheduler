@@ -9,7 +9,8 @@ object ChildRoutineMapper {
 
     fun toEntity(domain: ChildRoutineInput): ChildRoutineEntity {
         return ChildRoutineEntity(
-            name = domain.name,
+            childId = domain.childId,
+            childName = domain.childName,
 
             wakeUpTime = domain.wakeUpTime.toString(),
             sleepTime = domain.sleepTime.toString(),
@@ -28,7 +29,8 @@ object ChildRoutineMapper {
 
     fun toDomain(entity: ChildRoutineEntity): ChildRoutineInput {
         return ChildRoutineInput(
-            name = entity.name,
+            childId = entity.childId,
+            childName = entity.childName,
 
             wakeUpTime = LocalTime.parse(entity.wakeUpTime),
             sleepTime = LocalTime.parse(entity.sleepTime),

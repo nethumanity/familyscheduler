@@ -7,12 +7,14 @@ import com.example.familyscheduler.data.local.dao.ChildRoutineDao
 import com.example.familyscheduler.data.local.dao.DailyStateDao
 import com.example.familyscheduler.data.local.dao.HouseholdRequirementDao
 import com.example.familyscheduler.data.local.dao.RequirementOverrideDao
+import com.example.familyscheduler.data.local.dao.RoutineShiftOverrideDao
 import com.example.familyscheduler.data.local.dao.TemplateDao
 import com.example.familyscheduler.data.local.entity.ChildOverrideEntity
 import com.example.familyscheduler.data.local.entity.ChildRoutineEntity
 import com.example.familyscheduler.data.local.entity.DailyStateEntity
 import com.example.familyscheduler.data.local.entity.HouseholdRequirementEntity
 import com.example.familyscheduler.data.local.entity.RequirementOverrideEntity
+import com.example.familyscheduler.data.local.entity.RoutineShiftOverrideEntity
 import com.example.familyscheduler.data.local.entity.TemplateEntity
 
 @Database(
@@ -22,9 +24,10 @@ import com.example.familyscheduler.data.local.entity.TemplateEntity
         ChildRoutineEntity::class,
         DailyStateEntity::class,
         RequirementOverrideEntity::class,
-        ChildOverrideEntity::class
+        ChildOverrideEntity::class,
+        RoutineShiftOverrideEntity::class
                ],
-    version = 7,
+    version = 8,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -34,5 +37,6 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun dailyStateDao(): DailyStateDao
     abstract fun requirementOverrideDao(): RequirementOverrideDao
     abstract fun childOverrideDao(): ChildOverrideDao
+    abstract fun routineShiftOverrideDao(): RoutineShiftOverrideDao
 
 }

@@ -10,12 +10,12 @@ interface ChildRoutineDao {
     @Query("SELECT * FROM child_routines")
     fun getAll(): Flow<List<ChildRoutineEntity>>
 
-    @Query("SELECT * FROM child_routines WHERE name = :name LIMIT 1")
-    fun getByName(name: String): Flow<ChildRoutineEntity?>
+    @Query("SELECT * FROM child_routines WHERE childId = :childId LIMIT 1")
+    fun getByChildId(childId: String): Flow<ChildRoutineEntity?>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(entity: ChildRoutineEntity)
 
-    @Query("DELETE FROM child_routines WHERE name = :name")
-    suspend fun delete(name: String)
+    @Query("DELETE FROM child_routines WHERE childId = :childId")
+    suspend fun delete(childId: String)
 }

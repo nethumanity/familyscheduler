@@ -1,13 +1,12 @@
 package com.example.familyscheduler.domain.schedule
 
 import com.example.familyscheduler.domain.person.Person
-import com.example.familyscheduler.domain.slot.FlexWindowParameters
 import com.example.familyscheduler.domain.slot.SlotState
 import com.example.familyscheduler.domain.slot.TimeSlot
 import com.example.familyscheduler.domain.time.TimeAxis
 import java.util.UUID
 
-data class DailyTemplate(   //1つのDailyTemplateは複数のScheduleTemplateからなる
+data class DailyTemplate(
     val id: String = UUID.randomUUID().toString(),
     val person: Person,
     val name: String,
@@ -23,8 +22,7 @@ data class DailyTemplate(   //1つのDailyTemplateは複数のScheduleTemplate�
                     index = index,
                     person = person,
                     state = SlotState.UNASSIGNED,
-                    flexWindow = FlexWindowParameters(0, 0),
-                    taskName = emptyList()
+                    taskIds = emptyList()
                 )
             }.toMutableList()
 

@@ -4,6 +4,7 @@ import java.time.DayOfWeek
 import java.time.LocalTime
 
 data class ChildCareBlock(
+    val eventId: String,
     val daysOfWeek: Set<DayOfWeek>,
     val startTime: LocalTime,
     val endTime: LocalTime,

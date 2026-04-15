@@ -2,6 +2,7 @@ package com.example.familyscheduler.ui.components
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -72,55 +73,58 @@ fun TemplateSheet(
         LazyColumn {
             items(templates) { template ->
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    //.padding(vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    ListItem(
-                        headlineContent = {
-                            Text(
-                                text = template.name,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        },
-                        modifier = Modifier
-                            .weight(1f)
-                            .clickable { onApplyTemplate(template) }
-                            .padding(end = 8.dp) // ← ケバブとの距離
-                    )
-
-                    IconButton(
-                        onClick = { expandedMenuId = template.id },
-                        modifier = Modifier.size(32.dp) //いらない？
+                Box {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        //.padding(vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(
-                            Icons.Default.MoreVert,
-                            contentDescription = "menu",
-                            tint = Color.LightGray
+                        ListItem(
+                            headlineContent = {
+                                Text(
+                                    text = template.name,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            },
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable { onApplyTemplate(template) }
+                                .padding(end = 8.dp) // ← ケバブとの距離
+                        )
+
+                        IconButton(
+                            onClick = { expandedMenuId = template.id },
+                            modifier = Modifier.size(32.dp) //いらない？
+                        ) {
+                            Icon(
+                                Icons.Default.MoreVert,
+                                contentDescription = "menu",
+                                tint = Color.LightGray
+                            )
+                        }
+                    }
+
+                    DropdownMenu(
+                        expanded = expandedMenuId == template.id,
+                        onDismissRequest = { expandedMenuId = null },
+                        modifier = Modifier.align(Alignment.TopEnd)
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("編集") },
+                            onClick = {
+                                expandedMenuId = null
+                                onEditTemplate(template.id, person)
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("削除") },
+                            onClick = {
+                                expandedMenuId = null
+                                onDeleteTemplate(template.id)
+                            }
                         )
                     }
-                }
-
-                DropdownMenu(
-                    expanded = expandedMenuId == template.id,
-                    onDismissRequest = { expandedMenuId = null }
-                ) {
-                    DropdownMenuItem(
-                        text = { Text("編集") },
-                        onClick = {
-                            expandedMenuId = null
-                            onEditTemplate(template.id, person)
-                        }
-                    )
-                    DropdownMenuItem(
-                        text = { Text("削除") },
-                        onClick = {
-                            expandedMenuId = null
-                            onDeleteTemplate(template.id)
-                        }
-                    )
                 }
             }
         }

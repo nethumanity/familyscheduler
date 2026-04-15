@@ -1,7 +1,6 @@
 package com.example.familyscheduler.domain.schedule
 
 import com.example.familyscheduler.domain.person.Person
-import com.example.familyscheduler.domain.slot.FlexWindowParameters
 import com.example.familyscheduler.domain.slot.TimeSlot
 import com.example.familyscheduler.domain.time.TimeAxis
 import com.example.familyscheduler.domain.time.TimeRange
@@ -31,8 +30,7 @@ data class ScheduleTemplate(
                 index = index,
                 person = person,
                 state = type.state,
-                flexWindow = FlexWindowParameters(type.flexWindow, type.flexWindow),
-                taskName = emptyList()
+                taskIds = emptyList()
             )
         }
     }

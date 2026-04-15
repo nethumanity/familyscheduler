@@ -8,19 +8,19 @@ import java.time.LocalDate
 object ChildOverrideMapper {
 
     fun toEntity(
-        childName: String,
+        childId: String,
         date: LocalDate,
         routine: ChildTodayRoutine
     ): ChildOverrideEntity {
         return ChildOverrideEntity(
-            childName = childName,
+            childId = childId,
             date = date.toString(),
             routine = routine.name
         )
     }
 
     fun toDomain(entity: ChildOverrideEntity): Pair<Pair<String, LocalDate>, ChildTodayRoutine> {
-        return (entity.childName to LocalDate.parse(entity.date)) to
+        return (entity.childId to LocalDate.parse(entity.date)) to
                 ChildTodayRoutine.valueOf(entity.routine)
     }
 }

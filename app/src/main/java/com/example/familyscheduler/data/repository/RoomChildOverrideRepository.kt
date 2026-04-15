@@ -19,7 +19,7 @@ class RoomChildOverrideRepository(
         }
     }
 
-    // いらない？
+    // いらない
     override fun getOverride(
         childName: String,
         date: LocalDate
@@ -33,14 +33,14 @@ class RoomChildOverrideRepository(
     }
 
     override suspend fun saveOverride(
-        childName: String,
+        childId: String,
         date: LocalDate,
         routine: ChildTodayRoutine
     ) {
-        dao.insert(ChildOverrideMapper.toEntity(childName, date, routine))
+        dao.insert(ChildOverrideMapper.toEntity(childId, date, routine))
     }
 
-    override suspend fun deleteByChildName(childName: String) {
-        dao.deleteByChildName(childName)
+    override suspend fun deleteByChildId(childId: String) {
+        dao.deleteByChildId(childId)
     }
 }

@@ -3,7 +3,8 @@ package com.example.familyscheduler.domain.routine
 import java.time.LocalTime
 
 data class ResolvedChildRoutine(
-    val name: String,
+    val childId: String,
+    val childName: String,
     val wakeUpTime: LocalTime,
     val sleepTime: LocalTime,
     val todayRoutine: ChildTodayRoutine,

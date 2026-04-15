@@ -1,11 +1,10 @@
 package com.example.familyscheduler.domain.evaluation
 
-data class AvailabilityEvaluation(      //ネスト構造を要検討
+data class AvailabilityEvaluation(
     val index: Int,
     val hasFlexRequirement: Boolean,
     val missing: Int,
-    val reasons: List<MissingReason>,
-    val flexProposals: List<FlexResolveProposal> = emptyList()
+    val reasons: List<ReasonEvaluation>
 ) {
     val state: AvailabilityState
         get() = when {

@@ -1,25 +1,25 @@
 package com.example.familyscheduler.domain.routine
 
 import com.example.familyscheduler.domain.time.TimeAxis
-import com.example.familyscheduler.domain.time.TimeAxis.stepMinutes
-import java.time.DayOfWeek
+import java.time.LocalDate
 import java.time.LocalTime
 
 class ChildRoutineBuilder {
 
     fun build(
-        day: DayOfWeek,
+        date: LocalDate,
         routines: List<ResolvedChildRoutine>
-    ): List<ChildCareBlock> {
+    ): RoutineResult {
 
         val baseUnits = buildBaseUnits(routines)
 
-        val dropEvents = buildDropEvents(routines)
-        val pickupEvents = buildPickupEvents(routines)
+        val dropEvents = buildDropEvents(routines, date)
+        val pickupEvents = buildPickupEvents(routines, date)
+        val events = dropEvents.values + pickupEvents.values
 
-        val injected = injectEvents(baseUnits, dropEvents, pickupEvents)
+        val injected = injectEvents(baseUnits, dropEvents, pickupEvents, date)
 
-        return compressUnits(injected, day)
+        return RoutineResult(compressUnits(injected), events)
     }
 
     private data class BaseUnit(
@@ -36,7 +36,7 @@ class ChildRoutineBuilder {
 
         for (start in TimeAxis.all) {
 
-            val end = start.plusMinutes(stepMinutes.toLong())
+            val end = start.plusMinutes(TimeAxis.stepMinutes.toLong())
 
             val activeChildren = routines.count { child ->
 
@@ -68,56 +68,67 @@ class ChildRoutineBuilder {
         return units
     }
 
-    private data class EventInfo(
-        val label: ChildCareLabel,
-        val flexEarliest: LocalTime,
-        val flexLatest: LocalTime
-    )
-
     private fun buildDropEvents(
-        routines: List<ResolvedChildRoutine>
-    ): Map<LocalTime, EventInfo> {
+        routines: List<ResolvedChildRoutine>,
+        date: LocalDate
+    ): Map<LocalTime, ChildCareEvent> {
 
         return routines
             .filter { it.todayRoutine == ChildTodayRoutine.NURSERY }
             .groupBy { it.nurseryStart }
-            .mapValues { (_, group) ->
+            .mapValues { (time, group) ->
 
+                val childIds = group.map { it.childId }
+                val eventId = "DROP_${date}_${time}"
+                val duration = TimeAxis.stepMinutes // 拡張要素：NurseryPlan? ?: TimeAxis.stepMinutes
                 val earliest = group.maxOf { it.nurseryStartEarliest }
                 val latest = group.minOf { it.nurseryStartLatest }
 
-                EventInfo(
+                ChildCareEvent(
+                    eventId = eventId,
+                    time = time,
+                    duration = duration,
                     label = ChildCareLabel.NURSERY_DROP_OFF,
                     flexEarliest = earliest,
-                    flexLatest = latest
+                    flexLatest = latest,
+                    childIds = childIds
                 )
             }
     }
 
     private fun buildPickupEvents(
-        routines: List<ResolvedChildRoutine>
-    ): Map<LocalTime, EventInfo> {
+        routines: List<ResolvedChildRoutine>,
+        date: LocalDate
+    ): Map<LocalTime, ChildCareEvent> {
 
         return routines
             .filter { it.todayRoutine == ChildTodayRoutine.NURSERY }
             .groupBy { it.nurseryEnd }
-            .mapValues { (_, group) ->
+            .mapValues { (time, group) ->
 
+                val childIds = group.map { it.childId }
+                val eventId = "PICKUP_${date}_${time}"
+                val duration = TimeAxis.stepMinutes // 拡張要素：NurseryPlan? ?: TimeAxis.stepMinutes
                 val earliest = group.maxOf { it.nurseryEndEarliest }
                 val latest = group.minOf { it.nurseryEndLatest }
 
-                EventInfo(
+                ChildCareEvent(
+                    eventId = eventId,
+                    time = time,
+                    duration = duration,
                     label = ChildCareLabel.NURSERY_PICKUP,
                     flexEarliest = earliest,
-                    flexLatest = latest
+                    flexLatest = latest,
+                    childIds = childIds
                 )
             }
     }
 
     private fun injectEvents(
         baseUnits: List<BaseUnit>,
-        dropEvents: Map<LocalTime, EventInfo>,
-        pickupEvents: Map<LocalTime, EventInfo>
+        dropEvents: Map<LocalTime, ChildCareEvent>,
+        pickupEvents: Map<LocalTime, ChildCareEvent>,
+        date: LocalDate
     ): List<ChildCareBlock> {
 
         return baseUnits.map { unit ->
@@ -127,7 +138,8 @@ class ChildRoutineBuilder {
                     ?: pickupEvents[unit.start]
 
             ChildCareBlock(
-                daysOfWeek = emptySet(),
+                eventId = event?.eventId ?: "CHILDCARE_${date}_${unit.start}",
+                daysOfWeek = setOf(date.dayOfWeek),
                 startTime = unit.start,
                 endTime = unit.end,
                 label = event?.label,
@@ -139,8 +151,7 @@ class ChildRoutineBuilder {
     }
 
     private fun compressUnits(
-        blocks: List<ChildCareBlock>,
-        day: DayOfWeek
+        blocks: List<ChildCareBlock>
     ): List<ChildCareBlock> {
 
         if (blocks.isEmpty()) return emptyList()
@@ -151,7 +162,8 @@ class ChildRoutineBuilder {
         for (next in blocks.drop(1)) {
 
             val mergeable =
-                current.label == next.label &&
+                current.eventId == next.eventId &&
+                        current.label == next.label &&
                         current.activeChildrenCount == next.activeChildrenCount &&
                         current.flexEarliest == next.flexEarliest &&
                         current.flexLatest == next.flexLatest
@@ -161,12 +173,11 @@ class ChildRoutineBuilder {
                     endTime = next.endTime
                 )
             } else {
-                result += current.copy(daysOfWeek = setOf(day))
+                result += current
                 current = next
             }
         }
-
-        result += current.copy(daysOfWeek = setOf(day))
+        result += current
 
         return result
     }

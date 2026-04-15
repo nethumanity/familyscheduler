@@ -19,21 +19,25 @@ import com.example.familyscheduler.domain.requirement.RequirementToggleOverride
 import com.example.familyscheduler.domain.requirement.TimeRangeHouseholdRequirement
 import com.example.familyscheduler.domain.requirement.repository.HouseholdRequirementRepository
 import com.example.familyscheduler.domain.requirement.repository.RequirementOverrideRepository
+import com.example.familyscheduler.domain.routine.ChildCareEvent
+import com.example.familyscheduler.domain.routine.ChildCareLabel
 import com.example.familyscheduler.domain.routine.ChildCareRuleConverter
 import com.example.familyscheduler.domain.routine.ChildRoutineBuilder
 import com.example.familyscheduler.domain.routine.ChildRoutineInput
 import com.example.familyscheduler.domain.routine.ChildTodayRoutine
 import com.example.familyscheduler.domain.routine.RoutineResolver
+import com.example.familyscheduler.domain.routine.RoutineShiftOverride
 import com.example.familyscheduler.domain.routine.repository.ChildOverrideRepository
 import com.example.familyscheduler.domain.routine.repository.ChildRoutineRepository
+import com.example.familyscheduler.domain.routine.repository.RoutineShiftOverrideRepository
 import com.example.familyscheduler.domain.schedule.DailyState
 import com.example.familyscheduler.domain.schedule.DailyTemplate
 import com.example.familyscheduler.domain.schedule.RepeatRule
 import com.example.familyscheduler.domain.schedule.repository.DailyStateRepository
 import com.example.familyscheduler.domain.schedule.repository.TemplateRepository
-import com.example.familyscheduler.domain.slot.FlexWindowParameters
 import com.example.familyscheduler.domain.slot.SlotState
 import com.example.familyscheduler.domain.slot.TimeSlot
+import com.example.familyscheduler.domain.time.TimeAxis
 import com.example.familyscheduler.seeder.SampleDataSeeder
 import com.example.familyscheduler.ui.utilities.EditingTarget
 import com.example.familyscheduler.ui.utilities.GuideState
@@ -54,6 +58,7 @@ class TimelineViewModel(
     private val requirementOverrideRepository: RequirementOverrideRepository,
     private val childRoutineRepository: ChildRoutineRepository,
     private val childOverrideRepository: ChildOverrideRepository,
+    private val routineShiftOverrideRepository: RoutineShiftOverrideRepository,
     private val routineResolver: RoutineResolver,
     private val childRoutineBuilder: ChildRoutineBuilder,
     private val childCareRuleConverter: ChildCareRuleConverter,
@@ -65,7 +70,7 @@ class TimelineViewModel(
 
     data class WarningDialogState(
         val index: Int,
-        val reasonIndex: Int, //追加
+        val reasonIndex: Int,
         val proposals: List<FlexResolveProposal> //たぶん、削除可能
     )
 
@@ -75,6 +80,7 @@ class TimelineViewModel(
         val dailyStates: List<DailyState>,
         val overrides: List<RequirementOverride>,
         val childRoutines: List<ChildRoutineInput>,
+        val childCareEvents: List<ChildCareEvent>,
         val slots: List<TimeSlot>,
         val slotsByIndex: Map<Int, List<TimeSlot>>,
         val slotsByPersonIndex: Map<Pair<Person, Int>, TimeSlot>,
@@ -94,6 +100,7 @@ class TimelineViewModel(
             dailyStates = emptyList(),
             overrides = emptyList(),
             childRoutines = emptyList(),
+            childCareEvents = emptyList(),
             slots = emptyList(),
             slotsByIndex = emptyMap(),
             slotsByPersonIndex = emptyMap(),
@@ -206,11 +213,13 @@ class TimelineViewModel(
 
             val childFlow = combine(
                 childRoutineRepository.getAllFlow(),
-                childOverrideRepository.getAllFlow()
+                childOverrideRepository.getAllFlow(),
+                routineShiftOverrideRepository.getAllFlow()
             ) { routines: List<ChildRoutineInput>,
-                childOverrides: Map<Pair<String, LocalDate>, ChildTodayRoutine> ->
+                childOverrides: Map<Pair<String, LocalDate>, ChildTodayRoutine>,
+                routineShiftOverrides: List<RoutineShiftOverride> ->
 
-                routines to childOverrides
+                Triple(routines, childOverrides, routineShiftOverrides)
             }
 
             combine(
@@ -221,7 +230,7 @@ class TimelineViewModel(
 
                 val (date, templates, statesMap) = base
                 val (rules, overrides) = rule
-                val (routines, childOverrides) = child
+                val (routines, childOverrides, routineShiftOverrides) = child
 
                 computeUiState(
                     date = date,
@@ -230,7 +239,8 @@ class TimelineViewModel(
                     rules = rules,
                     overrides = overrides,
                     routines = routines,
-                    childOverrides = childOverrides
+                    childOverrides = childOverrides,
+                    routineShiftOverrides = routineShiftOverrides
                 )
 
             }.collect { state ->
@@ -304,7 +314,8 @@ class TimelineViewModel(
         rules: List<HouseholdRequirementRule>,
         overrides: List<RequirementOverride>,
         routines: List<ChildRoutineInput>,
-        childOverrides: Map<Pair<String, LocalDate>, ChildTodayRoutine>
+        childOverrides: Map<Pair<String, LocalDate>, ChildTodayRoutine>,
+        routineShiftOverrides: List<RoutineShiftOverride>
     ): TimelineUiState {
 
         // ① DailyState抽出
@@ -318,13 +329,13 @@ class TimelineViewModel(
 
         // ② ChildRoutine → Rule
         val resolved =
-            routineResolver.resolve(routines, date, childOverrides)
+            routineResolver.resolve(routines, date, childOverrides, routineShiftOverrides)
 
-        val blocks =
-            childRoutineBuilder.build(date.dayOfWeek, resolved)
+        val routineResult =
+            childRoutineBuilder.build(date, resolved)
 
         val childRules =
-            childCareRuleConverter.convert(blocks, date)
+            childCareRuleConverter.convert(routineResult.blocks)
 
         val mergedRules =
             (rules.filter { it.source != RequirementSource.CHILD_ROUTINE }
@@ -360,6 +371,7 @@ class TimelineViewModel(
             dailyStates = states,
             overrides = overridesForDate,
             childRoutines = routines,
+            childCareEvents = routineResult.events,
             slots = result.slots,
             slotsByIndex = slotsByIndex,
             slotsByPersonIndex = slotsByPersonIndex,
@@ -383,7 +395,7 @@ class TimelineViewModel(
             .filter {
                 it.state == req.targetState &&
                         it.person in req.allowedPersons &&
-                        req.name in it.taskName
+                        req.sourceRuleId in it.taskIds
             }
             .map { it.person }
     }
@@ -408,9 +420,9 @@ class TimelineViewModel(
                 if (req != null && reversedPerson.size == 1) // req != nullの代わりに↓を有効にしてもいい
                     canAssignInVm(
                         person = reversedPerson.single(),
-                        index = req.startIndex, //?: TimeAxis.indexOf(rule.timeRange.start),
-                        slotsByPersonIndex = _uiState.value.slotsByPersonIndex,
-                        requiredState = rule.targetState
+                        requirement = req,
+                        candidateStartIndex = req.startIndex, //?: TimeAxis.indexOf(rule.timeRange.start),
+                        slotsByPersonIndex = _uiState.value.slotsByPersonIndex
                     )
                 else false
 
@@ -445,12 +457,23 @@ class TimelineViewModel(
 
     fun canAssignInVm(
         person: Person,
-        index: Int,
-        slotsByPersonIndex: Map<Pair<Person, Int>, TimeSlot>,
-        requiredState: SlotState
+        requirement: TimeRangeHouseholdRequirement,
+        candidateStartIndex: Int,
+        slotsByPersonIndex: Map<Pair<Person, Int>, TimeSlot>
     ): Boolean {
-        val slot = slotsByPersonIndex[person to index] ?: return false
-        return slot.state.weight <= requiredState.weight
+
+        val indices = requirement.allIndices()
+        for (i in indices) {
+            val offset = i - requirement.startIndex
+            val targetIndex = candidateStartIndex + offset
+            val slotIndexKey = person to targetIndex
+            val slot = slotsByPersonIndex[slotIndexKey] ?: return false
+
+            if (slot.state.weight > requirement.targetState.weight) {
+                return false
+            }
+        }
+        return true
     }
 
     fun startEditRequirement(ruleId: String) {
@@ -517,8 +540,7 @@ class TimelineViewModel(
                     if (slot.index == index) {
                         slot.copy(
                             state = newState,
-                            flexWindow = FlexWindowParameters(0,0),
-                            taskName = emptyList()
+                            taskIds = emptyList()
                         )
                     } else slot
                 }
@@ -608,7 +630,6 @@ class TimelineViewModel(
         reasonIndex: Int = 0
     ) {
         val evaluation = _uiState.value.evaluationsByIndex[index] ?: return
-        //val evaluation = _uiState.value.evaluations.find { it.index == index } ?: return
 
         if (evaluation.state != AvailabilityState.WARN) return
 
@@ -616,7 +637,7 @@ class TimelineViewModel(
             WarningDialogState(
                 index = index,
                 reasonIndex = reasonIndex,
-                proposals = evaluation.flexProposals
+                proposals = evaluation.reasons.flatMap { it.proposals }
             )
     }
 
@@ -630,53 +651,52 @@ class TimelineViewModel(
 
         viewModelScope.launch {
 
-            // 現状では_dailyStatesのスロットと_slotsのスロットは一致しないことに留意
-            // proposalの実行処理の仕様によってはバグるかも
-            // （代替案）TimeSlotにisUserLocked = falseを追加し、newSlotsはtrueにする
-            val states = _uiState.value.dailyStates.map { state ->
+            when (proposal.requirementSource) {
 
-                if (state.person !in proposal.persons) return@map state
+                RequirementSource.USER -> {
+                    val existOverride =
+                        _uiState.value.overrides
+                            .filterIsInstance<RequirementShiftOverride>()
+                            .firstOrNull {it.ruleId == proposal.sourceRuleId}
 
-                val newSlots = state.slots.map { slot ->
-                    when {
-                        // この部分は保険、重要なのはRequirementのOverride生成
-                        // initial側はslotの変更なし（現状案）
-                        // taskNameの引継ぎはSolverに任せる
-                        slot.index == proposal.candidateIndex &&
-                                slot.person in proposal.persons ->
-                            slot.copy(
-                                state = proposal.targetState //むしろいらないかも。block導入時に要否を決める
+                    val deltaSteps =
+                        if(existOverride != null) {
+                            proposal.candidateIndex - proposal.initialIndex + existOverride.deltaSteps
+                        } else {proposal.candidateIndex - proposal.initialIndex}
+
+                    requirementOverrideRepository.saveOverride(
+                        override = RequirementShiftOverride(
+                            ruleId = proposal.sourceRuleId,
+                            date = _currentDate.value,
+                            deltaSteps = deltaSteps
+                        )
+                    )
+                }
+                RequirementSource.NURSERY_DROP_OFF, RequirementSource.NURSERY_PICKUP -> {
+                    val event =
+                        _uiState.value.childCareEvents
+                            .firstOrNull { it.eventId == proposal.sourceRuleId }
+                            ?: return@launch
+
+                    val label = when (proposal.requirementSource) {
+                        RequirementSource.NURSERY_DROP_OFF -> ChildCareLabel.NURSERY_DROP_OFF
+                        RequirementSource.NURSERY_PICKUP -> ChildCareLabel.NURSERY_PICKUP
+                        else -> return@launch
+                    }
+
+                    event.childIds.forEach { childId ->
+                        routineShiftOverrideRepository.saveOverride(
+                            override = RoutineShiftOverride(
+                                childId = childId,
+                                date = _currentDate.value,
+                                eventType = label,
+                                nurseryTime = TimeAxis.all[proposal.candidateIndex]
                             )
-
-                        else -> slot
+                        )
                     }
                 }
-
-                state.copy(slots = newSlots)
+                else -> {}
             }
-
-            states.forEach {
-                dailyStateRepository.save(it)
-            }
-
-            val existOverride =
-                _uiState.value.overrides
-                    .filterIsInstance<RequirementShiftOverride>()
-                    .firstOrNull {it.ruleId == proposal.sourceRuleId}
-
-            val deltaSteps =
-                if(existOverride != null) {
-                    proposal.candidateIndex - proposal.initialIndex + existOverride.deltaSteps
-                } else {proposal.candidateIndex - proposal.initialIndex}
-
-            requirementOverrideRepository.saveOverride(
-                override = RequirementShiftOverride(
-                    ruleId = proposal.sourceRuleId,
-                    date = _currentDate.value,
-                    deltaSteps = deltaSteps
-                )
-            )
-
             dismissWarningDialog()
         }
     }

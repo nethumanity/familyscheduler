@@ -6,5 +6,5 @@ import com.example.familyscheduler.domain.slot.SlotState
 data class BlockInfo(
     val person: List<Person>,
     val currentState: List<SlotState>,
-    val taskName: List<String?>
+    val taskIds: List<String>
 )

@@ -14,10 +14,10 @@ interface ChildOverrideRepository {
     ): Flow<ChildTodayRoutine?>
 
     suspend fun saveOverride(
-        childName: String,
+        childId: String,
         date: LocalDate,
         routine: ChildTodayRoutine
     )
 
-    suspend fun deleteByChildName(childName: String)
+    suspend fun deleteByChildId(childId: String)
 }

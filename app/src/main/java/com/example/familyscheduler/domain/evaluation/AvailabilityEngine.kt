@@ -35,14 +35,14 @@ object AvailabilityEngine {
             overrides = overrides
         )
 
-        assignRemainingUnassignedToFree(workingSlots)
-
         val evaluations =
             evaluateAvailability(
                 slots = workingSlots,
                 slotIndex = index,
                 requirements = requirements
             )
+
+        assignRemainingUnassignedToFree(workingSlots)
 
         return AvailabilityResult(
             slots = workingSlots,
@@ -51,6 +51,7 @@ object AvailabilityEngine {
     }
 
     fun buildSlotIndex(slots: List<TimeSlot>): SlotIndex {
+
         val byIndex = slots.indices.groupBy { slots[it].index }
 
         val byPersonIndex =
@@ -67,12 +68,14 @@ object AvailabilityEngine {
         requirements: List<HouseholdRequirement>,
         overrides: List<RequirementOverride>
     ) {
-
-        internalAssign(
-            slots = slots,
-            slotIndex = slotIndex,
-            requirements = requirements
-        )
+        //if (requirements.isNullOrEmpty()) return
+        val orderedReqs = requirements.sortedByDescending {
+            it.prioritySeed
+        }
+        for (req in orderedReqs) {
+            if (!mayAssignBlock(req, slots, slotIndex)) continue
+            assignBlock(req, slots, slotIndex)
+        }
 
         applyReverseOverrides(
             slots = slots,
@@ -82,57 +85,50 @@ object AvailabilityEngine {
         )
     }
 
-    private fun internalAssign(
-        slots: MutableList<TimeSlot>,
-        slotIndex: SlotIndex,
-        requirements: List<HouseholdRequirement>?
-    ) {
-        if (requirements.isNullOrEmpty()) return
+    private fun mayAssignBlock(
+        req: HouseholdRequirement,
+        slots: List<TimeSlot>,
+        slotIndex: SlotIndex
+    ): Boolean {
+        val indices = req.allIndices()
 
-        val orderedReqs = requirements.sortedByDescending {
-            it.prioritySeed
+        val validPersons = req.allowedPersons.filter { person ->
+            indices.all { index ->
+                val i = slotIndex.byPersonIndex[person to index] ?: return@filter false
+                val slot = slots[i]
+                slot.state == SlotState.UNASSIGNED ||
+                        slot.state == req.targetState
+            }
         }
 
-        for (req in orderedReqs) {
-            for (index in TimeAxis.indices) {
-                if (!req.isRequiredAt(index)) continue
+        return validPersons.size >= req.requiredCount
+    }
 
-                val indicesAtIndex = slotIndex.byIndex[index].orEmpty()
+    private fun assignBlock(
+        req: HouseholdRequirement,
+        slots: MutableList<TimeSlot>,
+        slotIndex: SlotIndex
+    ) {
+        val indices = req.allIndices()
 
-                val alreadySatisfied =
-                    indicesAtIndex.filter { i ->
-                        val slot = slots[i]
-                        slot.person in req.allowedPersons &&
-                                slot.state == req.targetState
-                    }
+        val validPersons = req.allowedPersons.filter { person ->
+            indices.all { index ->
+                val i = slotIndex.byPersonIndex[person to index] ?: return@filter false
+                val slot = slots[i]
+                slot.state == SlotState.UNASSIGNED ||
+                        slot.state == req.targetState
+            }
+        }.take(req.requiredCount)
 
-                for (i in alreadySatisfied) {
-                    val slot = slots[i]
-                    slots[i] = slot.copy(
-                        taskName = slot.taskName + req.name
-                    )
-                }
+        for (person in validPersons) {
+            for (index in indices) {
+                val i = slotIndex.byPersonIndex[person to index] ?: continue
+                val slot = slots[i]
 
-                var remaining = req.requiredCount - alreadySatisfied.size
-                if (remaining <= 0) continue
-
-                val candidates =
-                    indicesAtIndex.filter { i ->
-                        val slot = slots[i]
-                        slot.person in req.allowedPersons &&
-                                slot.state == SlotState.UNASSIGNED
-                    } //.sortedBy { it.person }   //必要に応じて、誰から割り当てるかを実装
-
-                for (i in candidates) {
-                    if (remaining <= 0) break
-
-                    val slot = slots[i]
-                    slots[i] = slot.copy(
-                        state = req.targetState,
-                        taskName = slot.taskName + req.name
-                    )
-                    remaining--
-                }
+                slots[i] = slot.copy(
+                    state = req.targetState,
+                    taskIds = slot.taskIds + req.sourceRuleId
+                )
             }
         }
     }
@@ -168,7 +164,7 @@ object AvailabilityEngine {
                             val slot = slots[i]
                             slot.person in req.allowedPersons &&
                                     slot.state == req.targetState &&
-                                    req.name in slot.taskName
+                                    req.sourceRuleId in slot.taskIds
                     }
 
                     // ② 反転対象
@@ -180,7 +176,7 @@ object AvailabilityEngine {
                         val slot = slots[i]
                         slots[i] = slot.copy(
                             state = SlotState.UNASSIGNED,
-                            taskName = slot.taskName - req.name
+                            taskIds = slot.taskIds - req.sourceRuleId
                         )
                     }
 
@@ -200,7 +196,7 @@ object AvailabilityEngine {
 
                             slots[candidate] = slot.copy(
                                 state = req.targetState,
-                                taskName = slot.taskName + req.name
+                                taskIds = slot.taskIds + req.sourceRuleId
                             )
                         }
                     }
@@ -216,7 +212,7 @@ object AvailabilityEngine {
 
             if (slot.state == SlotState.UNASSIGNED) {
                 slots[i] = slot.copy(
-                    state = SlotState.FREE  //flexWindowParameters(0, 0)であることに留意
+                    state = SlotState.FREE
                 )
             }
         }
@@ -236,7 +232,7 @@ object AvailabilityEngine {
 
             if (activeReqs.isEmpty()) return@mapNotNull null
 
-            val reasons = mutableListOf<MissingReason>()
+            val reasons = mutableListOf<ReasonEvaluation>()
 
             activeReqs.forEach { req ->
 
@@ -248,9 +244,9 @@ object AvailabilityEngine {
                         }
                         .map { it.person }
 
-                val required = req.requiredCount
-                val assigned = satisfiedPersons.size
-                val missing = required - assigned
+                val requiredCount = req.requiredCount
+                val assignedCount = satisfiedPersons.size
+                val missing = requiredCount - assignedCount
 
                 if (missing > 0) {
                     val info =
@@ -258,38 +254,49 @@ object AvailabilityEngine {
                             slots = slotsAtIndex,
                             persons = req.allowedPersons.toList() - satisfiedPersons
                         )
-                    reasons.add(
+                    val reason =
                         MissingReason(
                             sourceRuleId = req.sourceRuleId,
                             requirementName = req.name,
-                            requiredCount = required,
-                            assignedCount = assigned,
+                            requiredCount = requiredCount,
+                            assignedCount = assignedCount,
                             blockingPersons = info
+                        )
+
+                    val waiting =
+                        generateWaitingProposals(
+                            slots = slots,
+                            slotIndex = slotIndex,
+                            requirements = activeReqs,
+                            reason = reason
+                        )
+                    val assigned =
+                        generateAssignedProposals(
+                            index = index,
+                            slots = slots,
+                            slotIndex = slotIndex,
+                            requirements = activeReqs,
+                            reason = reason
+                        )
+                    reasons.add(
+                        ReasonEvaluation(
+                            reason = reason,
+                            proposals = (waiting + assigned)
                         )
                     )
                 }
             }
-
-            val proposals =
-                flexResolveProposalsAt(
-                    index = index,
-                    slots = slots,
-                    slotIndex = slotIndex,
-                    requirements = activeReqs, //GPTの推奨はrequirements,関数内でインデックスフィルター
-                    reasons = reasons
-                )
 
             AvailabilityEvaluation(
                 index = index,
                 hasFlexRequirement = activeReqs.any { it.flexWindowSlots.backward != 0 || it.flexWindowSlots.forward != 0 },
                 missing = reasons.size,
                 reasons = reasons,
-                flexProposals = proposals
             )
         }
     }
 
-    fun collectBlockInfo(   // BlockInfoは単数前提に変更
+    fun collectBlockInfo(
         slots: List<TimeSlot>,
         persons: List<Person>,
     ): BlockInfo {
@@ -299,16 +306,15 @@ object AvailabilityEngine {
         return BlockInfo(
                 person = persons,
                 currentState = slotByPerson.map { it.state },
-                taskName = slotByPerson.flatMap { it.taskName }
+                taskIds = slotByPerson.flatMap { it.taskIds }
         )
     }
 
-    fun flexResolveProposalsAt(     //このblockは動かす候補になるか？（インデックスフィルターなし）
-        index: Int,
+    fun generateWaitingProposals(
         slots: List<TimeSlot>,
         slotIndex: SlotIndex,
         requirements: List<HouseholdRequirement>,
-        reasons: List<MissingReason>
+        reason: MissingReason
     ): List<FlexResolveProposal> {
 
         val hasFlexRequirement =
@@ -319,22 +325,17 @@ object AvailabilityEngine {
 
         if (!hasFlexRequirement) return emptyList()
 
-        return reasons
-            .flatMap { reason ->
-                generateFlexResolveProposalsForReason(
-                    index = index,
-                    slots = slots,
-                    slotIndex = slotIndex,
-                    requirements = requirements,
-                    reason = reason
-                )
-            }
+        return generateFlexResolveProposalsForReason(
+            slots = slots,
+            slotIndex = slotIndex,
+            requirements = requirements,
+            reason = reason
+        )
             .sortedBy { it.score(slots) }
-            .take(3)
+            .take(4)
     }
 
-    fun generateFlexResolveProposalsForReason(  //どこに動かせば解決しそうか？
-        index: Int,
+    fun generateFlexResolveProposalsForReason(
         slots: List<TimeSlot>,
         slotIndex: SlotIndex,
         requirements: List<HouseholdRequirement>,
@@ -342,7 +343,7 @@ object AvailabilityEngine {
     ): List<FlexResolveProposal> {
 
         val requirement = requirements
-            .find { it.name == reason.requirementName }
+            .find { it.sourceRuleId == reason.sourceRuleId }
             ?: return emptyList()
 
         val persons = requirement.allowedPersons.toList()
@@ -351,16 +352,18 @@ object AvailabilityEngine {
 
         return offsets.flatMap { offset ->
 
-            val candidateIndex = index + offset
-            if (candidateIndex !in TimeAxis.all.indices) return@flatMap emptyList()
+            val startIndex = requirement.allIndices().first()
+            val newStartIndex = startIndex + offset
+            if (newStartIndex !in TimeAxis.all.indices) return@flatMap emptyList()
 
             val validPersons = persons.filter {
-                canAssign(
+                canAssignBlock(
                     person = it,
-                    candidateIndex = candidateIndex,
-                    slots =slots,
-                    slotIndex = slotIndex,
-                    requiredState = requirement.targetState
+                    requirement = requirement,
+                    baseStartIndex = startIndex,
+                    candidateStartIndex = newStartIndex,
+                    slots = slots,
+                    slotIndex = slotIndex
                 )
             }
 
@@ -369,11 +372,13 @@ object AvailabilityEngine {
                 requirement.requiredCount == 1 -> {
                     validPersons.map { person ->
                         FlexResolveProposal(
+                            type = ProposalType.WAITING,
                             sourceRuleId = requirement.sourceRuleId,
+                            requirementSource = requirement.source,
                             requirementName = reason.requirementName,
                             persons = listOf(person),
-                            initialIndex = index,
-                            candidateIndex = candidateIndex,
+                            initialIndex = startIndex,
+                            candidateIndex = newStartIndex,
                             targetState = requirement.targetState
                         )
                     }
@@ -383,11 +388,13 @@ object AvailabilityEngine {
                 validPersons.size >= requirement.requiredCount -> {
                     listOf(
                         FlexResolveProposal(
+                            type = ProposalType.WAITING,
                             sourceRuleId = requirement.sourceRuleId,
+                            requirementSource = requirement.source,
                             requirementName = reason.requirementName,
                             persons = validPersons.take(requirement.requiredCount),
-                            initialIndex = index,
-                            candidateIndex = candidateIndex,
+                            initialIndex = startIndex,
+                            candidateIndex = newStartIndex,
                             targetState = requirement.targetState
                         )
                     )
@@ -398,20 +405,127 @@ object AvailabilityEngine {
         }
     }
 
-    fun canAssign(  //その場所に置けるか？
+    fun canAssignBlock(
         person: Person,
-        candidateIndex: Int,
+        requirement: HouseholdRequirement,
+        baseStartIndex: Int,
+        candidateStartIndex: Int,
+        slots: List<TimeSlot>,
+        slotIndex: SlotIndex
+    ): Boolean {
+        val indices = requirement.allIndices()
+        for (i in indices) {
+            val offset = i - baseStartIndex
+            val targetIndex = candidateStartIndex + offset
+            val slotIndexKey = person to targetIndex
+            val idx = slotIndex.byPersonIndex[slotIndexKey] ?: return false
+            val slot = slots[idx]
+
+            if (slot.state.weight > requirement.targetState.weight) {
+                return false
+            }
+        }
+        return true
+    }
+
+    fun generateAssignedProposals(
+        index: Int,
         slots: List<TimeSlot>,
         slotIndex: SlotIndex,
-        requiredState: SlotState
-    ): Boolean {
-        val i = slotIndex.byPersonIndex[person to candidateIndex]
-            ?: return false
+        requirements: List<HouseholdRequirement>,
+        reason: MissingReason
+    ): List<FlexResolveProposal> {
 
-        val slot = slots[i]
-        val candidatePriority = slot.state.weight
-        val reqPriority = requiredState.weight
+        val hasFlexRequirement =
+            requirements.any {
+                it.flexWindowSlots.backward != 0 ||
+                        it.flexWindowSlots.forward != 0
+            }
 
-        return candidatePriority <= reqPriority
+        if (!hasFlexRequirement) return emptyList()
+
+        val slotsAtIndex = slotIndex.byIndex[index].orEmpty().map { slots[it] }
+        val waitingReq = requirements.find { it.sourceRuleId == reason.sourceRuleId }
+            ?: return emptyList()
+
+        val waitingStart =  waitingReq.allIndices().first()
+        val waitingEnd =  waitingReq.allIndices().last()
+
+        return slotsAtIndex
+            .filter { it.person in waitingReq.allowedPersons &&
+                    it.state != waitingReq.targetState }
+            .flatMap { slot ->
+                val assignedReqs =
+                    requirements.filter { it.sourceRuleId in slot.taskIds }
+                val targetReq = assignedReqs.maxByOrNull { it.prioritySeed }
+                    ?: return@flatMap emptyList()
+
+                val targetReqRange = targetReq.allIndices()
+                val baseStartIndex = targetReqRange.first()
+                val baseEndIndex = targetReqRange.last()
+                val offsetPair = listOf(
+                    waitingStart - baseEndIndex,
+                    waitingEnd - baseStartIndex
+                    )
+                val persons = targetReq.allowedPersons.toList()
+                val window = targetReq.flexWindowSlots
+                val offsets = (-window.backward until 0) + (1..window.forward)
+
+                offsets.flatMap { offset ->
+                    if (!(offset <= offsetPair.first() || offset >= offsetPair.last())) return@flatMap emptyList()
+                    val newStartIndex = baseStartIndex + offset
+                    if (newStartIndex !in TimeAxis.all.indices) return@flatMap emptyList()
+
+                    val validPersons = persons.filter {
+                        canAssignBlock(
+                            person = it,
+                            requirement = targetReq,
+                            baseStartIndex = baseStartIndex,
+                            candidateStartIndex = newStartIndex,
+                            slots = slots,
+                            slotIndex = slotIndex
+                        )
+                    }
+
+                    if (validPersons.size < targetReq.requiredCount) return@flatMap emptyList()
+
+                    when {
+                        // ★ 1人必要 → 全員分 proposal
+                        targetReq.requiredCount == 1 -> {
+                            validPersons.map { person ->
+                                FlexResolveProposal(
+                                    type = ProposalType.ASSIGNED,
+                                    sourceRuleId = targetReq.sourceRuleId,
+                                    requirementSource = targetReq.source,
+                                    requirementName = targetReq.name,
+                                    persons = listOf(person),
+                                    initialIndex = baseStartIndex,
+                                    candidateIndex = newStartIndex,
+                                    targetState = targetReq.targetState
+                                )
+                            }
+                        }
+                        // ★ 複数人必要 → まとめて1 proposal
+                        validPersons.size >= targetReq.requiredCount -> {
+                            listOf(
+                                FlexResolveProposal(
+                                    type = ProposalType.ASSIGNED,
+                                    sourceRuleId = targetReq.sourceRuleId,
+                                    requirementSource = targetReq.source,
+                                    requirementName = targetReq.name,
+                                    persons = validPersons.take(targetReq.requiredCount),
+                                    initialIndex = baseStartIndex,
+                                    candidateIndex = newStartIndex,
+                                    targetState = targetReq.targetState
+                                )
+                            )
+                        }
+                        else -> emptyList()
+                    }
+                }
+            }
+            .distinctBy { Triple(it.sourceRuleId, it.candidateIndex, it.persons.sorted()) }
+            .sortedBy { it.score(slots) }
+            .take(2)
+        }
     }
-}

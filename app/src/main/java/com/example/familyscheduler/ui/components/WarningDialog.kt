@@ -81,10 +81,10 @@ fun WarningDialog(
                         Column(
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Text(renderMissingReason(reason))
+                            Text(renderMissingReason(reason.reason))
 
                             val proposals = flexProposals.filter {
-                                it.requirementName == reason.requirementName
+                                it.requirementName == reason.reason.requirementName
                             }
 
                             if (proposals.isNotEmpty()) {
@@ -102,7 +102,6 @@ fun WarningDialog(
                         }
                     }
 
-                    // 👇 ページインジケータ（おすすめ）
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.Center
@@ -120,43 +119,6 @@ fun WarningDialog(
                         }
                     }
                 }
-
-                /*
-                evaluation?.reasons?.forEach { reason ->
-                    Text(renderMissingReason(reason))
-                }
-
-                if (flexProposals.isNotEmpty()) {
-                    HorizontalDivider()
-
-                    Text("解消案", fontWeight = FontWeight.Bold)
-
-                    flexProposals.forEach { proposal ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { selectedProposal = proposal }
-                                .padding(vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            RadioButton(
-                                selected = selectedProposal == proposal,
-                                onClick = { selectedProposal = proposal }
-                            )
-
-                            Spacer(modifier = Modifier.width(8.dp))
-
-                            Text(
-                                text =  //下記をより分かりやすい文章にし、外部関数renderFlexProposal(proposal)として切り出したい
-                                    "${proposal.persons.joinToString("・") { it.name }} の " +
-                                            "${proposal.requirementName} 予定を " +
-                                            "${(proposal.candidateIndex - proposal.initialIndex) * TimeAxis.stepMinutes}分ずらす",
-                                fontSize = 14.sp
-                            )
-                        }
-                    }
-                }
-                 */
             }
         }
     )

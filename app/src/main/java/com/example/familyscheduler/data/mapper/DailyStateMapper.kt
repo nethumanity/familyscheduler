@@ -4,7 +4,6 @@ import com.example.familyscheduler.data.local.dto.TimeSlotDto
 import com.example.familyscheduler.data.local.entity.DailyStateEntity
 import com.example.familyscheduler.domain.person.Person
 import com.example.familyscheduler.domain.schedule.DailyState
-import com.example.familyscheduler.domain.slot.FlexWindowParameters
 import com.example.familyscheduler.domain.slot.SlotState
 import com.example.familyscheduler.domain.slot.TimeSlot
 import com.google.gson.Gson
@@ -22,9 +21,7 @@ object DailyStateMapper {
                 index = it.index,
                 person = it.person.name,
                 state = it.state.name,
-                backward = it.flexWindow.backward,
-                forward = it.flexWindow.forward,
-                taskNames = it.taskName
+                taskIds = it.taskIds
             )
         }
 
@@ -49,11 +46,7 @@ object DailyStateMapper {
                 index = it.index,
                 person = Person.valueOf(it.person),
                 state = SlotState.valueOf(it.state),
-                flexWindow = FlexWindowParameters(
-                    backward = it.backward,
-                    forward = it.forward
-                ),
-                taskName = it.taskNames
+                taskIds = it.taskIds
             )
         }
 

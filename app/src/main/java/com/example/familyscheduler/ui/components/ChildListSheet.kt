@@ -1,6 +1,7 @@
 package com.example.familyscheduler.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -21,7 +22,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -77,33 +77,36 @@ fun ChildListSheet(
                     currentDate,
                     overrides)
 
-                ChildRow(
-                    child = child,
-                    routine = todayRoutine,
-                    onToggle = {
-                        viewModel.toggleTodayRoutine(child, currentDate)
-                    },
-                    onMenuClick = { expandedMenuId = child.name }
-                )
+                Box {
+                    ChildRow(
+                        child = child,
+                        routine = todayRoutine,
+                        onToggle = {
+                            viewModel.toggleTodayRoutine(child, currentDate)
+                        },
+                        onMenuClick = { expandedMenuId = child.childId }
+                    )
 
-                DropdownMenu(
-                    expanded = expandedMenuId == child.name,
-                    onDismissRequest = { expandedMenuId = null }
-                ) {
-                    DropdownMenuItem(
-                        text = { Text("編集") },
-                        onClick = {
-                            expandedMenuId = null
-                            onEditChildRoutine(child.name)
-                        }
-                    )
-                    DropdownMenuItem(
-                        text = { Text("削除") },
-                        onClick = {
-                            expandedMenuId = null
-                            viewModel.deleteChildRoutine(child.name)
-                        }
-                    )
+                    DropdownMenu(
+                        expanded = expandedMenuId == child.childId,
+                        onDismissRequest = { expandedMenuId = null },
+                        modifier = Modifier.align(Alignment.TopEnd)
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("編集") },
+                            onClick = {
+                                expandedMenuId = null
+                                onEditChildRoutine(child.childId)
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("削除") },
+                            onClick = {
+                                expandedMenuId = null
+                                viewModel.deleteChildRoutine(child.childId)
+                            }
+                        )
+                    }
                 }
             }
         }

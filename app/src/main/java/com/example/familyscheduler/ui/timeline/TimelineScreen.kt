@@ -5,7 +5,6 @@
 
 package com.example.familyscheduler.ui.timeline
 
-import android.util.Log
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -58,6 +57,9 @@ fun TimelineScreen(
     val uiState by viewModel.uiState.collectAsState()
     val dialogState by viewModel.warningDialogState.collectAsState()
 
+    val ruleMap = remember(uiState.rules) { uiState.rules.associateBy { it.id } }
+    val slotMap = remember(uiState.slots) { uiState.slots.groupBy { it.index } }
+
     var editingSlot by remember { mutableStateOf<Pair<Int, Person>?>(null) }
 
     LazyColumn(
@@ -98,12 +100,8 @@ fun TimelineScreen(
             val index = TimeAxis.displayStartIndex + offset
 
             val time = TimeAxis.all[index]
-            val rowSlots = uiState.slots.filter { it.index == index }
-
-            Log.d(
-                "TimelineScreen",
-                "index=$index rowSlots=${rowSlots.map{it.person}}"
-            )
+            val rowSlots = slotMap[index] ?: emptyList()//uiState.slots.filter { it.index == index }
+            val rowSlotMap = remember(rowSlots) { rowSlots.associateBy { it.person } }
 
             Row(
                 modifier = Modifier
@@ -167,8 +165,13 @@ fun TimelineScreen(
 
                 // 各personのslot
                 persons.forEach { person ->
-                    val slot = rowSlots.firstOrNull { slot ->
-                        slot.person.name == person.name
+                    val slot = rowSlotMap[person]
+//                    val slot = rowSlots.firstOrNull { slot ->
+//                        slot.person.name == person.name
+//                    }
+                    val taskNames = remember(slot, ruleMap) { 
+                        slot?.taskIds?.mapNotNull { ruleMap[it]?.taskName }
+                            ?: emptyList()
                     }
 
                     Box(
@@ -184,8 +187,7 @@ fun TimelineScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = (slot?.taskName ?: emptyList())
-                                .filterNotNull()
+                            text = taskNames//(slot?.taskName ?: emptyList())
                                 .joinToString("  "),
                             fontSize = 12.sp,
                             color = Color.Black

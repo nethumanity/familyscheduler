@@ -12,17 +12,17 @@ interface ChildOverrideDao {
 
     @Query("""
         SELECT * FROM child_overrides 
-        WHERE childName = :childName AND date = :date
+        WHERE childId = :childId AND date = :date
         LIMIT 1
     """)
     fun getByChildAndDate(
-        childName: String,
+        childId: String,
         date: String
     ): Flow<ChildOverrideEntity?>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(entity: ChildOverrideEntity)
 
-    @Query("DELETE FROM child_overrides WHERE childName = :childName")
-    suspend fun deleteByChildName(childName: String)
+    @Query("DELETE FROM child_overrides WHERE childId = :childId")
+    suspend fun deleteByChildId(childId: String)
 }

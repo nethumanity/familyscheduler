@@ -38,6 +38,7 @@ import com.example.familyscheduler.data.repository.RoomChildRoutineRepository
 import com.example.familyscheduler.data.repository.RoomDailyStateRepository
 import com.example.familyscheduler.data.repository.RoomHouseholdRequirementRepository
 import com.example.familyscheduler.data.repository.RoomRequirementOverrideRepository
+import com.example.familyscheduler.data.repository.RoomRoutineShiftOverrideRepository
 import com.example.familyscheduler.data.repository.RoomTemplateRepository
 import com.example.familyscheduler.domain.person.Person
 import com.example.familyscheduler.domain.requirement.RequirementBuilder
@@ -105,6 +106,7 @@ fun MainScreen() {
     val requirementOverrideRepository = remember { RoomRequirementOverrideRepository(db.requirementOverrideDao()) }
     val childRepository = remember { RoomChildRoutineRepository(db.childRoutineDao()) }
     val childOverrideRepository = remember { RoomChildOverrideRepository(db.childOverrideDao()) }
+    val routineShiftOverrideRepository = remember { RoomRoutineShiftOverrideRepository(db.routineShiftOverrideDao()) }
 
     val factory = TimelineViewModelFactory(
         templateRepository = templateRepository,
@@ -113,6 +115,7 @@ fun MainScreen() {
         requirementOverrideRepository = requirementOverrideRepository,
         childRoutineRepository = childRepository,
         childOverrideRepository = childOverrideRepository,
+        routineShiftOverrideRepository = routineShiftOverrideRepository,
         routineResolver = RoutineResolver(),
         childRoutineBuilder = ChildRoutineBuilder(),
         childCareRuleConverter = ChildCareRuleConverter(
@@ -373,8 +376,8 @@ fun MainScreen() {
                                         sheet = null
                                         navController.navigate("child_input")
                                     },
-                                    onEditChildRoutine = { childName ->
-                                        childRoutineViewModel.startEditChildRoutine(childName)
+                                    onEditChildRoutine = { childId ->
+                                        childRoutineViewModel.startEditChildRoutine(childId)
                                         sheet = null
                                         navController.navigate("child_input")
                                     }

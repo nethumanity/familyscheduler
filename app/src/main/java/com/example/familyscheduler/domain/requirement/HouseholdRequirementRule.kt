@@ -42,6 +42,7 @@ data class HouseholdRequirementRule(
 
         return TimeRangeHouseholdRequirement(
             sourceRuleId = id,
+            source = source,
             name = taskName,
             targetState = targetState,
             requiredCount = requiredCount,
@@ -53,17 +54,58 @@ data class HouseholdRequirementRule(
         )
     }
 
-    // 最上位（or 次点）のpriorityにrequiredCount, allowedPersonsの組合せを入れるべきかもしれない
-    // Count = 2, PersonsSize = 2, Count = 1, PersonsSize = 1 > Count = 1, PersonsSize = 2
     fun prioritySeed(startIndex: Int, endIndex: Int): Long {
-        val length = endIndex - startIndex
         val flex = flexWindowSlots.backward + flexWindowSlots.forward
+        val length = endIndex - startIndex
 
-        return targetState.weight * 1_000_000L +                         // WORK > CHILDCARE > LIFE
+        val tightness =
+            if (allowedPersons.isEmpty()) 1.0
+            else requiredCount.toDouble() / allowedPersons.size
+
+        val semanticScore =
+            targetState.weight * 1_000_000L
+
+        val constraintScore =
+            (tightness * 500_000).toLong()
+
+        val flexibleScore =
+            (1_000_000L / (1 + flex))
+
+        val timeScore =
+            length * 1_000_000L
+
+        val tieBreaker =
+            ((if (date != null) 10 else 0) * 1_000L) +
+                    (createdAt % 1000)
+
+        println(
+            """req: $taskName
+            semantic=$semanticScore
+            constraint=$constraintScore
+            flex=$flexibleScore
+            time=$timeScore
+            total=${semanticScore +
+                    constraintScore +
+                    flexibleScore +
+                    timeScore +
+                    tieBreaker}"""
+        )
+
+        return semanticScore +
+                constraintScore +
+                flexibleScore +
+                timeScore +
+                tieBreaker
+
+
+
+        /* 旧バージョン
+        return targetState.weight * 1_000_000L +
                 (if (date != null) 100_000 else 0) +
-                (if (source == RequirementSource.USER) 10_000 else 0) +  // あまり意味はない
-                ((1000 - length) * 100L) +                               // 逆がいい気もするが、試しながら考える
+                (if (source == RequirementSource.USER) 10_000 else 0) +
+                ((1000 - length) * 100L) +
                 ((100 - flex) * 10L) +
                 createdAt
+         */
     }
 }

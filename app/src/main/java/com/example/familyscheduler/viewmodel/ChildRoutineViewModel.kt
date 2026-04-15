@@ -195,7 +195,7 @@ class ChildRoutineViewModel(
                 .coerceAtLeast(end)
 
         return ChildRoutineInput(
-            name = state.name.trim(),
+            childName = state.name.trim(),
             wakeUpTime = wakeUp,
             sleepTime = sleep,
             daysOfWeek = if (state.hasNursery) state.daysOfWeek else emptySet(),
@@ -235,15 +235,15 @@ class ChildRoutineViewModel(
         val nurseryEndLatest: LocalTime? = null
     )
 
-    fun load(childName: String) {
+    fun load(childId: String) {
 
         viewModelScope.launch {
 
-            val child = repository.getByChildName(childName).first() ?: return@launch
+            val child = repository.getByChildId(childId).first() ?: return@launch
 
             _formState.update {
                 ChildRoutineUiState(
-                    name = child.name,
+                    name = child.childName,
 
                     wakeUpTime = child.wakeUpTime,
                     sleepTime = child.sleepTime,
@@ -281,7 +281,7 @@ class ChildRoutineViewModel(
             Log.d("override", "current=$current next=$next")
 
             overrideRepository.saveOverride(
-                child.name,
+                child.childId,
                 date,
                 next
             )
@@ -294,7 +294,7 @@ class ChildRoutineViewModel(
         overrides: Map<Pair<String, LocalDate>, ChildTodayRoutine>
     ): ChildTodayRoutine {
 
-        overrides[child.name to date]?.let {
+        overrides[child.childId to date]?.let {
             Log.d("override", "override found $it")
             return it
         }
@@ -308,27 +308,28 @@ class ChildRoutineViewModel(
         }
     }
 
-    fun startEditChildRoutine(childName: String) {
+    fun startEditChildRoutine(childId: String) {
 
         if (_editingTarget.value != null) return
 
         _editingTarget.value = EditingTarget(
-            childRoutineId = childName
+            childRoutineId = childId
         )
     }
 
-    fun deleteChildRoutine(childName: String) {
+    fun deleteChildRoutine(childId: String) {
 
         val input = uiState.value.routines
-            .find { it.name == childName }
+            .find { it.childId == childId }
             ?: return
 
         viewModelScope.launch {
-            overrideRepository.deleteByChildName(childName)
-            repository.delete(childName)
+            overrideRepository.deleteByChildId(childId)
+            //routineShiftOverrideRepository.deleteByChildId(childId)
+            repository.delete(childId)
 
             // 編集中なら解除
-            if (_editingTarget.value?.childRoutineId == childName) {
+            if (_editingTarget.value?.childRoutineId == childId) {
                 _editingTarget.value = null
             }
 

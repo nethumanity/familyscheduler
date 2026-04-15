@@ -5,5 +5,5 @@ data class MissingReason(
     val requirementName: String,
     val requiredCount: Int,
     val assignedCount: Int,
-    val blockingPersons: BlockInfo    //Listをやめて検証中
+    val blockingPersons: BlockInfo
 )

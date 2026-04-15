@@ -1,6 +1,7 @@
 package com.example.familyscheduler.ui.components
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -24,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.familyscheduler.domain.evaluation.AvailabilityEvaluation
 import com.example.familyscheduler.domain.evaluation.AvailabilityState
 import com.example.familyscheduler.domain.requirement.TimeRangeHouseholdRequirement
@@ -53,7 +55,7 @@ fun DailyOverviewSheet(
     val warnings = uiState.evaluations.extractWarnings()
     val warningMap = warnings
         .flatMap { it.reasons }
-        .associateBy { it.sourceRuleId }
+        .associateBy { it.reason.sourceRuleId }
     val uiRequirements = uiState.rules
         .toUiModels(
             requirements = uiState.requirements,
@@ -68,7 +70,7 @@ fun DailyOverviewSheet(
         contentPadding = PaddingValues(16.dp)
     ) {
         item {
-            Text("📅 ${uiState.date}", fontWeight = FontWeight.Bold)
+            Text("${uiState.date}", fontSize = 20.sp, fontWeight = FontWeight.Bold)
 
         }
         item {
@@ -88,7 +90,7 @@ fun DailyOverviewSheet(
             items(warnings) { eval ->
                 eval.reasons.forEachIndexed { i, reason ->
 
-                    val blockText = renderBlockingPersons(reason)
+                    val blockText = renderBlockingPersons(reason.reason)
 
                     Row(
                         modifier = Modifier
@@ -107,12 +109,12 @@ fun DailyOverviewSheet(
                             modifier = Modifier.width(60.dp)
                         )
 
-                        val nameText = if (reason.requirementName == "") {
+                        val nameText = if (reason.reason.requirementName == "") {
                             slotStateLabel(
-                                uiState.rules.first { it.id == reason.sourceRuleId }.targetState
+                                uiState.rules.first { it.id == reason.reason.sourceRuleId }.targetState
                             )
                         } else {
-                            reason.requirementName
+                            reason.reason.requirementName
                         }
 
                         Text(
@@ -122,7 +124,7 @@ fun DailyOverviewSheet(
                             modifier = Modifier.weight(1f)
                         )
 
-                        Text("${blockText}　提案：${eval.flexProposals.size}")
+                        Text("${blockText}　提案：${reason.proposals.size}")
                     }
 
                     /* 実装予定
@@ -156,45 +158,47 @@ fun DailyOverviewSheet(
 
             val reason = warningMap[req.id]
             val isWarn = reason != null
-            val count = reason?.let { renderMissingReasonCount(it) }
+            val count = reason?.let { renderMissingReasonCount(it.reason) }
             val assignedPersons = viewModel.getAssignedPersons(req.id)
                 .joinToString(" ") { it.label }
 
-            RequirementRow(
-                req = req,
-                isWarn = isWarn,
-                count = count,
-                assignedPersons = assignedPersons,
-                onClick = {
-                    viewModel.toggleRequirementMode(
-                        uiState.rules.first { it.id == req.id },
-                        uiState.requirements
-                            .filterIsInstance<TimeRangeHouseholdRequirement>()
-                            .firstOrNull { it.sourceRuleId == req.id }
-                    )
-                },
-                onMenuClick = { expandedMenuId = req.id }
-            )
+            Box {
+                RequirementRow(
+                    req = req,
+                    isWarn = isWarn,
+                    count = count,
+                    assignedPersons = assignedPersons,
+                    onClick = {
+                        viewModel.toggleRequirementMode(
+                            uiState.rules.first { it.id == req.id },
+                            uiState.requirements
+                                .filterIsInstance<TimeRangeHouseholdRequirement>()
+                                .firstOrNull { it.sourceRuleId == req.id }
+                        )
+                    },
+                    onMenuClick = { expandedMenuId = req.id }
+                )
 
-            // Menu出現位置をRequirementRowに合わせることはできますか？また、offsetで位置を（右端に）ずらせますか？
-            DropdownMenu(
-                expanded = expandedMenuId == req.id,
-                onDismissRequest = { expandedMenuId = null }
-            ) {
-                DropdownMenuItem(
-                    text = { Text("編集") },
-                    onClick = {
-                        expandedMenuId = null
-                        onEditRequirement(req.id)
-                    }
-                )
-                DropdownMenuItem(
-                    text = { Text("削除") },
-                    onClick = {
-                        expandedMenuId = null
-                        viewModel.deleteRequirement(req.id)
-                    }
-                )
+                DropdownMenu(
+                    expanded = expandedMenuId == req.id,
+                    onDismissRequest = { expandedMenuId = null },
+                    modifier = Modifier.align(Alignment.TopEnd)
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("編集") },
+                        onClick = {
+                            expandedMenuId = null
+                            onEditRequirement(req.id)
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("削除") },
+                        onClick = {
+                            expandedMenuId = null
+                            viewModel.deleteRequirement(req.id)
+                        }
+                    )
+                }
             }
         }
     }

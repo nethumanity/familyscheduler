@@ -6,7 +6,9 @@ import androidx.room.PrimaryKey
 @Entity(tableName = "child_routines")
 data class ChildRoutineEntity(
 
-    @PrimaryKey val name: String,
+    @PrimaryKey val childId: String,
+
+    val childName: String,
 
     val wakeUpTime: String,
     val sleepTime: String,

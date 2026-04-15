@@ -43,7 +43,7 @@ fun ChildRow(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = child.name,
+                text = child.childName,
                 fontSize = 16.sp,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,

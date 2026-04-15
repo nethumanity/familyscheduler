@@ -7,9 +7,9 @@ interface ChildRoutineRepository {
 
     fun getAllFlow(): Flow<List<ChildRoutineInput>>
 
-    fun getByChildName(childName: String): Flow<ChildRoutineInput?>
+    fun getByChildId(childId: String): Flow<ChildRoutineInput?>
 
     suspend fun save(input: ChildRoutineInput)
 
-    suspend fun delete(name: String)
+    suspend fun delete(childId: String)
 }

@@ -9,7 +9,7 @@ object RoutineSamples {
     fun defaultRoutine(): List<ChildRoutineInput> = listOf(
 
         ChildRoutineInput(
-            name = "NALE",
+            childName = "NALE",
             wakeUpTime = LocalTime.of(6,30),
             sleepTime = LocalTime.of(20,0),
             daysOfWeek = setOf(
@@ -28,7 +28,7 @@ object RoutineSamples {
         ),
 
         ChildRoutineInput(
-            name = "JOE",
+            childName = "JOE",
             wakeUpTime = LocalTime.of(6,30),
             sleepTime = LocalTime.of(20,0),
             daysOfWeek = setOf(

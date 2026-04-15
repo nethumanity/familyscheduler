@@ -7,9 +7,7 @@ import com.example.familyscheduler.domain.slot.FlexWindowParameters
 import com.example.familyscheduler.domain.slot.SlotState
 import com.example.familyscheduler.domain.time.TimeAxis
 import com.example.familyscheduler.domain.time.TimeRange
-import java.time.DayOfWeek
 import java.time.Duration
-import java.time.LocalDate
 
 class ChildCareRuleConverter(
     private val capacityCalculator: CareCapacityCalculator,
@@ -17,18 +15,16 @@ class ChildCareRuleConverter(
 ) {
 
     fun convert(
-        blocks: List<ChildCareBlock>,
-        date: LocalDate
+        blocks: List<ChildCareBlock>
     ): List<HouseholdRequirementRule> {
 
         return blocks
             .filter { it.activeChildrenCount > 0 }
-            .map { toRule(it, date) }
+            .map { toRule(it) }
     }
 
     private fun toRule(
-        block: ChildCareBlock,
-        date: LocalDate
+        block: ChildCareBlock
     ): HouseholdRequirementRule {
 
         val requiredCount =
@@ -36,21 +32,11 @@ class ChildCareRuleConverter(
                 block.activeChildrenCount
             )
 
-        val id = householdRequirementRuleKey(
-            date = date,
-            source = RequirementSource.CHILD_ROUTINE.toString(),
-            taskName = block.label.toString(),
-            timeRange = TimeRange(
-                start = block.startTime,
-                end = block.endTime
-            )
-        )
-
         return HouseholdRequirementRule(
-            id = id,
-            source = RequirementSource.CHILD_ROUTINE,
+            id = block.eventId,
+            source = sourceOf(block.label),
             taskName = taskNameOf(block.label),
-            targetState = SlotState.CHILDCARE, // 固定
+            targetState = SlotState.CHILDCARE,
             requiredCount = requiredCount,
             allowedPersons = allowedPersons,
             flexWindowSlots = toFlexWindow(block),
@@ -63,25 +49,6 @@ class ChildCareRuleConverter(
         )
     }
 
-    private fun householdRequirementRuleKey(
-        date: LocalDate,
-        source: String,
-        taskName: String,
-        timeRange: TimeRange
-    ): String {
-        return buildString {
-            append(date)
-            append("_")
-            append(source)
-            append("_")
-            append(taskName)
-            append("_")
-            append(timeRange.start)
-            append("_")
-            append(timeRange.end)
-        }
-    }
-
     private fun taskNameOf(
         label: ChildCareLabel?
     ): String =
@@ -89,6 +56,15 @@ class ChildCareRuleConverter(
             ChildCareLabel.NURSERY_DROP_OFF -> "登園"
             ChildCareLabel.NURSERY_PICKUP -> "お迎え"
             null -> ""
+        }
+
+    private fun sourceOf(
+        label: ChildCareLabel?
+    ): RequirementSource =
+        when (label) {
+            ChildCareLabel.NURSERY_DROP_OFF -> RequirementSource.NURSERY_DROP_OFF
+            ChildCareLabel.NURSERY_PICKUP -> RequirementSource.NURSERY_PICKUP
+            else -> RequirementSource.CHILD_ROUTINE
         }
 
     private fun toFlexWindow(
