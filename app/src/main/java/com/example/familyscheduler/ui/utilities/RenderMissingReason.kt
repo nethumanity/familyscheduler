@@ -3,6 +3,7 @@ package com.example.familyscheduler.ui.utilities
 import com.example.familyscheduler.domain.evaluation.FlexResolveProposal
 import com.example.familyscheduler.domain.evaluation.MissingReason
 import com.example.familyscheduler.domain.person.Person
+import com.example.familyscheduler.domain.slot.SlotState
 import com.example.familyscheduler.domain.time.TimeAxis
 
 fun renderBlockingPersons(reason: MissingReason): String {
@@ -31,19 +32,26 @@ fun renderMissingReason(reason: MissingReason): String {
     val block = reason.blockingPersons
 
     val personsText =
-        block.person.joinToString("、") { it.label }
+        block.person.joinToString("・") { it.label }
 
+    val requirementText =
+        reason.requirementName
+            .takeIf { it.isNotBlank() }
+            ?.take(15)
+            ?: slotStateLabel(SlotState.CHILDCARE)
+
+    // blockInfoにはtaskNameがあった方がいいかも
     val statesText =
         block.currentState.joinToString("、") { slotStateLabel(it) }
 
-    return "${personsText}に${reason.requirementName}の予定がありますが、すでに${statesText}が入っています"
+    return "${personsText}は${requirementText}の予定ですが、他の予定と重複しています"
 }
 
 fun renderMissingReasonCount(reason: MissingReason): String =
     "${reason.assignedCount}/${reason.requiredCount}"
 
 fun renderFlexProposal(proposal: FlexResolveProposal): String {
-    val persons = proposal.persons.joinToString("・") { it.name }
+    val persons = proposal.persons.joinToString("・") { it.label }
 
     val minutes =
         (proposal.candidateIndex - proposal.initialIndex) *
@@ -51,5 +59,5 @@ fun renderFlexProposal(proposal: FlexResolveProposal): String {
 
     val direction = if (minutes > 0) "後ろに" else "前に"
 
-    return "$persons の ${proposal.requirementName} を ${kotlin.math.abs(minutes)}分$direction ずらす"
+    return "$persons の ${proposal.requirementName.take(15)} を ${kotlin.math.abs(minutes)}分$direction ずらす"
 }

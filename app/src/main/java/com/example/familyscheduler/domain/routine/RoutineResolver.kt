@@ -16,7 +16,7 @@ class RoutineResolver {
             resolveSingle(routine, date, childOverrides)
         }
 
-        return applyRoutineOverrides(base, routineShiftOverrides)
+        return applyRoutineOverrides(base, routineShiftOverrides, date)
     }
 
     private fun resolveSingle(
@@ -59,16 +59,17 @@ class RoutineResolver {
 
     private fun applyRoutineOverrides(
         routines: List<ResolvedChildRoutine>,
-        overrides: List<RoutineShiftOverride>
+        overrides: List<RoutineShiftOverride>,
+        date: LocalDate
     ): List<ResolvedChildRoutine> {
 
         val shiftMap = overrides
-            .associateBy { it.childId to it.eventType }
+            .associateBy { it.childId to it.date to it.eventType }
 
         return routines.map { routine ->
 
-            val startShift = shiftMap[routine.childId to ChildCareLabel.NURSERY_DROP_OFF]
-            val endShift = shiftMap[routine.childId to ChildCareLabel.NURSERY_PICKUP]
+            val startShift = shiftMap[routine.childId to date to ChildCareLabel.NURSERY_DROP_OFF]
+            val endShift = shiftMap[routine.childId to date to ChildCareLabel.NURSERY_PICKUP]
 
             routine.copy(
                 nurseryStart = startShift?.nurseryTime ?: routine.nurseryStart,
