@@ -315,6 +315,12 @@ fun MainScreen() {
                         onOpenScheduleInput = {
                             navController.navigate("schedule_input/${Person.FATHER.name}")
                         },
+                        onOpenChildRoutineInput = {
+                            navController.navigate("child_input")
+                        },
+                        onOpenTaskInput = {
+                            navController.navigate("add_task")
+                        },
                         onBack = {
                             navController.popBackStack()
                         }
