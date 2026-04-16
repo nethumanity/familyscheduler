@@ -95,8 +95,9 @@ object AvailabilityEngine {
             indices.all { index ->
                 val i = slotIndex.byPersonIndex[person to index] ?: return@filter false
                 val slot = slots[i]
-                slot.state == SlotState.UNASSIGNED ||
-                        slot.state == req.targetState
+                slot.state.weight <= req.targetState.weight // お試し（挙動を要確認）
+                //slot.state == SlotState.UNASSIGNED ||
+                //        slot.state == req.targetState
             }
         }
 
@@ -116,8 +117,9 @@ object AvailabilityEngine {
             indices.all { index ->
                 val i = slotIndex.byPersonIndex[person to index] ?: return@filter false
                 val slot = slots[i]
-                slot.state == SlotState.UNASSIGNED ||
-                        slot.state == req.targetState
+                slot.state.weight <= req.targetState.weight // お試し（挙動を要確認）
+                //slot.state == SlotState.UNASSIGNED ||
+                //        slot.state == req.targetState
             }
         }.take(req.requiredCount)
 

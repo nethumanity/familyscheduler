@@ -6,8 +6,11 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
@@ -166,6 +169,7 @@ fun MainScreen() {
     }
 
     Scaffold(
+        contentWindowInsets = WindowInsets.safeDrawing,
         topBar = {
 
             when (currentRoute) {
@@ -173,6 +177,7 @@ fun MainScreen() {
                 "timeline" -> {
 
                     HeaderBar(
+                        modifier = Modifier.statusBarsPadding(),    // デバイスでの挙動を要確認
                         date = currentDate,
                         onPreviousDay = {
                             timelineViewModel.changeDate(currentDate.minusDays(1))
