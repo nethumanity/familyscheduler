@@ -32,8 +32,7 @@ import com.example.familyscheduler.ui.utilities.renderMissingReason
 @Composable
 fun WarningDialog(
     index: Int,
-    evaluation: AvailabilityEvaluation?,
-    flexProposals: List<FlexResolveProposal>, //たぶん、削除可能
+    evaluation: AvailabilityEvaluation,
     initialPage: Int,
     onDismiss: () -> Unit,
     onApplyProposal: (FlexResolveProposal) -> Unit
@@ -42,8 +41,10 @@ fun WarningDialog(
         initialPage = initialPage,
         pageCount = { evaluation?.reasons?.size ?: 0 }
     )
+    val currentReason = evaluation.reasons.getOrNull(pagerState.currentPage)
+    val hasProposal = currentReason?.proposals?.isNotEmpty() == true
 
-    var selectedProposal by remember {
+    var selectedProposal by remember(pagerState.currentPage) {
         mutableStateOf<FlexResolveProposal?>(null)
     }
 
@@ -55,7 +56,7 @@ fun WarningDialog(
             }
         },
         dismissButton = {
-            if (flexProposals.isNotEmpty()) {
+            if (hasProposal) {
                 TextButton(
                     enabled = selectedProposal != null,
                     onClick = {
@@ -83,15 +84,11 @@ fun WarningDialog(
                         ) {
                             Text(renderMissingReason(reason.reason))
 
-                            val proposals = flexProposals.filter {
-                                it.requirementName == reason.reason.requirementName
-                            }
-
-                            if (proposals.isNotEmpty()) {
+                            if (reason.proposals.isNotEmpty()) {
                                 HorizontalDivider()
                                 Text("解消案", fontWeight = FontWeight.Bold)
 
-                                proposals.forEach { proposal ->
+                                reason.proposals.forEach { proposal ->
                                     ProposalRow(
                                         proposal = proposal,
                                         selected = selectedProposal == proposal,

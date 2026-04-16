@@ -127,19 +127,19 @@ class WeeklyTaskViewModel(
         val requiredCount =
             if (input.isTwoPersonTask) 2 else 1
 
-        val allowedPersons: Set<Person> =
+        val allowedPersons: List<Person> =
             if (input.isTwoPersonTask) {
-                Person.values().toSet()
+                Person.values().toList()
             } else {
                 when (input.allowedPersonOption) {
                     AllowedPersonOption.EITHER ->
-                        Person.values().toSet()
+                        Person.values().toList()
 
                     AllowedPersonOption.FATHER_ONLY ->
-                        setOf(Person.FATHER)
+                        listOf(Person.FATHER)
 
                     AllowedPersonOption.MOTHER_ONLY ->
-                        setOf(Person.MOTHER)
+                        listOf(Person.MOTHER)
                 }
             }
 

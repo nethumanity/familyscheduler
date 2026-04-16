@@ -166,9 +166,6 @@ fun TimelineScreen(
                 // 各personのslot
                 persons.forEach { person ->
                     val slot = rowSlotMap[person]
-//                    val slot = rowSlots.firstOrNull { slot ->
-//                        slot.person.name == person.name
-//                    }
                     val taskNames = remember(slot, ruleMap) { 
                         slot?.taskIds?.mapNotNull { ruleMap[it]?.taskName }
                             ?: emptyList()
@@ -225,11 +222,11 @@ fun TimelineScreen(
     dialogState?.let { state ->
 
         val evaluation = uiState.evaluationsByIndex[state.index]
+            ?: return@let
 
         WarningDialog(
             index = state.index,
             evaluation = evaluation,
-            flexProposals = state.proposals, // evaluation?.flexProposals ?: emptyList(), でもOK?
             initialPage = state.reasonIndex,
             onDismiss = {
                 viewModel.dismissWarningDialog()

@@ -48,7 +48,7 @@ object HouseholdRequirementMapper {
                 .split(",")
                 .filter { it.isNotBlank() }
                 .map { Person.valueOf(it) }
-                .toSet(),
+                .toList(),
 
             flexWindowSlots = FlexWindowParameters(
                 backward = entity.flexBackward,

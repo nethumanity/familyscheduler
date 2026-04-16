@@ -120,7 +120,7 @@ fun MainScreen() {
         childRoutineBuilder = ChildRoutineBuilder(),
         childCareRuleConverter = ChildCareRuleConverter(
             capacityCalculator = CareCapacityCalculator(),
-            allowedPersons = Person.values().toSet()
+            allowedPersons = Person.values().toList()
         ),
         requirementBuilder = RequirementBuilder()
     )

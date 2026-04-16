@@ -10,7 +10,7 @@ data class TimeRangeHouseholdRequirement(
     override val name: String,
     override val targetState: SlotState,
     override val requiredCount: Int,
-    override val allowedPersons: Set<Person>,
+    override val allowedPersons: List<Person>,  // Set<Person>
     override val flexWindowSlots: FlexWindowParameters,
     val startIndex: Int,
     val endIndex: Int,

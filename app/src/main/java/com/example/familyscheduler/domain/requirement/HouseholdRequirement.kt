@@ -10,7 +10,7 @@ interface HouseholdRequirement {
     val name: String
     val targetState: SlotState
     val requiredCount: Int
-    val allowedPersons: Set<Person>
+    val allowedPersons: List<Person> // Set<Person>
     val flexWindowSlots: FlexWindowParameters
     val prioritySeed: Long
 

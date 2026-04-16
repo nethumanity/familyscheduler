@@ -5,7 +5,6 @@ import com.example.familyscheduler.domain.requirement.HouseholdRequirement
 import com.example.familyscheduler.domain.requirement.RequirementModeToday
 import com.example.familyscheduler.domain.requirement.RequirementOverride
 import com.example.familyscheduler.domain.requirement.RequirementToggleOverride
-import com.example.familyscheduler.domain.requirement.TimeRangeHouseholdRequirement
 import com.example.familyscheduler.domain.slot.SlotState
 import com.example.familyscheduler.domain.slot.TimeSlot
 import com.example.familyscheduler.domain.time.TimeAxis
@@ -72,27 +71,27 @@ object AvailabilityEngine {
         val orderedReqs = requirements.sortedByDescending {
             it.prioritySeed
         }
+        val reverseRuleIds = overrides
+            .filterIsInstance<RequirementToggleOverride>()
+            .filter { it.mode == RequirementModeToday.REVERSE }
+            .map { it.ruleId }
+            .toSet()
         for (req in orderedReqs) {
-            if (!mayAssignBlock(req, slots, slotIndex)) continue
-            assignBlock(req, slots, slotIndex)
+            if (!mayAssignBlock(req, slots, slotIndex, reverseRuleIds)) continue
+            assignBlock(req, slots, slotIndex, reverseRuleIds)
         }
-
-        applyReverseOverrides(
-            slots = slots,
-            slotIndex = slotIndex,
-            requirements = requirements,
-            overrides = overrides
-        )
     }
 
     private fun mayAssignBlock(
         req: HouseholdRequirement,
         slots: List<TimeSlot>,
-        slotIndex: SlotIndex
+        slotIndex: SlotIndex,
+        reverseRuleIds: Set<String>
     ): Boolean {
         val indices = req.allIndices()
+        val orderedPersons = req.orderedPersons(reverseRuleIds)
 
-        val validPersons = req.allowedPersons.filter { person ->
+        val validPersons = orderedPersons.filter { person ->
             indices.all { index ->
                 val i = slotIndex.byPersonIndex[person to index] ?: return@filter false
                 val slot = slots[i]
@@ -107,11 +106,13 @@ object AvailabilityEngine {
     private fun assignBlock(
         req: HouseholdRequirement,
         slots: MutableList<TimeSlot>,
-        slotIndex: SlotIndex
+        slotIndex: SlotIndex,
+        reverseRuleIds: Set<String>
     ) {
         val indices = req.allIndices()
+        val orderedPersons = req.orderedPersons(reverseRuleIds)
 
-        val validPersons = req.allowedPersons.filter { person ->
+        val validPersons = orderedPersons.filter { person ->
             indices.all { index ->
                 val i = slotIndex.byPersonIndex[person to index] ?: return@filter false
                 val slot = slots[i]
@@ -133,76 +134,13 @@ object AvailabilityEngine {
         }
     }
 
-    private fun applyReverseOverrides(
-        slots: MutableList<TimeSlot>,
-        slotIndex: SlotIndex,
-        requirements: List<HouseholdRequirement>,
-        overrides: List<RequirementOverride>
-    ) {
-        val reverseRuleIds = overrides
-            .filterIsInstance<RequirementToggleOverride>()
-            .filter { it.mode == RequirementModeToday.REVERSE }
-            .map { it.ruleId }
-            .toSet()
-
-        if (reverseRuleIds.isEmpty()) return
-
-        requirements
-            .filterIsInstance<TimeRangeHouseholdRequirement>()
-            .filter { it.sourceRuleId in reverseRuleIds }
-            .forEach { req ->
-
-                for (index in TimeAxis.indices) {
-
-                    if (!req.isRequiredAt(index)) continue
-
-                    val indicesAtIndex = slotIndex.byIndex[index].orEmpty()
-
-                    // ① 今の割当を取得
-                    val assigned =
-                        indicesAtIndex.filter { i ->
-                            val slot = slots[i]
-                            slot.person in req.allowedPersons &&
-                                    slot.state == req.targetState &&
-                                    req.sourceRuleId in slot.taskIds
-                    }
-
-                    // ② 反転対象
-                    val assignedPersons = assigned.map { i -> slots[i].person }.toSet()
-                    val reversedPersons = req.allowedPersons - assignedPersons
-
-                    // ③ 一旦削除
-                    assigned.forEach { i ->
-                        val slot = slots[i]
-                        slots[i] = slot.copy(
-                            state = SlotState.UNASSIGNED,
-                            taskIds = slot.taskIds - req.sourceRuleId
-                        )
-                    }
-
-                    // ④ 強制assign（軽いガードのみ）
-                    reversedPersons.forEach { person ->
-
-                        val candidate =
-                            indicesAtIndex
-                            .firstOrNull { i ->
-                                val slot = slots[i]
-                                slot.person == person &&
-                                        slot.state.weight <= req.targetState.weight
-                            }
-
-                        if (candidate != null) {
-                            val slot = slots[candidate]
-
-                            slots[candidate] = slot.copy(
-                                state = req.targetState,
-                                taskIds = slot.taskIds + req.sourceRuleId
-                            )
-                        }
-                    }
-                }
-            }
-    }
+    private fun HouseholdRequirement.orderedPersons(
+        reverseRuleIds: Set<String>
+    ): List<Person> =
+        if (sourceRuleId in reverseRuleIds)
+            allowedPersons.reversed()
+        else
+            allowedPersons
 
     private fun assignRemainingUnassignedToFree(
         slots: MutableList<TimeSlot>

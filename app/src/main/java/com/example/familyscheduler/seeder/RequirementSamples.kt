@@ -21,7 +21,7 @@ object RequirementSamples {
             taskName = "朝食",
             targetState = SlotState.LIFE,
             requiredCount = 1,
-            allowedPersons = setOf(Person.FATHER),
+            allowedPersons = listOf(Person.FATHER),
             flexWindowSlots = FlexWindowParameters(0, 0),
             date = null,
             daysOfWeek = DayOfWeek.values().toSet(),
@@ -37,7 +37,7 @@ object RequirementSamples {
             taskName = "朝食",
             targetState = SlotState.CHILDCARE,
             requiredCount = 1,
-            allowedPersons = setOf(Person.MOTHER),
+            allowedPersons = listOf(Person.MOTHER),
             flexWindowSlots = FlexWindowParameters(0,0),
             date = null,
             daysOfWeek = DayOfWeek.values().toSet(),
@@ -53,7 +53,7 @@ object RequirementSamples {
             taskName = "夕食準備",
             targetState = SlotState.LIFE,
             requiredCount = 1,
-            allowedPersons = setOf(
+            allowedPersons = listOf(
                 Person.FATHER,
                 Person.MOTHER
             ),
@@ -72,7 +72,7 @@ object RequirementSamples {
             taskName = "夕食",
             targetState = SlotState.CHILDCARE,
             requiredCount = 2,
-            allowedPersons = setOf(
+            allowedPersons = listOf(
                 Person.FATHER,
                 Person.MOTHER
             ),
@@ -91,7 +91,7 @@ object RequirementSamples {
             taskName = "買い物",
             targetState = SlotState.LIFE,
             requiredCount = 1,
-            allowedPersons = setOf(
+            allowedPersons = listOf(
                 Person.FATHER,
                 Person.MOTHER
             ),
@@ -114,7 +114,7 @@ object RequirementSamples {
             taskName = "通院",
             targetState = SlotState.LIFE,
             requiredCount = 1,
-            allowedPersons = setOf(Person.MOTHER),
+            allowedPersons = listOf(Person.MOTHER),
             flexWindowSlots = FlexWindowParameters(0,0),
             date = LocalDate.now(),
             daysOfWeek = null,

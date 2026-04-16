@@ -15,7 +15,7 @@ data class HouseholdRequirementRule(
     val taskName: String,
     val targetState: SlotState,
     val requiredCount: Int,
-    val allowedPersons: Set<Person>,
+    val allowedPersons: List<Person>,   // Set<Person>
     val flexWindowSlots: FlexWindowParameters,
     val date: LocalDate?,               // 入力系①日付指定パターン用
     val daysOfWeek: Set<DayOfWeek>?,    // 入力系②毎日/曜日指定パターン、③子どもルーティン用

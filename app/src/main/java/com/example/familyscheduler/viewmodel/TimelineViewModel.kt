@@ -70,8 +70,7 @@ class TimelineViewModel(
 
     data class WarningDialogState(
         val index: Int,
-        val reasonIndex: Int,
-        val proposals: List<FlexResolveProposal> //たぶん、削除可能
+        val reasonIndex: Int
     )
 
     data class TimelineUiState(
@@ -636,8 +635,7 @@ class TimelineViewModel(
         _warningDialogState.value =
             WarningDialogState(
                 index = index,
-                reasonIndex = reasonIndex,
-                proposals = evaluation.reasons.flatMap { it.proposals }
+                reasonIndex = reasonIndex
             )
     }
 

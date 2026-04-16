@@ -11,7 +11,7 @@ import java.time.Duration
 
 class ChildCareRuleConverter(
     private val capacityCalculator: CareCapacityCalculator,
-    private val allowedPersons: Set<Person>,
+    private val allowedPersons: List<Person>,
 ) {
 
     fun convert(
