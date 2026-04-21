@@ -36,6 +36,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.room.Room
 import com.example.familyscheduler.data.local.AppDatabase
+import com.example.familyscheduler.data.repository.InMemorySettingsRepository
 import com.example.familyscheduler.data.repository.RoomChildOverrideRepository
 import com.example.familyscheduler.data.repository.RoomChildRoutineRepository
 import com.example.familyscheduler.data.repository.RoomDailyStateRepository
@@ -65,10 +66,12 @@ import com.example.familyscheduler.ui.utilities.UiEvent
 import com.example.familyscheduler.viewmodel.ChildRoutineViewModel
 import com.example.familyscheduler.viewmodel.Factory.ChildRoutineViewModelFactory
 import com.example.familyscheduler.viewmodel.Factory.OneTimeTaskViewModelFactory
+import com.example.familyscheduler.viewmodel.Factory.SettingsViewModelFactory
 import com.example.familyscheduler.viewmodel.Factory.TemplateEditViewModelFactory
 import com.example.familyscheduler.viewmodel.Factory.TimelineViewModelFactory
 import com.example.familyscheduler.viewmodel.Factory.WeeklyTaskViewModelFactory
 import com.example.familyscheduler.viewmodel.OneTimeTaskViewModel
+import com.example.familyscheduler.viewmodel.SettingsViewModel
 import com.example.familyscheduler.viewmodel.TemplateEditViewModel
 import com.example.familyscheduler.viewmodel.TimelineViewModel
 import com.example.familyscheduler.viewmodel.WeeklyTaskViewModel
@@ -110,6 +113,7 @@ fun MainScreen() {
     val childRepository = remember { RoomChildRoutineRepository(db.childRoutineDao()) }
     val childOverrideRepository = remember { RoomChildOverrideRepository(db.childOverrideDao()) }
     val routineShiftOverrideRepository = remember { RoomRoutineShiftOverrideRepository(db.routineShiftOverrideDao()) }
+    val settingsRepository = remember { InMemorySettingsRepository() }
 
     val factory = TimelineViewModelFactory(
         templateRepository = templateRepository,
@@ -125,7 +129,8 @@ fun MainScreen() {
             capacityCalculator = CareCapacityCalculator(),
             allowedPersons = Person.values().toList()
         ),
-        requirementBuilder = RequirementBuilder()
+        requirementBuilder = RequirementBuilder(),
+        settingsRepository = settingsRepository
     )
 
     val timelineViewModel: TimelineViewModel =
@@ -311,7 +316,14 @@ fun MainScreen() {
                 }
 
                 composable("settings") {
+
+                    val settingsViewModel: SettingsViewModel =
+                        viewModel(
+                            factory = SettingsViewModelFactory(settingsRepository)
+                        )
+
                     SettingsScreen(
+                        viewModel = settingsViewModel,
                         onOpenScheduleInput = {
                             navController.navigate("schedule_input/${Person.FATHER.name}")
                         },

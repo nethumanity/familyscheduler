@@ -7,30 +7,33 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.familyscheduler.viewmodel.SettingsViewModel
 
 @Composable
 fun SettingsScreen(
-    //viewModel: SettingsViewModel,
+    viewModel: SettingsViewModel,
     onOpenScheduleInput: () -> Unit,
     onOpenChildRoutineInput: () -> Unit,
     onOpenTaskInput: () -> Unit,
     onBack: () -> Unit
 ) {
-    //val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
 
     LazyColumn (
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
             Text(
-                text = "設定　※現在は各種登録のみ可",
+                text = "設定",
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -63,44 +66,44 @@ fun SettingsScreen(
         item {
             SettingsNumberItem(
                 title = "1人で見れる子どもの数",
-                value = 2,
-                onValueChange = { /* ViewModel */ }
+                value = uiState.maxChildrenPerAdult,
+                onValueChange = viewModel::updateMaxChildren
             )
         }
         item {
             SettingsNumberItem(
                 title = "寝かしつけ所用時間（分）",
-                value = 30,
-                onValueChange = { }
+                value = uiState.bedtimeMinutes,
+                onValueChange = viewModel::updateBedtime
             )
         }
         item {
             SettingsNumberItem(
                 title = "登園所用時間（分）",
-                value = 30,
-                onValueChange = { }
+                value = uiState.dropOffMinutes,
+                onValueChange = viewModel::updateDropOff
             )
         }
         item {
             SettingsNumberItem(
                 title = "お迎え所用時間（分）",
-                value = 30,
-                onValueChange = { }
+                value = uiState.pickupMinutes,
+                onValueChange = { viewModel::updatePickup }
             )
         }
         item { SettingsSectionTitle("表示") }
         item {
             SettingsSwitchItem(
                 title = "凡例を表示",
-                checked = false,
-                onCheckedChange = { }
+                checked = uiState.showLegend,
+                onCheckedChange = { viewModel.toggleLegend() }
             )
         }
         item {
             SettingsSwitchItem(
                 title = "集計を表示",
-                checked = false,
-                onCheckedChange = { }
+                checked = uiState.showTotal,
+                onCheckedChange = { viewModel.toggleTotal() }
             )
         }
     }

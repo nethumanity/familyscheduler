@@ -18,6 +18,8 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -62,137 +64,150 @@ fun TimelineScreen(
 
     var editingSlot by remember { mutableStateOf<Pair<Int, Person>?>(null) }
 
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .pointerInput(Unit) {
-                var totalDrag = 0f
-
-                detectHorizontalDragGestures(
-                    onDragEnd = {
-                        if (totalDrag > 200) {
-                            viewModel.changeDate(uiState.date.minusDays(1))
-                        } else if (totalDrag < -200) {
-                            viewModel.changeDate(uiState.date.plusDays(1))
-                        }
-                        totalDrag = 0f
-                    }
-                ) { _, dragAmount ->
-                    totalDrag += dragAmount
-                }
-            }
+    Box(
+        modifier = Modifier.fillMaxSize()
     ) {
-        stickyHeader {
-            TimelineHeaderRow(
-                viewModel = viewModel,
-                persons = persons,
-                dailyStates = uiState.dailyStates,
-                onDailyStateClick = { person ->
-                    onOpenTemplateSheet(person)
-                }
-            )
-        }
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .pointerInput(Unit) {
+                    var totalDrag = 0f
 
-        items(
-            count = TimeAxis.displayEndIndex - TimeAxis.displayStartIndex + 1
-        ) { offset ->
-
-            val index = TimeAxis.displayStartIndex + offset
-
-            val time = TimeAxis.all[index]
-            val rowSlots = slotMap[index] ?: emptyList()//uiState.slots.filter { it.index == index }
-            val rowSlotMap = remember(rowSlots) { rowSlots.associateBy { it.person } }
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp)
-                    .border(0.5.dp, Color.LightGray)
-                    .pointerInput(persons, time) {
-
-                        detectTapGestures(
-                            onTap = {
-                                val evaluation = uiState.evaluationsByIndex[index]
-
-                                if (evaluation?.state == AvailabilityState.WARN) {
-                                    viewModel.onAvailabilityWarningClick(index, 0)
-                                }
-                            },
-                            onLongPress = { offset ->
-                                val timeColumnWidthPx = 64.dp.toPx()
-
-                                if (offset.x < timeColumnWidthPx)
-                                    return@detectTapGestures
-
-                                val columnWidth =
-                                    (size.width - timeColumnWidthPx) / persons.size
-
-                                val columnIndex =
-                                    ((offset.x - timeColumnWidthPx) / columnWidth)
-                                        .toInt()
-                                        .coerceIn(0, persons.lastIndex)
-
-                                val person = persons[columnIndex]
-
-                                editingSlot = index to person
+                    detectHorizontalDragGestures(
+                        onDragEnd = {
+                            if (totalDrag > 200) {
+                                viewModel.changeDate(uiState.date.minusDays(1))
+                            } else if (totalDrag < -200) {
+                                viewModel.changeDate(uiState.date.plusDays(1))
                             }
-                        )
-                    }
-            ) {
-
-                // 時刻表示
-                Column(
-                    modifier = Modifier.width(64.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = time.toString(),
-                        fontSize = 12.sp
-                    )
-
-                    val evaluation = uiState.evaluationsByIndex[index]
-
-                    if (evaluation?.state == AvailabilityState.WARN) {
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Icon(
-                            painter = painterResource(R.drawable.ic_warning),
-                            contentDescription = "warning",
-                            tint = Color.Red,
-                            modifier = Modifier.size(16.dp)
-                        )
+                            totalDrag = 0f
+                        }
+                    ) { _, dragAmount ->
+                        totalDrag += dragAmount
                     }
                 }
-
-                // 各personのslot
-                persons.forEach { person ->
-                    val slot = rowSlotMap[person]
-                    val taskNames = remember(slot, ruleMap) { 
-                        slot?.taskIds?.mapNotNull { ruleMap[it]?.taskName }
-                            ?: emptyList()
+        ) {
+            stickyHeader {
+                TimelineHeaderRow(
+                    viewModel = viewModel,
+                    persons = persons,
+                    dailyStates = uiState.dailyStates,
+                    onDailyStateClick = { person ->
+                        onOpenTemplateSheet(person)
                     }
+                )
+            }
 
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight()
-                            .background(
-                                slot?.let {
-                                    slotStateColor(it.state)
-                                } ?: Color.LightGray
+            items(
+                count = TimeAxis.displayEndIndex - TimeAxis.displayStartIndex + 1
+            ) { offset ->
+
+                val index = TimeAxis.displayStartIndex + offset
+
+                val time = TimeAxis.all[index]
+                val rowSlots = slotMap[index] ?: emptyList()//uiState.slots.filter { it.index == index }
+                val rowSlotMap = remember(rowSlots) { rowSlots.associateBy { it.person } }
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp)
+                        .border(0.5.dp, Color.LightGray)
+                        .pointerInput(persons, time) {
+
+                            detectTapGestures(
+                                onTap = {
+                                    val evaluation = uiState.evaluationsByIndex[index]
+
+                                    if (evaluation?.state == AvailabilityState.WARN) {
+                                        viewModel.onAvailabilityWarningClick(index, 0)
+                                    }
+                                },
+                                onLongPress = { offset ->
+                                    val timeColumnWidthPx = 64.dp.toPx()
+
+                                    if (offset.x < timeColumnWidthPx)
+                                        return@detectTapGestures
+
+                                    val columnWidth =
+                                        (size.width - timeColumnWidthPx) / persons.size
+
+                                    val columnIndex =
+                                        ((offset.x - timeColumnWidthPx) / columnWidth)
+                                            .toInt()
+                                            .coerceIn(0, persons.lastIndex)
+
+                                    val person = persons[columnIndex]
+
+                                    editingSlot = index to person
+                                }
                             )
-                            .border(0.5.dp, Color.DarkGray),
-                        contentAlignment = Alignment.Center
+                        }
+                ) {
+
+                    // 時刻表示
+                    Column(
+                        modifier = Modifier.width(64.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = taskNames//(slot?.taskName ?: emptyList())
-                                .joinToString("  "),
-                            fontSize = 12.sp,
-                            color = Color.Black
+                            text = time.toString(),
+                            fontSize = 12.sp
                         )
+
+                        val evaluation = uiState.evaluationsByIndex[index]
+
+                        if (evaluation?.state == AvailabilityState.WARN) {
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Icon(
+                                painter = painterResource(R.drawable.ic_warning),
+                                contentDescription = "warning",
+                                tint = Color.Red,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+
+                    // 各personのslot
+                    persons.forEach { person ->
+                        val slot = rowSlotMap[person]
+                        val taskNames = remember(slot, ruleMap) {
+                            slot?.taskIds?.mapNotNull { ruleMap[it]?.taskName }
+                                ?: emptyList()
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight()
+                                .background(
+                                    slot?.let {
+                                        slotStateColor(it.state)
+                                    } ?: Color.LightGray
+                                )
+                                .border(0.5.dp, Color.DarkGray),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = taskNames
+                                    .joinToString("  "),
+                                fontSize = 12.sp,
+                                color = Color.Black
+                            )
+                        }
                     }
                 }
             }
         }
+
+        TimelineOverlay(
+            settings = uiState.settings,
+            slots = uiState.slots,
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 60.dp)
+                .offset(x = 32.dp)
+        )
     }
 
     editingSlot?.let { (index, person) ->

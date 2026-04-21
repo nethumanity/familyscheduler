@@ -1,6 +1,5 @@
 package com.example.familyscheduler.ui.utilities
 
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.graphics.Color
 import java.time.DayOfWeek
 

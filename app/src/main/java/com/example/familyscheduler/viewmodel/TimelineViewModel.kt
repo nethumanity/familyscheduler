@@ -41,7 +41,9 @@ import com.example.familyscheduler.domain.time.TimeAxis
 import com.example.familyscheduler.seeder.SampleDataSeeder
 import com.example.familyscheduler.ui.utilities.EditingTarget
 import com.example.familyscheduler.ui.utilities.GuideState
+import com.example.familyscheduler.ui.utilities.SettingsUiState
 import com.example.familyscheduler.ui.utilities.UiEvent
+import com.example.familyscheduler.ui.utilities.repository.SettingsRepository
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -62,7 +64,8 @@ class TimelineViewModel(
     private val routineResolver: RoutineResolver,
     private val childRoutineBuilder: ChildRoutineBuilder,
     private val childCareRuleConverter: ChildCareRuleConverter,
-    private val requirementBuilder: RequirementBuilder
+    private val requirementBuilder: RequirementBuilder,
+    private val settingsRepository: SettingsRepository
 ) : ViewModel() {
 
     private val _events = MutableSharedFlow<UiEvent>()
@@ -87,6 +90,7 @@ class TimelineViewModel(
         val evaluationsByIndex: Map<Int, AvailabilityEvaluation>,
         val requirements: List<HouseholdRequirement>,
         val rules: List<HouseholdRequirementRule>,
+        val settings: SettingsUiState
     )
 
     private val _currentDate = MutableStateFlow(LocalDate.now())
@@ -106,7 +110,8 @@ class TimelineViewModel(
             evaluations = emptyList(),
             evaluationsByIndex = emptyMap(),
             requirements = emptyList(),
-            rules = emptyList()
+            rules = emptyList(),
+            settings = SettingsUiState()
         )
     )
     val uiState: StateFlow<TimelineUiState> = _uiState
@@ -221,17 +226,20 @@ class TimelineViewModel(
                 Triple(routines, childOverrides, routineShiftOverrides)
             }
 
+            val settingsFlow = settingsRepository.settings
+
             combine(
                 baseFlow,
                 ruleFlow,
-                childFlow
-            ) { base, rule, child ->
+                childFlow,
+                settingsFlow
+            ) { base, rule, child, settings ->
 
                 val (date, templates, statesMap) = base
                 val (rules, overrides) = rule
                 val (routines, childOverrides, routineShiftOverrides) = child
 
-                computeUiState(
+                val computed = computeUiState(
                     date = date,
                     templates = templates,
                     statesMap = statesMap,
@@ -241,6 +249,8 @@ class TimelineViewModel(
                     childOverrides = childOverrides,
                     routineShiftOverrides = routineShiftOverrides
                 )
+
+                computed.copy(settings = settings)
 
             }.collect { state ->
                 Log.d("TimelineVM", buildUiLog(state))
@@ -377,7 +387,8 @@ class TimelineViewModel(
             evaluations = result.evaluations,
             evaluationsByIndex = evaluationsByIndex,
             requirements = requirements,
-            rules = mergedRules
+            rules = mergedRules,
+            settings = SettingsUiState()
         )
     }
 

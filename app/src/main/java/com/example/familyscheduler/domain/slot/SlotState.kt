@@ -16,5 +16,20 @@ enum class SlotState(val weight: Int) {
             WORK,
             LIFE
         )
+
+        val totalSectionAllowedState = listOf(
+            WORK,
+            CHILDCARE,
+            LIFE
+        )
+
+        val legendSectionAllowedState = listOf(
+            WORK,
+            UNAVAILABLE,
+            REST,
+            CHILDCARE,
+            LIFE,
+            FREE
+        )
     }
 }

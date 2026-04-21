@@ -13,6 +13,7 @@ import com.example.familyscheduler.domain.routine.repository.ChildRoutineReposit
 import com.example.familyscheduler.domain.routine.repository.RoutineShiftOverrideRepository
 import com.example.familyscheduler.domain.schedule.repository.DailyStateRepository
 import com.example.familyscheduler.domain.schedule.repository.TemplateRepository
+import com.example.familyscheduler.ui.utilities.repository.SettingsRepository
 import com.example.familyscheduler.viewmodel.TimelineViewModel
 
 class TimelineViewModelFactory(
@@ -26,7 +27,8 @@ class TimelineViewModelFactory(
     private val routineResolver: RoutineResolver,
     private val childRoutineBuilder: ChildRoutineBuilder,
     private val childCareRuleConverter: ChildCareRuleConverter,
-    private val requirementBuilder: RequirementBuilder
+    private val requirementBuilder: RequirementBuilder,
+    private val settingsRepository: SettingsRepository
 ) : ViewModelProvider.Factory {
 
     override fun <T : ViewModel> create(
@@ -46,7 +48,8 @@ class TimelineViewModelFactory(
                 routineResolver = routineResolver,
                 childRoutineBuilder = childRoutineBuilder,
                 childCareRuleConverter = childCareRuleConverter,
-                requirementBuilder = requirementBuilder
+                requirementBuilder = requirementBuilder,
+                settingsRepository = settingsRepository
             ) as T
         }
 
