@@ -38,10 +38,11 @@ class WeeklyTaskViewModel(
         val allowedPersonOption: AllowedPersonOption = AllowedPersonOption.EITHER,
 
         val startTime: LocalTime? = null,
-        val durationMinutes: Int = 30,
+        val durationSteps: Int = 1,
 
         val isFlexible: Boolean = false,
-        val flexMinutes: Int = 0
+        val flexBackwardSteps: Int = 0,
+        val flexForwardSteps: Int = 0
     )
 
     private val _uiState = MutableStateFlow(WeeklyTaskUiState())
@@ -65,14 +66,17 @@ class WeeklyTaskViewModel(
     fun updateStartTime(time: LocalTime?) =
         _uiState.update { it.copy(startTime = time) }
 
-    fun updateDuration(minutes: Int) =
-        _uiState.update { it.copy(durationMinutes = minutes) }
+    fun updateDuration(steps: Int) =
+        _uiState.update { it.copy(durationSteps = steps.coerceAtLeast(1)) }
 
     fun updateFlexible(value: Boolean) =
         _uiState.update { it.copy(isFlexible = value) }
 
-    fun updateFlex(minutes: Int) =
-        _uiState.update { it.copy(flexMinutes = minutes) }
+    fun updateBackwardFlex(steps: Int) =
+        _uiState.update { it.copy(flexBackwardSteps = steps.coerceAtLeast(0)) }
+
+    fun updateForwardFlex(steps: Int) =
+        _uiState.update { it.copy(flexForwardSteps = steps.coerceAtLeast(0)) }
 
     fun toggleEveryDay(value: Boolean) {
 
@@ -143,16 +147,19 @@ class WeeklyTaskViewModel(
                 }
             }
 
+        val stepMinutes = TimeAxis.stepMinutes
+
+        val durationMinutes = input.durationSteps * stepMinutes
+
         val flexSlots =
             if (!input.isFlexible) {
                 FlexWindowParameters(0, 0)
             } else {
-                val slot = input.flexMinutes / TimeAxis.stepMinutes
-                FlexWindowParameters(slot, slot)
+                FlexWindowParameters(input.flexBackwardSteps, input.flexForwardSteps)
             }
 
         val endTime =
-            start.plusMinutes(input.durationMinutes.toLong())
+            start.plusMinutes(durationMinutes.toLong())
 
         return HouseholdRequirementRule(
             id = input.id ?: UUID.randomUUID().toString(),
@@ -179,9 +186,6 @@ class WeeklyTaskViewModel(
         val start = rule.timeRange.start
         val end = rule.timeRange.end
 
-        val duration =
-            java.time.Duration.between(start, end).toMinutes().toInt()
-
         val isTwoPerson = rule.requiredCount >= 2
 
         val allowedOption =
@@ -189,8 +193,8 @@ class WeeklyTaskViewModel(
                 AllowedPersonOption.EITHER
             } else {
                 when (rule.allowedPersons) {
-                    setOf(Person.FATHER) -> AllowedPersonOption.FATHER_ONLY
-                    setOf(Person.MOTHER) -> AllowedPersonOption.MOTHER_ONLY
+                    listOf(Person.FATHER) -> AllowedPersonOption.FATHER_ONLY
+                    listOf(Person.MOTHER) -> AllowedPersonOption.MOTHER_ONLY
                     else -> AllowedPersonOption.EITHER
                 }
             }
@@ -199,9 +203,18 @@ class WeeklyTaskViewModel(
             rule.flexWindowSlots.backward > 0 ||
                     rule.flexWindowSlots.forward > 0
 
-        val flexMinutes =
+        val stepMinutes = TimeAxis.stepMinutes
+
+        val durationSteps = (java.time.Duration.between(start, end).toMinutes() / stepMinutes).toInt()
+
+        val flexBackwardSteps =
             if (isFlexible) {
-                rule.flexWindowSlots.backward * TimeAxis.stepMinutes
+                rule.flexWindowSlots.backward
+            } else 0
+
+        val flexForwardSteps =
+            if (isFlexible) {
+                rule.flexWindowSlots.forward
             } else 0
 
         val days = rule.daysOfWeek ?: emptySet()
@@ -209,23 +222,19 @@ class WeeklyTaskViewModel(
         val isEveryDay = days.size == 7
 
         _uiState.value = WeeklyTaskUiState(
-            id = rule.id,   // 重要
-
+            id = rule.id,
             taskName = rule.taskName,
             targetState = rule.targetState,
-
             everyDay = isEveryDay,
             daysOfWeek =
                 if (isEveryDay) emptySet() else days,
-
             isTwoPersonTask = isTwoPerson,
             allowedPersonOption = allowedOption,
-
             startTime = start,
-            durationMinutes = duration,
-
+            durationSteps = durationSteps,
             isFlexible = isFlexible,
-            flexMinutes = flexMinutes
+            flexBackwardSteps = flexBackwardSteps,
+            flexForwardSteps = flexForwardSteps
         )
     }
 }

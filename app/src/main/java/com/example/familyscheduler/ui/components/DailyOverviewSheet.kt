@@ -135,7 +135,7 @@ fun DailyOverviewSheet(
                             modifier = Modifier.size(32.dp), // ← Iconと同じサイズ
                             contentAlignment = Alignment.Center
                         ) {
-                            if (eval.reasons.flatMap { it.proposals }.isNotEmpty()) {
+                            if (reason.proposals.isNotEmpty()) {
                                 Icon(
                                     painter = painterResource(R.drawable.ic_proposal),
                                     contentDescription = "Proposal",

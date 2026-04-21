@@ -1,25 +1,29 @@
 package com.example.familyscheduler.ui.inputs
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
-import com.example.familyscheduler.domain.time.DurationDropdown
-import com.example.familyscheduler.domain.time.FlexDropdown
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import com.example.familyscheduler.domain.time.TimeDropdownPicker
+import com.example.familyscheduler.ui.utilities.StepDropdown
 import java.time.LocalTime
 
 @Composable
 fun TimeSection(
     startTime: LocalTime?,
-    durationMinutes: Int,
+    durationSteps: Int,
     isFlexible: Boolean,
-    flexMinutes: Int,
+    backwardSteps: Int,
+    forwardSteps: Int,
     onStartTimeChange: (LocalTime?) -> Unit,
-    onDurationMinutesChange: (Int) -> Unit,
+    onDurationChange: (Int) -> Unit,
     onIsFlexibleChange: (Boolean) -> Unit,
-    onFlexMinutesChange: (Int) -> Unit
+    onBackwardChange: (Int) -> Unit,
+    onForwardChange: (Int) -> Unit
 ) {
 
     TimeDropdownPicker(
@@ -28,9 +32,12 @@ fun TimeSection(
         onTimeSelected = { onStartTimeChange(it) }
     )
 
-    DurationDropdown(
-        selectedMinutes = durationMinutes,
-        onSelect = { onDurationMinutesChange(it) }
+    StepDropdown(
+        label = "所要時間",
+        selectedSteps = durationSteps,
+        stepOptions = listOf(1, 2, 3, 4, 5, 6),
+        onSelect = onDurationChange,
+        modifier = Modifier
     )
 
     Row (
@@ -44,9 +51,23 @@ fun TimeSection(
     }
 
     if (isFlexible) {
-        FlexDropdown(
-            selectedMinutes = flexMinutes,
-            onSelect = { onFlexMinutesChange(it) }
-        )
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            StepDropdown(
+                label = "前に",
+                selectedSteps = backwardSteps,
+                stepOptions = listOf(0, 1, 2, 3, 4, 5, 6),
+                onSelect = onBackwardChange,
+                modifier = Modifier.weight(1f)
+            )
+            StepDropdown(
+                label = "後ろに",
+                selectedSteps = forwardSteps,
+                stepOptions = listOf(0, 1, 2, 3, 4, 5, 6),
+                onSelect = onForwardChange,
+                modifier = Modifier.weight(1f)
+            )
+        }
     }
 }

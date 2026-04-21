@@ -1,6 +1,6 @@
 @file:OptIn(ExperimentalMaterial3Api::class)
 
-package com.example.familyscheduler.domain.time
+package com.example.familyscheduler.ui.utilities
 
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -13,25 +13,29 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import com.example.familyscheduler.domain.time.TimeAxis
 
 @Composable
-fun FlexDropdown(
-    selectedMinutes: Int,
-    onSelect: (Int) -> Unit
+fun StepDropdown(
+    label: String,
+    selectedSteps: Int,
+    stepMinutes: Int = TimeAxis.stepMinutes,
+    stepOptions: List<Int>,
+    onSelect: (Int) -> Unit,
+    modifier: Modifier
 ) {
-    val options = listOf(30, 60, 90, 120, 150, 180)
-
     var expanded by remember { mutableStateOf(false) }
 
     ExposedDropdownMenuBox(
         expanded = expanded,
-        onExpandedChange = { expanded = it }
+        onExpandedChange = { expanded = it },
+        modifier = modifier
     ) {
         OutlinedTextField(
-            value = "${selectedMinutes}分",
+            value = "${selectedSteps * stepMinutes} 分",
             onValueChange = {},
             readOnly = true,
-            label = { Text("") },
+            label = { Text(label) },
             modifier = Modifier.menuAnchor()
         )
 
@@ -39,12 +43,12 @@ fun FlexDropdown(
             expanded = expanded,
             onDismissRequest = { expanded = false }
         ) {
-            options.forEach { minutes ->
+            stepOptions.forEach { steps ->
                 DropdownMenuItem(
-                    text = { Text("${minutes}分") },
+                    text = { Text("${steps * stepMinutes} 分") },
                     onClick = {
                         expanded = false
-                        onSelect(minutes)
+                        onSelect(steps)
                     }
                 )
             }

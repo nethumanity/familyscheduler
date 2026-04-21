@@ -78,13 +78,15 @@ fun WeeklyTaskInputScreen(
         item {
             TimeSection(
                 startTime = state.startTime,
-                durationMinutes = state.durationMinutes,
+                durationSteps = state.durationSteps,
                 isFlexible = state.isFlexible,
-                flexMinutes = state.flexMinutes,
-                onStartTimeChange = {viewModel.updateStartTime(it) },
-                onDurationMinutesChange = { viewModel.updateDuration(it) },
+                backwardSteps = state.flexBackwardSteps,
+                forwardSteps = state.flexForwardSteps,
+                onStartTimeChange = { viewModel.updateStartTime(it) },
+                onDurationChange = { viewModel.updateDuration(it) },
                 onIsFlexibleChange = { viewModel.updateFlexible(it) },
-                onFlexMinutesChange = { viewModel.updateFlex(it) }
+                onBackwardChange = { viewModel.updateBackwardFlex(it) },
+                onForwardChange = { viewModel.updateForwardFlex(it) }
             )
         }
         item {
