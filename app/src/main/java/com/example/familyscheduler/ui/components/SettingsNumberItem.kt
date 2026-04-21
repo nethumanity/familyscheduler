@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 fun SettingsNumberItem(
     title: String,
     value: Int,
+    displayText: String,
     onValueChange: (Int) -> Unit
 ) {
     Row(
@@ -26,7 +27,7 @@ fun SettingsNumberItem(
             IconButton(onClick = { onValueChange(value - 1) }) {
                 Text("-")
             }
-            Text(value.toString())
+            Text(displayText)
             IconButton(onClick = { onValueChange(value + 1) }) {
                 Text("+")
             }

@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.familyscheduler.domain.time.TimeAxis
 import com.example.familyscheduler.viewmodel.SettingsViewModel
 
 @Composable
@@ -24,6 +25,7 @@ fun SettingsScreen(
     onBack: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val step = TimeAxis.stepMinutes
 
     LazyColumn (
         modifier = Modifier
@@ -67,28 +69,32 @@ fun SettingsScreen(
             SettingsNumberItem(
                 title = "1人で見れる子どもの数",
                 value = uiState.maxChildrenPerAdult,
+                displayText = "${uiState.maxChildrenPerAdult} 人",
                 onValueChange = viewModel::updateMaxChildren
             )
         }
         item {
             SettingsNumberItem(
-                title = "寝かしつけ所用時間（分）",
-                value = uiState.bedtimeMinutes,
-                onValueChange = viewModel::updateBedtime
+                title = "寝かしつけ所用時間",
+                value = uiState.bedtimeSteps,
+                displayText = "${uiState.bedtimeSteps * step} 分（固定）",
+                onValueChange = {} // viewModel::updateBedtime
             )
         }
         item {
             SettingsNumberItem(
-                title = "登園所用時間（分）",
-                value = uiState.dropOffMinutes,
-                onValueChange = viewModel::updateDropOff
+                title = "登園所用時間",
+                value = uiState.dropOffSteps,
+                displayText = "${uiState.dropOffSteps * step} 分（固定）",
+                onValueChange = {} // viewModel::updateDropOff
             )
         }
         item {
             SettingsNumberItem(
-                title = "お迎え所用時間（分）",
-                value = uiState.pickupMinutes,
-                onValueChange = { viewModel::updatePickup }
+                title = "お迎え所用時間",
+                value = uiState.pickupSteps,
+                displayText = "${uiState.pickupSteps * step} 分（固定）",
+                onValueChange = {} // viewModel::updatePickup
             )
         }
         item { SettingsSectionTitle("表示") }

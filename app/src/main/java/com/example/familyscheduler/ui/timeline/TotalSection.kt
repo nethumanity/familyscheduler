@@ -52,7 +52,7 @@ fun TotalSection(slots: List<TimeSlot>) {
                             .background(slotStateColor(state))
                     )
                     Spacer(Modifier.width(4.dp))
-                    Text(formatHours(fatherHours), fontSize = 12.sp)
+                    Text(formatHours(fatherHours), fontSize = 11.sp)
                     Spacer(Modifier.width(120.dp))
                     Box(
                         modifier = Modifier
@@ -60,7 +60,7 @@ fun TotalSection(slots: List<TimeSlot>) {
                             .background(slotStateColor(state))
                     )
                     Spacer(Modifier.width(4.dp))
-                    Text(formatHours(motherHours), fontSize = 12.sp)
+                    Text(formatHours(motherHours), fontSize = 11.sp)
                 }
             }
     }

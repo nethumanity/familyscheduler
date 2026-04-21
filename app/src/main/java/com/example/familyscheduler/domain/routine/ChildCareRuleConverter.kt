@@ -7,6 +7,7 @@ import com.example.familyscheduler.domain.slot.FlexWindowParameters
 import com.example.familyscheduler.domain.slot.SlotState
 import com.example.familyscheduler.domain.time.TimeAxis
 import com.example.familyscheduler.domain.time.TimeRange
+import com.example.familyscheduler.ui.utilities.SettingsUiState
 import java.time.Duration
 
 class ChildCareRuleConverter(
@@ -15,21 +16,24 @@ class ChildCareRuleConverter(
 ) {
 
     fun convert(
-        blocks: List<ChildCareBlock>
+        blocks: List<ChildCareBlock>,
+        settings: SettingsUiState
     ): List<HouseholdRequirementRule> {
 
         return blocks
             .filter { it.activeChildrenCount > 0 }
-            .map { toRule(it) }
+            .map { toRule(it, settings) }
     }
 
     private fun toRule(
-        block: ChildCareBlock
+        block: ChildCareBlock,
+        settings: SettingsUiState
     ): HouseholdRequirementRule {
 
         val requiredCount =
             capacityCalculator.calculateRequiredCount(
-                block.activeChildrenCount
+                activeChildrenCount = block.activeChildrenCount,
+                maxChildrenPerAdult = settings.maxChildrenPerAdult
             )
 
         return HouseholdRequirementRule(

@@ -19,7 +19,7 @@ fun FlexDropdown(
     selectedMinutes: Int,
     onSelect: (Int) -> Unit
 ) {
-    val options = listOf(30, 60, 90)
+    val options = listOf(30, 60, 90, 120, 150, 180)
 
     var expanded by remember { mutableStateOf(false) }
 

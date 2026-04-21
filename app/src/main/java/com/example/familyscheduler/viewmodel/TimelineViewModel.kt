@@ -239,7 +239,7 @@ class TimelineViewModel(
                 val (rules, overrides) = rule
                 val (routines, childOverrides, routineShiftOverrides) = child
 
-                val computed = computeUiState(
+                computeUiState(
                     date = date,
                     templates = templates,
                     statesMap = statesMap,
@@ -247,10 +247,9 @@ class TimelineViewModel(
                     overrides = overrides,
                     routines = routines,
                     childOverrides = childOverrides,
-                    routineShiftOverrides = routineShiftOverrides
+                    routineShiftOverrides = routineShiftOverrides,
+                    settings = settings
                 )
-
-                computed.copy(settings = settings)
 
             }.collect { state ->
                 Log.d("TimelineVM", buildUiLog(state))
@@ -324,7 +323,8 @@ class TimelineViewModel(
         overrides: List<RequirementOverride>,
         routines: List<ChildRoutineInput>,
         childOverrides: Map<Pair<String, LocalDate>, ChildTodayRoutine>,
-        routineShiftOverrides: List<RoutineShiftOverride>
+        routineShiftOverrides: List<RoutineShiftOverride>,
+        settings: SettingsUiState
     ): TimelineUiState {
 
         // ① DailyState抽出
@@ -344,7 +344,7 @@ class TimelineViewModel(
             childRoutineBuilder.build(date, resolved)
 
         val childRules =
-            childCareRuleConverter.convert(routineResult.blocks)
+            childCareRuleConverter.convert(routineResult.blocks, settings)
 
         val mergedRules =
             (rules.filter { it.source != RequirementSource.CHILD_ROUTINE }
@@ -388,7 +388,7 @@ class TimelineViewModel(
             evaluationsByIndex = evaluationsByIndex,
             requirements = requirements,
             rules = mergedRules,
-            settings = SettingsUiState()
+            settings = settings
         )
     }
 

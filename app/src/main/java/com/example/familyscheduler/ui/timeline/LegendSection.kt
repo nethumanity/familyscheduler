@@ -39,7 +39,7 @@ fun LegendSection() {
                                     .size(10.dp)
                                     .background(slotStateColor(state))
                             )
-                            Text(slotStateLabel(state), fontSize = 12.sp)
+                            Text(slotStateLabel(state), fontSize = 11.sp)
                         }
                     }
                 }
