@@ -2,7 +2,6 @@ package com.example.familyscheduler.data.repository
 
 import com.example.familyscheduler.data.local.dao.DailyStateDao
 import com.example.familyscheduler.data.mapper.DailyStateMapper
-import com.example.familyscheduler.domain.person.Person
 import com.example.familyscheduler.domain.schedule.DailyState
 import com.example.familyscheduler.domain.schedule.repository.DailyStateRepository
 import kotlinx.coroutines.flow.Flow
@@ -13,18 +12,15 @@ class RoomDailyStateRepository(
     private val dao: DailyStateDao
 ) : DailyStateRepository {
 
-    override fun getAllFlow(): Flow<Map<Pair<LocalDate, Person>, DailyState>> {
-        return dao.getAll().map { list ->
-            list.associate { entity ->
-                val domain = DailyStateMapper.toDomain(entity)
-                (domain.date to domain.person) to domain
-            }
-        }
-    }
+//    override fun getAllFlow(): Flow<Map<Pair<LocalDate, Person>, DailyState>> {
+//        return dao.getAll().map { list ->
+//            list.associate { entity ->
+//                val domain = DailyStateMapper.toDomain(entity)
+//                (domain.date to domain.person) to domain
+//            }
+//        }
+//    }
 
-    // 使い方は↓
-    //currentDate.flatMapLatest { date ->
-    //dailyStateRepository.getByDate(date)
     override fun getByDate(date: LocalDate): Flow<List<DailyState>> {
         return dao.getByDate(date.toString()).map { list ->
             list.map { DailyStateMapper.toDomain(it) }

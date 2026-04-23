@@ -113,17 +113,44 @@ object AvailabilityEngine {
         val indices = req.allIndices()
         val orderedPersons = req.orderedPersons(reverseRuleIds)
 
-        val validPersons = orderedPersons.filter { person ->
-            indices.all { index ->
-                val i = slotIndex.byPersonIndex[person to index] ?: return@filter false
-                val slot = slots[i]
-                slot.state.weight <= req.targetState.weight // お試し（挙動を要確認）
-                //slot.state == SlotState.UNASSIGNED ||
-                //        slot.state == req.targetState
-            }
-        }.take(req.requiredCount)
+//        val validPersons = orderedPersons.filter { person ->
+//            indices.all { index ->
+//                val i = slotIndex.byPersonIndex[person to index] ?: return@filter false
+//                val slot = slots[i]
+//                slot.state.weight <= req.targetState.weight // お試し（挙動を要確認）
+//                //slot.state == SlotState.UNASSIGNED ||
+//                //        slot.state == req.targetState
+//            }
+//        }.take(req.requiredCount)
 
-        for (person in validPersons) {
+        val candidates = orderedPersons
+            .mapNotNull { person ->
+
+                // まず「物理的に可能か」は維持
+                val isValid = indices.all { index ->
+                    val i = slotIndex.byPersonIndex[person to index] ?: return@mapNotNull null
+                    val slot = slots[i]
+                    slot.state.weight <= req.targetState.weight
+                }
+
+                if (!isValid) return@mapNotNull null
+
+                val score = scorePersonForRequirement(
+                    person,
+                    indices,
+                    slots,
+                    slotIndex,
+                    req.targetState
+                )
+
+                person to score
+            }
+            .sortedByDescending { it.second }
+            .map { it.first }
+            .take(req.requiredCount)
+
+        for (person in candidates) {
+        //for (person in validPersons) {
             for (index in indices) {
                 val i = slotIndex.byPersonIndex[person to index] ?: continue
                 val slot = slots[i]
@@ -143,6 +170,30 @@ object AvailabilityEngine {
             allowedPersons.reversed()
         else
             allowedPersons
+
+    private fun scorePersonForRequirement(
+        person: Person,
+        indices: List<Int>,
+        slots: List<TimeSlot>,
+        slotIndex: SlotIndex,
+        targetState: SlotState
+    ): Int {
+
+        var score = 0
+
+        for (index in indices) {
+            val i = slotIndex.byPersonIndex[person to index] ?: return Int.MIN_VALUE
+            val slot = slots[i]
+
+            score += when (slot.state) {
+                targetState -> 100      // 最優先
+                SlotState.UNASSIGNED -> 50
+                else -> -slot.state.weight  // 軽いほど良い
+            }
+        }
+
+        return score
+    }
 
     private fun assignRemainingUnassignedToFree(
         slots: MutableList<TimeSlot>

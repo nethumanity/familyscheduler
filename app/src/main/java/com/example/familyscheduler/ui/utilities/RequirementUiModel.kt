@@ -9,15 +9,7 @@ data class RequirementUiModel(
     val startIndex: Int,
     val targetState: SlotState,
     val mode: RequirementModeToday,
-    val canEdit: Boolean // ← 追加
+    val canEdit: Boolean,
+    val isProposalApplied: Boolean = false
 )
 
-/* 将来向け
-data class RequirementUiModel(
-    val time: String,
-    val name: String,
-    val mode: RequirementModeToday,
-    val assigned: List<String>,
-    val warningCount: Int?,
-    val requiredCount: Int
-) */

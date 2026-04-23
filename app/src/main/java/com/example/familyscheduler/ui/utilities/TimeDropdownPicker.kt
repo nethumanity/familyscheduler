@@ -1,5 +1,6 @@
 @file:OptIn(ExperimentalMaterial3Api::class)
-package com.example.familyscheduler.domain.time
+
+package com.example.familyscheduler.ui.utilities
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column

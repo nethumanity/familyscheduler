@@ -5,8 +5,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.familyscheduler.domain.routine.ChildRoutineInput
 import com.example.familyscheduler.domain.routine.ChildTodayRoutine
-import com.example.familyscheduler.domain.routine.repository.ChildOverrideRepository
+import com.example.familyscheduler.domain.routine.RoutineOverrideSnapshot
+import com.example.familyscheduler.domain.routine.RoutineShiftOverride
+import com.example.familyscheduler.domain.routine.repository.RoutineToggleOverrideRepository
 import com.example.familyscheduler.domain.routine.repository.ChildRoutineRepository
+import com.example.familyscheduler.domain.routine.repository.RoutineShiftOverrideRepository
+import com.example.familyscheduler.ui.utilities.ChildRoutineUndoPayload
 import com.example.familyscheduler.ui.utilities.EditingTarget
 import com.example.familyscheduler.ui.utilities.UiEvent
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -22,20 +26,24 @@ import kotlinx.coroutines.launch
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalTime
+import java.util.UUID
 
 class ChildRoutineViewModel(
     private val repository: ChildRoutineRepository,
-    private val overrideRepository: ChildOverrideRepository
+    private val routineToggleOverrideRepository: RoutineToggleOverrideRepository,
+    private val routineShiftOverrideRepository: RoutineShiftOverrideRepository
 ) : ViewModel() {
 
     data class ChildRoutineScreenState(
         val routines: List<ChildRoutineInput> = emptyList(),
         val overrides: Map<Pair<String, LocalDate>, ChildTodayRoutine> = emptyMap(),
+        val shiftOverrides: List<RoutineShiftOverride> = emptyList(),
         val form: ChildRoutineUiState = ChildRoutineUiState()
     )
 
     val childRoutines = repository.getAllFlow()
-    val overrides = overrideRepository.getAllFlow()
+    val toggleOverrides = routineToggleOverrideRepository.getAllFlow()
+    val shiftOverrides = routineShiftOverrideRepository.getAllFlow()
 
     private val _events = MutableSharedFlow<UiEvent>()
     val events = _events.asSharedFlow()
@@ -48,12 +56,14 @@ class ChildRoutineViewModel(
     val uiState =
         combine(
             childRoutines,
-            overrides,
+            toggleOverrides,
+            shiftOverrides,
             _formState
-        ) { routines, overrides, form ->
+        ) { routines, overrides, shiftOverrides, form ->
             ChildRoutineScreenState(
                 routines = routines,
                 overrides = overrides,
+                shiftOverrides = shiftOverrides,
                 form = form
             )
         }.stateIn(
@@ -161,7 +171,7 @@ class ChildRoutineViewModel(
 
             repository.save(routine)
 
-            _formState.value = ChildRoutineUiState() // ← 追加
+            _formState.value = ChildRoutineUiState()
             _saveCompleted.emit(Unit)
 
             Log.d("RoutineSave", "Saved routine: $routine")
@@ -195,6 +205,7 @@ class ChildRoutineViewModel(
                 .coerceAtLeast(end)
 
         return ChildRoutineInput(
+            childId = state.id ?: UUID.randomUUID().toString(),
             childName = state.name.trim(),
             wakeUpTime = wakeUp,
             sleepTime = sleep,
@@ -209,14 +220,12 @@ class ChildRoutineViewModel(
     }
 
     data class ChildRoutineUiState(
-
+        val id: String? = null,
         val name: String = "",
-
         val wakeUpTime: LocalTime = LocalTime.of(7, 0),
         val sleepTime: LocalTime = LocalTime.of(21, 0),
 
         val hasNursery: Boolean = true,
-
         val daysOfWeek: Set<DayOfWeek> =
             setOf(
                 DayOfWeek.MONDAY,
@@ -239,26 +248,25 @@ class ChildRoutineViewModel(
 
         viewModelScope.launch {
 
-            val child = repository.getByChildId(childId).first() ?: return@launch
+            val routine = repository.getByChildId(childId).first() ?: return@launch
 
             _formState.update {
                 ChildRoutineUiState(
-                    name = child.childName,
+                    id = routine.childId,
+                    name = routine.childName,
+                    wakeUpTime = routine.wakeUpTime,
+                    sleepTime = routine.sleepTime,
 
-                    wakeUpTime = child.wakeUpTime,
-                    sleepTime = child.sleepTime,
+                    hasNursery = routine.daysOfWeek.isNotEmpty(),
+                    daysOfWeek = routine.daysOfWeek,
 
-                    hasNursery = child.daysOfWeek.isNotEmpty(),
+                    nurseryStart = routine.nurseryStart,
+                    nurseryStartEarliest = routine.nurseryStartEarliest,
+                    nurseryStartLatest = routine.nurseryStartLatest,
 
-                    daysOfWeek = child.daysOfWeek,
-
-                    nurseryStart = child.nurseryStart,
-                    nurseryStartEarliest = child.nurseryStartEarliest,
-                    nurseryStartLatest = child.nurseryStartLatest,
-
-                    nurseryEnd = child.nurseryEnd,
-                    nurseryEndEarliest = child.nurseryEndEarliest,
-                    nurseryEndLatest = child.nurseryEndLatest
+                    nurseryEnd = routine.nurseryEnd,
+                    nurseryEndEarliest = routine.nurseryEndEarliest,
+                    nurseryEndLatest = routine.nurseryEndLatest
                 )
             }
         }
@@ -280,7 +288,7 @@ class ChildRoutineViewModel(
 
             Log.d("override", "current=$current next=$next")
 
-            overrideRepository.saveOverride(
+            routineToggleOverrideRepository.replace(
                 child.childId,
                 date,
                 next
@@ -319,13 +327,20 @@ class ChildRoutineViewModel(
 
     fun deleteChildRoutine(childId: String) {
 
-        val input = uiState.value.routines
+        val routine = uiState.value.routines
             .find { it.childId == childId }
             ?: return
 
+        val snapshot = collectOverridesForChild(childId)
+
+        val payload = ChildRoutineUndoPayload(
+            routine = routine,
+            snapshot = snapshot
+        )
+
         viewModelScope.launch {
-            overrideRepository.deleteByChildId(childId)
-            //routineShiftOverrideRepository.deleteByChildId(childId)
+            routineToggleOverrideRepository.deleteAllByChildId(childId)
+            routineShiftOverrideRepository.deleteAllByChildId(childId)
             repository.delete(childId)
 
             // 編集中なら解除
@@ -335,10 +350,7 @@ class ChildRoutineViewModel(
 
             _events.emit(
                 UiEvent.ShowUndoDelete(
-                    message = "削除しました",
-                    onUndo = {
-                        undoDeleteChildRoutine(input)
-                    }
+                    onUndo = { undoDeleteChildRoutine(payload) }
                 )
             )
 
@@ -347,10 +359,32 @@ class ChildRoutineViewModel(
         }
     }
 
-    fun undoDeleteChildRoutine(input: ChildRoutineInput) {
+    fun undoDeleteChildRoutine(payload: ChildRoutineUndoPayload) {
 
         viewModelScope.launch {
-            repository.save(input)
+            repository.save(payload.routine)
+
+            payload.snapshot.childOverrides.forEach {
+                routineToggleOverrideRepository.replace(
+                    it.key.first,
+                    it.key.second,
+                    it.value
+                )
+            }
+
+            payload.snapshot.shiftOverrides.forEach {
+                routineShiftOverrideRepository.replace(it)
+            }
         }
+    }
+
+    fun collectOverridesForChild(childId: String): RoutineOverrideSnapshot {
+        val childOverrides = uiState.value.overrides
+            .filterKeys { it.first == childId }
+
+        val shiftOverrides = uiState.value.shiftOverrides
+            .filter { it.childId == childId }
+
+        return RoutineOverrideSnapshot(childOverrides, shiftOverrides)
     }
 }

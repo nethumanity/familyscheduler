@@ -6,7 +6,7 @@ import androidx.room.Entity
     tableName = "child_overrides",
     primaryKeys = ["childId", "date"]
 )
-data class ChildOverrideEntity(
+data class RoutineToggleOverrideEntity(
 
     val childId: String,
 

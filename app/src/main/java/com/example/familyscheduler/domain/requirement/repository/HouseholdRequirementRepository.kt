@@ -6,8 +6,6 @@ import java.time.LocalDate
 
 interface HouseholdRequirementRepository {
 
-    fun getAllFlow(): Flow<List<HouseholdRequirementRule>>
-
     fun getByDate(
         date: LocalDate
     ): Flow<List<HouseholdRequirementRule>>

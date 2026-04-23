@@ -15,7 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.familyscheduler.domain.schedule.ScheduleType
-import com.example.familyscheduler.domain.time.TimeDropdownPicker
+import com.example.familyscheduler.ui.utilities.TimeDropdownPicker
 import com.example.familyscheduler.viewmodel.TemplateEditViewModel
 
 @Composable

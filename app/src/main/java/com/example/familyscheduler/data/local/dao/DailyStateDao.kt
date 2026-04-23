@@ -7,8 +7,8 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface DailyStateDao {
 
-    @Query("SELECT * FROM daily_states")
-    fun getAll(): Flow<List<DailyStateEntity>>
+//    @Query("SELECT * FROM daily_states")
+//    fun getAll(): Flow<List<DailyStateEntity>>
 
     @Query("SELECT * FROM daily_states WHERE date = :date")
     fun getByDate(date: String): Flow<List<DailyStateEntity>>

@@ -16,7 +16,7 @@ object RequirementOverrideMapper {
                 RequirementOverrideEntity(
                     ruleId = domain.ruleId,
                     date = domain.date.toString(),
-                    type = "TOGGLE",
+                    type = domain.type.name,
                     mode = domain.mode.name,
                     deltaSteps = null
                 )
@@ -26,7 +26,7 @@ object RequirementOverrideMapper {
                 RequirementOverrideEntity(
                     ruleId = domain.ruleId,
                     date = domain.date.toString(),
-                    type = "SHIFT",
+                    type = domain.type.name,
                     mode = null,
                     deltaSteps = domain.deltaSteps
                 )

@@ -34,7 +34,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.familyscheduler.domain.person.Person
-import com.example.familyscheduler.domain.time.TimeDropdownPicker
+import com.example.familyscheduler.ui.utilities.TimeDropdownPicker
 import com.example.familyscheduler.ui.utilities.DayOfWeekUtilities
 import com.example.familyscheduler.viewmodel.TemplateEditViewModel
 import java.time.DayOfWeek

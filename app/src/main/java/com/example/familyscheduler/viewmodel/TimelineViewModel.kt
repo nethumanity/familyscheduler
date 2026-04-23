@@ -27,7 +27,7 @@ import com.example.familyscheduler.domain.routine.ChildRoutineInput
 import com.example.familyscheduler.domain.routine.ChildTodayRoutine
 import com.example.familyscheduler.domain.routine.RoutineResolver
 import com.example.familyscheduler.domain.routine.RoutineShiftOverride
-import com.example.familyscheduler.domain.routine.repository.ChildOverrideRepository
+import com.example.familyscheduler.domain.routine.repository.RoutineToggleOverrideRepository
 import com.example.familyscheduler.domain.routine.repository.ChildRoutineRepository
 import com.example.familyscheduler.domain.routine.repository.RoutineShiftOverrideRepository
 import com.example.familyscheduler.domain.schedule.DailyState
@@ -41,6 +41,7 @@ import com.example.familyscheduler.domain.time.TimeAxis
 import com.example.familyscheduler.seeder.SampleDataSeeder
 import com.example.familyscheduler.ui.utilities.EditingTarget
 import com.example.familyscheduler.ui.utilities.GuideState
+import com.example.familyscheduler.ui.utilities.RequirementUndoPayload
 import com.example.familyscheduler.ui.utilities.SettingsUiState
 import com.example.familyscheduler.ui.utilities.UiEvent
 import com.example.familyscheduler.ui.utilities.repository.SettingsRepository
@@ -49,6 +50,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -59,7 +61,7 @@ class TimelineViewModel(
     private val householdRequirementRepository: HouseholdRequirementRepository,
     private val requirementOverrideRepository: RequirementOverrideRepository,
     private val childRoutineRepository: ChildRoutineRepository,
-    private val childOverrideRepository: ChildOverrideRepository,
+    private val routineToggleOverrideRepository: RoutineToggleOverrideRepository,
     private val routineShiftOverrideRepository: RoutineShiftOverrideRepository,
     private val routineResolver: RoutineResolver,
     private val childRoutineBuilder: ChildRoutineBuilder,
@@ -82,6 +84,7 @@ class TimelineViewModel(
         val dailyStates: List<DailyState>,
         val overrides: List<RequirementOverride>,
         val childRoutines: List<ChildRoutineInput>,
+        val routineShiftOverrides: List<RoutineShiftOverride>,
         val childCareEvents: List<ChildCareEvent>,
         val slots: List<TimeSlot>,
         val slotsByIndex: Map<Int, List<TimeSlot>>,
@@ -103,6 +106,7 @@ class TimelineViewModel(
             dailyStates = emptyList(),
             overrides = emptyList(),
             childRoutines = emptyList(),
+            routineShiftOverrides = emptyList(),
             childCareEvents = emptyList(),
             slots = emptyList(),
             slotsByIndex = emptyMap(),
@@ -169,19 +173,16 @@ class TimelineViewModel(
         // ② DailyState不足分の補完（副作用）
         // -------------------------------
         viewModelScope.launch {
-            combine(
-                _currentDate,
-                templateRepository.getAllFlow(),
-                dailyStateRepository.getAllFlow()
-            ) { date, templates, statesMap ->
+            _currentDate.flatMapLatest { date ->
+                combine(
+                    templateRepository.getAllFlow(),
+                    dailyStateRepository.getByDate(date)
+                ) { templates, states ->
 
-                val existing =
-                    statesMap
-                        .filterKeys { it.first == date }
-                        .values
-                        .toList()
+                    val existing = states
 
-                buildMissingStates(date, templates, existing)
+                    buildMissingStates(date, templates, existing)
+                }
 
             }.collect { missingList ->
 
@@ -195,35 +196,33 @@ class TimelineViewModel(
         // -------------------------------
         viewModelScope.launch {
 
-            val baseFlow = combine(
-                _currentDate,
-                templateRepository.getAllFlow(),
-                dailyStateRepository.getAllFlow()
-            ) { date: LocalDate,
-                templates: List<DailyTemplate>,
-                states: Map<Pair<LocalDate, Person>, DailyState> ->
+            val baseFlow = _currentDate.flatMapLatest { date ->
+                combine(
+                    templateRepository.getAllFlow(),
+                    dailyStateRepository.getByDate(date)
+                ) { templates, states ->
 
-                Triple(date, templates, states)
+                    Triple(date, templates, states)
+                }
             }
 
-            val ruleFlow = combine(
-                householdRequirementRepository.getAllFlow(),
-                requirementOverrideRepository.getAllFlow()
-            ) { rules: List<HouseholdRequirementRule>,
-                overrides: List<RequirementOverride> ->
-
-                rules to overrides
+            val ruleFlow = _currentDate.flatMapLatest { date ->
+                combine(
+                    householdRequirementRepository.getByDate(date),
+                    requirementOverrideRepository.getByDate(date)
+                ) { rules, overrides ->
+                    rules to overrides
+                }
             }
 
-            val childFlow = combine(
-                childRoutineRepository.getAllFlow(),
-                childOverrideRepository.getAllFlow(),
-                routineShiftOverrideRepository.getAllFlow()
-            ) { routines: List<ChildRoutineInput>,
-                childOverrides: Map<Pair<String, LocalDate>, ChildTodayRoutine>,
-                routineShiftOverrides: List<RoutineShiftOverride> ->
-
-                Triple(routines, childOverrides, routineShiftOverrides)
+            val childFlow = _currentDate.flatMapLatest { date ->
+                combine(
+                    childRoutineRepository.getAllFlow(),
+                    routineToggleOverrideRepository.getByDate(date),
+                    routineShiftOverrideRepository.getByDate(date)
+                ) { routines, toggleOverrides, shiftOverrides ->
+                    Triple(routines, toggleOverrides, shiftOverrides)
+                }
             }
 
             val settingsFlow = settingsRepository.settings
@@ -235,19 +234,19 @@ class TimelineViewModel(
                 settingsFlow
             ) { base, rule, child, settings ->
 
-                val (date, templates, statesMap) = base
+                val (date, templates, states) = base
                 val (rules, overrides) = rule
-                val (routines, childOverrides, routineShiftOverrides) = child
+                val (routines, toggleOverrides, shiftOverrides) = child
 
                 computeUiState(
                     date = date,
                     templates = templates,
-                    statesMap = statesMap,
+                    states = states,
                     rules = rules,
                     overrides = overrides,
                     routines = routines,
-                    childOverrides = childOverrides,
-                    routineShiftOverrides = routineShiftOverrides,
+                    toggleOverrides = toggleOverrides,
+                    shiftOverrides = shiftOverrides,
                     settings = settings
                 )
 
@@ -255,7 +254,6 @@ class TimelineViewModel(
                 Log.d("TimelineVM", buildUiLog(state))
                 _uiState.value = state
             }
-
         }
     }
 
@@ -318,27 +316,27 @@ class TimelineViewModel(
     private fun computeUiState(
         date: LocalDate,
         templates: List<DailyTemplate>,
-        statesMap: Map<Pair<LocalDate, Person>, DailyState>,
+        states: List<DailyState>,
         rules: List<HouseholdRequirementRule>,
         overrides: List<RequirementOverride>,
         routines: List<ChildRoutineInput>,
-        childOverrides: Map<Pair<String, LocalDate>, ChildTodayRoutine>,
-        routineShiftOverrides: List<RoutineShiftOverride>,
+        toggleOverrides: Map<Pair<String, LocalDate>, ChildTodayRoutine>,
+        shiftOverrides: List<RoutineShiftOverride>,
         settings: SettingsUiState
     ): TimelineUiState {
 
         // ① DailyState抽出
-        val states =
-            statesMap
-                .filterKeys { it.first == date }
-                .values
-                .toList()
+//        val states =
+//            statesMap
+//                .filterKeys { it.first == date }
+//                .values
+//                .toList()
 
         val slots = states.flatMap { it.slots }
 
         // ② ChildRoutine → Rule
         val resolved =
-            routineResolver.resolve(routines, date, childOverrides, routineShiftOverrides)
+            routineResolver.resolve(routines, date, toggleOverrides, shiftOverrides)
 
         val routineResult =
             childRoutineBuilder.build(date, resolved)
@@ -348,7 +346,7 @@ class TimelineViewModel(
 
         val mergedRules =
             (rules.filter { it.source != RequirementSource.CHILD_ROUTINE }
-                .filter { it.isActiveOn(date) } // getByDateでRule取得するなら不要
+                //.filter { it.isActiveOn(date) } // getByDateでRule取得するなら不要
                     ) + childRules
 
         // ③ Overrideフィルタ
@@ -380,6 +378,7 @@ class TimelineViewModel(
             dailyStates = states,
             overrides = overridesForDate,
             childRoutines = routines,
+            routineShiftOverrides = shiftOverrides,
             childCareEvents = routineResult.events,
             slots = result.slots,
             slotsByIndex = slotsByIndex,
@@ -440,7 +439,7 @@ class TimelineViewModel(
 
             Log.d("override", "current=$current next=$next")
 
-            requirementOverrideRepository.saveOverride(
+            requirementOverrideRepository.replace(
                 override = RequirementToggleOverride(
                     ruleId = rule.id,
                     date = _currentDate.value,
@@ -501,8 +500,16 @@ class TimelineViewModel(
             .find { it.id == ruleId }
             ?: return
 
+        val overrides = _uiState.value.overrides
+            .filter { it.ruleId == ruleId }
+
+        val payload = RequirementUndoPayload(
+            requirement = rule,
+            overrides = overrides
+        )
+
         viewModelScope.launch {
-            requirementOverrideRepository.deleteByRuleId(ruleId)
+            requirementOverrideRepository.deleteAllByRuleId(ruleId)
             householdRequirementRepository.delete(ruleId)
 
             // 編集中なら解除
@@ -512,10 +519,7 @@ class TimelineViewModel(
 
             _events.emit(
                 UiEvent.ShowUndoDelete(
-                    message = "削除しました",
-                    onUndo = {
-                        undoDeleteRequirement(rule)
-                    }
+                    onUndo = { undoDeleteRequirement(payload) }
                 )
             )
 
@@ -524,10 +528,13 @@ class TimelineViewModel(
         }
     }
 
-    fun undoDeleteRequirement(rule: HouseholdRequirementRule) {
+    fun undoDeleteRequirement(payload: RequirementUndoPayload) {
 
         viewModelScope.launch {
-            householdRequirementRepository.save(rule)
+            householdRequirementRepository.save(payload.requirement)
+            payload.overrides.forEach {
+                requirementOverrideRepository.replace(it)
+            }
         }
     }
 
@@ -606,10 +613,7 @@ class TimelineViewModel(
 
             _events.emit(
                 UiEvent.ShowUndoDelete(
-                    message = "削除しました",
-                    onUndo = {
-                        undoDeleteTemplate(template)
-                    }
+                    onUndo = { undoDeleteTemplate(template) }
                 )
             )
 
@@ -634,7 +638,7 @@ class TimelineViewModel(
         _currentDate.value = date
     }
 
-    // 警告→提案→実行：編集機能（今後の強化ポイント）
+    // 警告→提案→実行：編集機能
     fun onAvailabilityWarningClick(
         index: Int,
         reasonIndex: Int = 0
@@ -666,18 +670,35 @@ class TimelineViewModel(
                     val existOverride =
                         _uiState.value.overrides
                             .filterIsInstance<RequirementShiftOverride>()
-                            .firstOrNull {it.ruleId == proposal.sourceRuleId}
+                            .firstOrNull {
+                                it.ruleId == proposal.sourceRuleId &&
+                                        it.date == _currentDate.value
+                            }
 
                     val deltaSteps =
-                        if(existOverride != null) {
-                            proposal.candidateIndex - proposal.initialIndex + existOverride.deltaSteps
-                        } else {proposal.candidateIndex - proposal.initialIndex}
+                        (proposal.candidateIndex - proposal.initialIndex) +
+                                (existOverride?.deltaSteps ?: 0)
 
-                    requirementOverrideRepository.saveOverride(
-                        override = RequirementShiftOverride(
-                            ruleId = proposal.sourceRuleId,
-                            date = _currentDate.value,
-                            deltaSteps = deltaSteps
+                    val before = existOverride
+                    val new = RequirementShiftOverride(
+                        ruleId = proposal.sourceRuleId,
+                        date = _currentDate.value,
+                        deltaSteps = deltaSteps
+                    )
+
+                    requirementOverrideRepository.replace(new)
+
+                    _events.emit(
+                        UiEvent.ShowUndoProposal(
+                            onUndo = {
+                                viewModelScope.launch {
+                                    if (before != null) {
+                                        requirementOverrideRepository.replace(before)
+                                    } else {
+                                        requirementOverrideRepository.delete(new)
+                                    }
+                                }
+                            }
                         )
                     )
                 }
@@ -693,20 +714,87 @@ class TimelineViewModel(
                         else -> return@launch
                     }
 
-                    event.childIds.forEach { childId ->
-                        routineShiftOverrideRepository.saveOverride(
-                            override = RoutineShiftOverride(
-                                childId = childId,
-                                date = _currentDate.value,
-                                eventType = label,
-                                nurseryTime = TimeAxis.all[proposal.candidateIndex]
-                            )
+                    val beforeMap = event.childIds.associateWith { childId ->
+                        _uiState.value.routineShiftOverrides.firstOrNull {
+                            it.childId == childId &&
+                                    it.date == _currentDate.value &&
+                                    it.eventType == label
+                        }
+                    }
+
+                    val news = event.childIds.map { childId ->
+                        RoutineShiftOverride(
+                            childId = childId,
+                            date = _currentDate.value,
+                            eventType = label,
+                            nurseryTime = TimeAxis.all[proposal.candidateIndex]
                         )
                     }
+
+                    news.forEach { routineShiftOverrideRepository.replace(it) }
+
+                    _events.emit(
+                        UiEvent.ShowUndoProposal(
+                            onUndo = {
+                                viewModelScope.launch {
+                                    news.forEach { routineShiftOverrideRepository.delete(it) }
+                                    beforeMap.forEach { (_, before) ->
+                                        before?.let { routineShiftOverrideRepository.replace(it) }
+                                    }
+                                }
+                            }
+                        )
+                    )
                 }
                 else -> {}
             }
             dismissWarningDialog()
+        }
+    }
+
+    fun clearProposal(ruleId: String) {
+
+        val targetReq = _uiState.value.rules
+            .firstOrNull { it.id == ruleId }
+            ?: return
+
+        when (targetReq.source) {
+
+            RequirementSource.USER -> {
+                viewModelScope.launch {
+                    val override =
+                        _uiState.value.overrides
+                            .filterIsInstance<RequirementShiftOverride>()
+                            .firstOrNull {
+                                it.ruleId == ruleId &&
+                                        it.date == _currentDate.value
+                                        //&& it.isFromProposal
+                            } ?: return@launch
+
+                    requirementOverrideRepository.delete(override)
+                }
+            }
+            RequirementSource.NURSERY_DROP_OFF, RequirementSource.NURSERY_PICKUP -> {
+                viewModelScope.launch {
+                    val event =
+                        _uiState.value.childCareEvents
+                            .firstOrNull { it.eventId == ruleId }
+                            ?: return@launch
+
+                    val overrides = event.childIds.mapNotNull { childId ->
+                        _uiState.value.routineShiftOverrides.firstOrNull {
+                            it.childId == childId &&
+                                    it.date == _currentDate.value &&
+                                    it.eventType == event.label
+                                    //&& it.isFromProposal
+                        }
+                    }
+                    overrides.forEach {
+                        routineShiftOverrideRepository.delete(it)
+                    }
+                }
+            }
+            else -> return
         }
     }
 

@@ -25,11 +25,19 @@ class RoomRoutineShiftOverrideRepository(
         }
     }
 
-    override suspend fun saveOverride(override: RoutineShiftOverride) {
+    override suspend fun replace(override: RoutineShiftOverride) {
         dao.insert(RoutineShiftOverrideMapper.toEntity(override))
     }
 
-    override suspend fun deleteByChildId(childId: String) {
+    override suspend fun deleteAllByChildId(childId: String) {
         dao.deleteByChildId(childId)
+    }
+
+    override suspend fun delete(override: RoutineShiftOverride) {
+        dao.deleteByKey(
+            override.childId,
+            override.date.toString(),
+            override.eventType.name
+        )
     }
 }

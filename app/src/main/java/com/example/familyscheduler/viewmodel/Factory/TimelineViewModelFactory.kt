@@ -8,7 +8,7 @@ import com.example.familyscheduler.domain.requirement.repository.RequirementOver
 import com.example.familyscheduler.domain.routine.ChildCareRuleConverter
 import com.example.familyscheduler.domain.routine.ChildRoutineBuilder
 import com.example.familyscheduler.domain.routine.RoutineResolver
-import com.example.familyscheduler.domain.routine.repository.ChildOverrideRepository
+import com.example.familyscheduler.domain.routine.repository.RoutineToggleOverrideRepository
 import com.example.familyscheduler.domain.routine.repository.ChildRoutineRepository
 import com.example.familyscheduler.domain.routine.repository.RoutineShiftOverrideRepository
 import com.example.familyscheduler.domain.schedule.repository.DailyStateRepository
@@ -22,7 +22,7 @@ class TimelineViewModelFactory(
     private val householdRequirementRepository: HouseholdRequirementRepository,
     private val requirementOverrideRepository: RequirementOverrideRepository,
     private val childRoutineRepository: ChildRoutineRepository,
-    private val childOverrideRepository: ChildOverrideRepository,
+    private val routineToggleOverrideRepository: RoutineToggleOverrideRepository,
     private val routineShiftOverrideRepository: RoutineShiftOverrideRepository,
     private val routineResolver: RoutineResolver,
     private val childRoutineBuilder: ChildRoutineBuilder,
@@ -43,7 +43,7 @@ class TimelineViewModelFactory(
                 householdRequirementRepository = householdRequirementRepository,
                 requirementOverrideRepository = requirementOverrideRepository,
                 childRoutineRepository = childRoutineRepository,
-                childOverrideRepository = childOverrideRepository,
+                routineToggleOverrideRepository = routineToggleOverrideRepository,
                 routineShiftOverrideRepository = routineShiftOverrideRepository,
                 routineResolver = routineResolver,
                 childRoutineBuilder = childRoutineBuilder,

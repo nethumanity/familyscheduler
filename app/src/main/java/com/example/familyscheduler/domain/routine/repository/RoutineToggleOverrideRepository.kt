@@ -4,20 +4,17 @@ import com.example.familyscheduler.domain.routine.ChildTodayRoutine
 import kotlinx.coroutines.flow.Flow
 import java.time.LocalDate
 
-interface ChildOverrideRepository {
+interface RoutineToggleOverrideRepository {
 
     fun getAllFlow(): Flow<Map<Pair<String, LocalDate>, ChildTodayRoutine>>
 
-    fun getOverride(
-        childName: String,
-        date: LocalDate
-    ): Flow<ChildTodayRoutine?>
+    fun getByDate(date: LocalDate): Flow<Map<Pair<String, LocalDate>, ChildTodayRoutine>>
 
-    suspend fun saveOverride(
+    suspend fun replace(
         childId: String,
         date: LocalDate,
         routine: ChildTodayRoutine
     )
 
-    suspend fun deleteByChildId(childId: String)
+    suspend fun deleteAllByChildId(childId: String)
 }

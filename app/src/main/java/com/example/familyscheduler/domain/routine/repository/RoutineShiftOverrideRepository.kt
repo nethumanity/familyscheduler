@@ -10,7 +10,9 @@ interface RoutineShiftOverrideRepository {
 
     fun getByDate(date: LocalDate): Flow<List<RoutineShiftOverride>>
 
-    suspend fun saveOverride(override: RoutineShiftOverride)
+    suspend fun replace(override: RoutineShiftOverride)
 
-    suspend fun deleteByChildId(childId: String)
+    suspend fun deleteAllByChildId(childId: String)
+
+    suspend fun delete(override: RoutineShiftOverride)
 }

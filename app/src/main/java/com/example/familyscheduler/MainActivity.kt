@@ -36,8 +36,9 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.room.Room
 import com.example.familyscheduler.data.local.AppDatabase
+import com.example.familyscheduler.data.repository.DataStoreSettingsRepository
 import com.example.familyscheduler.data.repository.InMemorySettingsRepository
-import com.example.familyscheduler.data.repository.RoomChildOverrideRepository
+import com.example.familyscheduler.data.repository.RoomRoutineToggleOverrideRepository
 import com.example.familyscheduler.data.repository.RoomChildRoutineRepository
 import com.example.familyscheduler.data.repository.RoomDailyStateRepository
 import com.example.familyscheduler.data.repository.RoomHouseholdRequirementRepository
@@ -98,9 +99,17 @@ fun MainScreen() {
     val currentRoute = backStackEntry?.destination?.route
 
     val context = LocalContext.current
+//    val db = remember {
+//        Room.databaseBuilder(
+//            context,
+//            AppDatabase::class.java,
+//            "app-db"
+//        ).build()
+//    }
+    val appContext = context.applicationContext
     val db = remember {
         Room.databaseBuilder(
-            context,
+            appContext,
             AppDatabase::class.java,
             "app-db"
         ).build()
@@ -111,9 +120,9 @@ fun MainScreen() {
     val householdRequirementRepository = remember { RoomHouseholdRequirementRepository(db.householdRequirementDao()) }
     val requirementOverrideRepository = remember { RoomRequirementOverrideRepository(db.requirementOverrideDao()) }
     val childRepository = remember { RoomChildRoutineRepository(db.childRoutineDao()) }
-    val childOverrideRepository = remember { RoomChildOverrideRepository(db.childOverrideDao()) }
+    val routineToggleOverrideRepository = remember { RoomRoutineToggleOverrideRepository(db.routineToggleOverrideDao()) }
     val routineShiftOverrideRepository = remember { RoomRoutineShiftOverrideRepository(db.routineShiftOverrideDao()) }
-    val settingsRepository = remember { InMemorySettingsRepository() }
+    val settingsRepository = remember { DataStoreSettingsRepository(appContext) }
 
     val factory = TimelineViewModelFactory(
         templateRepository = templateRepository,
@@ -121,7 +130,7 @@ fun MainScreen() {
         householdRequirementRepository = householdRequirementRepository,
         requirementOverrideRepository = requirementOverrideRepository,
         childRoutineRepository = childRepository,
-        childOverrideRepository = childOverrideRepository,
+        routineToggleOverrideRepository = routineToggleOverrideRepository,
         routineShiftOverrideRepository = routineShiftOverrideRepository,
         routineResolver = RoutineResolver(),
         childRoutineBuilder = ChildRoutineBuilder(),
@@ -136,7 +145,13 @@ fun MainScreen() {
     val timelineViewModel: TimelineViewModel =
         viewModel(factory = factory)
     val childRoutineViewModel: ChildRoutineViewModel =
-        viewModel(factory = ChildRoutineViewModelFactory(childRepository, childOverrideRepository))
+        viewModel(
+            factory = ChildRoutineViewModelFactory(
+                childRepository,
+                routineToggleOverrideRepository,
+                routineShiftOverrideRepository
+            )
+        )
 
     var sheet by remember { mutableStateOf<MainSheet?>(null) }
     val sheetState = rememberModalBottomSheetState(
@@ -156,6 +171,21 @@ fun MainScreen() {
             when (event) {
 
                 is UiEvent.ShowUndoDelete -> {
+
+                    sheetSnackbarHostState.currentSnackbarData?.dismiss()
+
+                    val result = sheetSnackbarHostState.showSnackbar(
+                        message = event.message,
+                        actionLabel = "元に戻す",
+                        duration = SnackbarDuration.Short
+                    )
+
+                    if (result == SnackbarResult.ActionPerformed) {
+                        event.onUndo()
+                    }
+                }
+
+                is UiEvent.ShowUndoProposal -> {
 
                     sheetSnackbarHostState.currentSnackbarData?.dismiss()
 

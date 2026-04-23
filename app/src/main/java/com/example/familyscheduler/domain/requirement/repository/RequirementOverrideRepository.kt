@@ -6,13 +6,11 @@ import java.time.LocalDate
 
 interface RequirementOverrideRepository {
 
-    fun getAllFlow(): Flow<List<RequirementOverride>>
-
     fun getByDate(date: LocalDate): Flow<List<RequirementOverride>>
 
-    fun getOverrides(ruleId: String, date: LocalDate): Flow<List<RequirementOverride>>
+    suspend fun replace(override: RequirementOverride)
 
-    suspend fun saveOverride(override: RequirementOverride)
+    suspend fun deleteAllByRuleId(ruleId: String)
 
-    suspend fun deleteByRuleId(ruleId: String)
+    suspend fun delete(override: RequirementOverride)
 }

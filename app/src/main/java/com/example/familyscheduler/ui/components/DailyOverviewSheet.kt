@@ -65,13 +65,15 @@ fun DailyOverviewSheet(
         .toUiModels(
             requirements = uiState.requirements,
             overrides = uiState.overrides,
+            shiftOverrides = uiState.routineShiftOverrides,
+            events = uiState.childCareEvents,
+            date = uiState.date,
             viewModel = viewModel
         )
         .filter { it.name.isNotEmpty() }
         .sortedBy { it.startIndex }
 
     LazyColumn(
-        //modifier = Modifier.fillMaxHeight(),
         contentPadding = PaddingValues(16.dp)
     ) {
         item {
@@ -89,7 +91,6 @@ fun DailyOverviewSheet(
 
             item {
                 Text("⚠ 警告", fontWeight = FontWeight.Bold)
-
             }
 
             items(warnings) { eval ->
@@ -128,7 +129,7 @@ fun DailyOverviewSheet(
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1f)
                         )
-                        //Text("${blockText}　提案：${reason.proposals.size}")
+
                         Text(blockText)
 
                         Box(
@@ -140,7 +141,7 @@ fun DailyOverviewSheet(
                                     painter = painterResource(R.drawable.ic_proposal),
                                     contentDescription = "Proposal",
                                     tint = Color(0xFFFF9800),
-                                    modifier = Modifier.matchParentSize()
+                                    modifier = Modifier.matchParentSize() // 少し小さくする
                                 )
                             }
                         }
@@ -188,20 +189,31 @@ fun DailyOverviewSheet(
                     onDismissRequest = { expandedMenuId = null },
                     modifier = Modifier.align(Alignment.TopEnd)
                 ) {
-                    DropdownMenuItem(
-                        text = { Text("編集") },
-                        onClick = {
-                            expandedMenuId = null
-                            onEditRequirement(req.id)
-                        }
-                    )
-                    DropdownMenuItem(
-                        text = { Text("削除") },
-                        onClick = {
-                            expandedMenuId = null
-                            viewModel.deleteRequirement(req.id)
-                        }
-                    )
+                    if (req.canEdit) {
+                        DropdownMenuItem(
+                            text = { Text("編集") },
+                            onClick = {
+                                expandedMenuId = null
+                                onEditRequirement(req.id)
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("削除") },
+                            onClick = {
+                                expandedMenuId = null
+                                viewModel.deleteRequirement(req.id)
+                            }
+                        )
+                    }
+                    if (req.isProposalApplied) {
+                        DropdownMenuItem(
+                            text = { Text("提案の実行を取り消す") },
+                            onClick = {
+                                expandedMenuId = null
+                                viewModel.clearProposal(req.id)
+                            }
+                        )
+                    }
                 }
             }
         }

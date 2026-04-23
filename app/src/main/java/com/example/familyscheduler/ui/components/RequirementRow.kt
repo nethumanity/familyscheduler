@@ -31,9 +31,12 @@ fun RequirementRow(
     onClick: () -> Unit,
     onMenuClick: () -> Unit
 ) {
-    val baseColor =
-        if (req.mode == RequirementModeToday.CANCELED) Color.LightGray
-        else Color.Unspecified
+
+    val baseColor = when {
+        req.mode == RequirementModeToday.CANCELED ->  Color.LightGray
+        req.isProposalApplied && req.mode != RequirementModeToday.CANCELED -> Color(0xFF1976D2)
+        else -> Color.Unspecified
+    }
 
     Row(
         modifier = Modifier
@@ -87,7 +90,7 @@ fun RequirementRow(
             modifier = Modifier.size(32.dp), // ← IconButtonと同じサイズ
             contentAlignment = Alignment.Center
         ) {
-            if (req.canEdit) {
+            if (req.canEdit || req.isProposalApplied) {
                 IconButton(
                     onClick = onMenuClick,
                     modifier = Modifier.matchParentSize()

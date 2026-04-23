@@ -8,7 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.example.familyscheduler.domain.time.TimeDropdownPicker
+import com.example.familyscheduler.ui.utilities.TimeDropdownPicker
 import com.example.familyscheduler.ui.utilities.StepDropdown
 import java.time.LocalTime
 

@@ -27,4 +27,16 @@ interface RoutineShiftOverrideDao {
         WHERE childId = :childId
     """)
     suspend fun deleteByChildId(childId: String)
+
+    @Query("""
+        DELETE FROM routine_shift_overrides
+        WHERE childId = :childId
+        AND date = :date
+        AND eventType = :eventType
+    """)
+    suspend fun deleteByKey(
+        childId: String,
+        date: String,
+        eventType: String
+    )
 }
