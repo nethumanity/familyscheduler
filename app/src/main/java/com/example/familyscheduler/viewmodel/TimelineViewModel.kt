@@ -120,7 +120,7 @@ class TimelineViewModel(
     )
     val uiState: StateFlow<TimelineUiState> = _uiState
 
-    private val ENABLE_SAMPLE_DATA = false   //falseでサンプル注入なし
+    private val ENABLE_SAMPLE_DATA = false   //falseでサンプル注入なし（そろそろいらない）
 
     private val _warningDialogState =
         MutableStateFlow<WarningDialogState?>(null)
@@ -325,13 +325,6 @@ class TimelineViewModel(
         settings: SettingsUiState
     ): TimelineUiState {
 
-        // ① DailyState抽出
-//        val states =
-//            statesMap
-//                .filterKeys { it.first == date }
-//                .values
-//                .toList()
-
         val slots = states.flatMap { it.slots }
 
         // ② ChildRoutine → Rule
@@ -345,9 +338,7 @@ class TimelineViewModel(
             childCareRuleConverter.convert(routineResult.blocks, settings)
 
         val mergedRules =
-            (rules.filter { it.source != RequirementSource.CHILD_ROUTINE }
-                //.filter { it.isActiveOn(date) } // getByDateでRule取得するなら不要
-                    ) + childRules
+            (rules.filter { it.source != RequirementSource.CHILD_ROUTINE }) + childRules
 
         // ③ Overrideフィルタ
         val overridesForDate =

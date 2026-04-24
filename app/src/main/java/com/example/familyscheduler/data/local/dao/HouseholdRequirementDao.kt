@@ -7,9 +7,6 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface HouseholdRequirementDao {
 
-//    @Query("SELECT * FROM household_requirements")
-//    fun getAll(): Flow<List<HouseholdRequirementEntity>>
-
     @Query("""
         SELECT * FROM household_requirements
         WHERE

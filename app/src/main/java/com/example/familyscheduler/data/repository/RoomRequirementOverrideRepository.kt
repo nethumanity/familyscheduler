@@ -12,24 +12,11 @@ class RoomRequirementOverrideRepository(
     private val dao: RequirementOverrideDao
 ) : RequirementOverrideRepository {
 
-//    override fun getAllFlow(): Flow<List<RequirementOverride>> {
-//        return dao.getAll().map { list ->
-//            list.map { RequirementOverrideMapper.toDomain(it) }
-//        }
-//    }
-
     override fun getByDate(date: LocalDate): Flow<List<RequirementOverride>> {
         return dao.getByDate(date.toString()).map { list ->
             list.map { RequirementOverrideMapper.toDomain(it) }
         }
     }
-
-    //いらない？
-//    override fun getOverrides(ruleId: String, date: LocalDate): Flow<List<RequirementOverride>> {
-//        return dao.getByRuleAndDate(ruleId, date.toString()).map { list ->
-//            list.map { RequirementOverrideMapper.toDomain(it) }
-//        }
-//    }
 
     override suspend fun replace(override: RequirementOverride) {
 

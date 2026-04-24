@@ -12,12 +12,6 @@ class RoomHouseholdRequirementRepository(
     private val dao: HouseholdRequirementDao
 ) : HouseholdRequirementRepository {
 
-//    override fun getAllFlow(): Flow<List<HouseholdRequirementRule>> {
-//        return dao.getAll().map { list ->
-//            list.map { HouseholdRequirementMapper.toDomain(it) }
-//        }
-//    }
-
     override fun getByDate(
         date: LocalDate
     ): Flow<List<HouseholdRequirementRule>> {

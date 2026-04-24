@@ -95,7 +95,7 @@ object AvailabilityEngine {
             indices.all { index ->
                 val i = slotIndex.byPersonIndex[person to index] ?: return@filter false
                 val slot = slots[i]
-                slot.state.weight <= req.targetState.weight // お試し（挙動を要確認）
+                slot.state.weight <= req.targetState.weight
                 //slot.state == SlotState.UNASSIGNED ||
                 //        slot.state == req.targetState
             }
@@ -113,20 +113,9 @@ object AvailabilityEngine {
         val indices = req.allIndices()
         val orderedPersons = req.orderedPersons(reverseRuleIds)
 
-//        val validPersons = orderedPersons.filter { person ->
-//            indices.all { index ->
-//                val i = slotIndex.byPersonIndex[person to index] ?: return@filter false
-//                val slot = slots[i]
-//                slot.state.weight <= req.targetState.weight // お試し（挙動を要確認）
-//                //slot.state == SlotState.UNASSIGNED ||
-//                //        slot.state == req.targetState
-//            }
-//        }.take(req.requiredCount)
-
         val candidates = orderedPersons
             .mapNotNull { person ->
 
-                // まず「物理的に可能か」は維持
                 val isValid = indices.all { index ->
                     val i = slotIndex.byPersonIndex[person to index] ?: return@mapNotNull null
                     val slot = slots[i]
@@ -150,7 +139,6 @@ object AvailabilityEngine {
             .take(req.requiredCount)
 
         for (person in candidates) {
-        //for (person in validPersons) {
             for (index in indices) {
                 val i = slotIndex.byPersonIndex[person to index] ?: continue
                 val slot = slots[i]
@@ -171,7 +159,7 @@ object AvailabilityEngine {
         else
             allowedPersons
 
-    private fun scorePersonForRequirement(
+    private fun scorePersonForRequirement(  // 拡張余地あり
         person: Person,
         indices: List<Int>,
         slots: List<TimeSlot>,

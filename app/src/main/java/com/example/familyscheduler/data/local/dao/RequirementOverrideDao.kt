@@ -7,17 +7,8 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface RequirementOverrideDao {
 
-//    @Query("SELECT * FROM requirement_overrides")
-//    fun getAll(): Flow<List<RequirementOverrideEntity>>
-
     @Query("SELECT * FROM requirement_overrides WHERE date = :date")
     fun getByDate(date: String): Flow<List<RequirementOverrideEntity>>
-
-//    @Query("SELECT * FROM requirement_overrides WHERE ruleId = :ruleId AND date = :date")
-//    fun getByRuleAndDate(
-//        ruleId: String,
-//        date: String
-//    ): Flow<List<RequirementOverrideEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(entity: RequirementOverrideEntity)

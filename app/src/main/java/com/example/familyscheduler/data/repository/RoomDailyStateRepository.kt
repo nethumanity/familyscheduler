@@ -12,15 +12,6 @@ class RoomDailyStateRepository(
     private val dao: DailyStateDao
 ) : DailyStateRepository {
 
-//    override fun getAllFlow(): Flow<Map<Pair<LocalDate, Person>, DailyState>> {
-//        return dao.getAll().map { list ->
-//            list.associate { entity ->
-//                val domain = DailyStateMapper.toDomain(entity)
-//                (domain.date to domain.person) to domain
-//            }
-//        }
-//    }
-
     override fun getByDate(date: LocalDate): Flow<List<DailyState>> {
         return dao.getByDate(date.toString()).map { list ->
             list.map { DailyStateMapper.toDomain(it) }

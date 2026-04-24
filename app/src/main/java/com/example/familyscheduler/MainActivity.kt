@@ -37,7 +37,6 @@ import androidx.navigation.compose.rememberNavController
 import androidx.room.Room
 import com.example.familyscheduler.data.local.AppDatabase
 import com.example.familyscheduler.data.repository.DataStoreSettingsRepository
-import com.example.familyscheduler.data.repository.InMemorySettingsRepository
 import com.example.familyscheduler.data.repository.RoomRoutineToggleOverrideRepository
 import com.example.familyscheduler.data.repository.RoomChildRoutineRepository
 import com.example.familyscheduler.data.repository.RoomDailyStateRepository
@@ -99,13 +98,6 @@ fun MainScreen() {
     val currentRoute = backStackEntry?.destination?.route
 
     val context = LocalContext.current
-//    val db = remember {
-//        Room.databaseBuilder(
-//            context,
-//            AppDatabase::class.java,
-//            "app-db"
-//        ).build()
-//    }
     val appContext = context.applicationContext
     val db = remember {
         Room.databaseBuilder(
@@ -212,7 +204,7 @@ fun MainScreen() {
                 "timeline" -> {
 
                     HeaderBar(
-                        modifier = Modifier.statusBarsPadding(),    // デバイスでの挙動を要確認
+                        modifier = Modifier.statusBarsPadding(),
                         date = currentDate,
                         onPreviousDay = {
                             timelineViewModel.changeDate(currentDate.minusDays(1))
@@ -278,7 +270,7 @@ fun MainScreen() {
 
                     val editingTarget by viewModel.editingTarget.collectAsState()
 
-                    LaunchedEffect(editingTarget?.childRoutineId) { //元は、引数：Unit
+                    LaunchedEffect(editingTarget?.childRoutineId) { // イベント化したほうがいい（SharedFlowなど）
                         val id = editingTarget?.childRoutineId
 
                         if (id != null) {
