@@ -112,5 +112,29 @@ fun SettingsScreen(
                 onCheckedChange = { viewModel.toggleTotal() }
             )
         }
+        item {
+            SettingsNumberItem(
+                title = "タイムライン開始",
+                value = uiState.timelineStartIndex,
+                displayText = "${TimeAxis.all.getOrNull(uiState.timelineStartIndex)?.toString() ?: "--:--"}（固定）",
+                onValueChange = {} // viewModel未実装
+            )
+        }
+        item {
+            SettingsNumberItem(
+                title = "タイムライン終了",
+                value = uiState.timelineEndIndex,
+                displayText = "${TimeAxis.all.getOrNull(uiState.timelineEndIndex)?.toString() ?: "--:--"}（固定）",
+                onValueChange = {} // viewModel未実装
+            )
+        }
+        item {
+            SettingsNumberItem(
+                title = "単位時間",
+                value = uiState.timelineStepMinutes,
+                displayText = "${uiState.timelineStepMinutes} 分（固定）",
+                onValueChange = {} // viewModel未実装
+            )
+        }
     }
 }

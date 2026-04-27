@@ -10,9 +10,9 @@ data class RoutineShiftOverrideEntity(
 
     val childId: String,
 
-    val date: String, // LocalDate → String
+    val date: String,
 
-    val eventType: String, // enum → String（DROP_OFF / PICKUP）
+    val eventType: String,
 
-    val nurseryTime: String  // LocalTime → String
+    val nurseryTime: String
 )

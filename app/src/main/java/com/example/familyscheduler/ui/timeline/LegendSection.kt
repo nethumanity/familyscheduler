@@ -22,7 +22,6 @@ import com.example.familyscheduler.ui.utilities.slotStateLabel
 fun LegendSection() {
 
     Column {
-        //Text("凡例", fontSize = 10.sp, fontWeight = FontWeight.Bold)
 
         SlotState.legendSectionAllowedState
             .chunked(3)

@@ -296,7 +296,6 @@ class TemplateEditViewModel(
         }
     }
 
-    // combine化は、状態が複数リソースから来るときにやる
     fun load(template: DailyTemplate) {
 
         val schedules = template.schedules
@@ -326,7 +325,7 @@ class TemplateEditViewModel(
         // ---- SLEEPの復元----
         val (sleepStart, sleepEnd) = restoreSleepRange(sleepList)
 
-        // ---- 現在のUIをベースにする（重要）----
+        // ---- 現在のUIをベースにする ----
         val current = _uiState.value
 
         // ---- UIにセット ----

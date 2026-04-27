@@ -17,7 +17,6 @@ class RoomChildRoutineRepository(
         }
     }
 
-    // 編集画面用
     override fun getByChildId(childId: String): Flow<ChildRoutineInput?> {
         return dao.getByChildId(childId).map {
             it?.let { ChildRoutineMapper.toDomain(it) }

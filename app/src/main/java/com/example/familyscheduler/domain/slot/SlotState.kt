@@ -31,5 +31,15 @@ enum class SlotState(val weight: Int) {
             LIFE,
             FREE
         )
+
+        val selectionSheetAllowedState = listOf(
+            UNASSIGNED,
+            CHILDCARE,
+            LIFE,
+            WORK,
+            UNAVAILABLE,
+            REST,
+            FREE
+        )
     }
 }

@@ -215,9 +215,7 @@ fun MainScreen() {
                     )
                 }
 
-                else -> {
-                    // 設定画面ではTopBarなし
-                }
+                else -> {}
             }
         },
 
@@ -270,7 +268,7 @@ fun MainScreen() {
 
                     val editingTarget by viewModel.editingTarget.collectAsState()
 
-                    LaunchedEffect(editingTarget?.childRoutineId) { // イベント化したほうがいい（SharedFlowなど）
+                    LaunchedEffect(editingTarget?.childRoutineId) {
                         val id = editingTarget?.childRoutineId
 
                         if (id != null) {

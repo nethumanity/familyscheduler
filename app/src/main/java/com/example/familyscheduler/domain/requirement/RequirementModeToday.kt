@@ -3,7 +3,7 @@ package com.example.familyscheduler.domain.requirement
 enum class RequirementModeToday {
     AUTO,            // 自動で割り当て
     CANCELED,        // その日の予定はキャンセル
-    //SOLO,            // 2人でやる予定を1人で実行
+    //SOLO,            // 2人でやる予定を1人で実行（条件あり）
     REVERSE;         // 割り当てを配偶者に変更（条件あり）
 
     fun next(

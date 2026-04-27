@@ -46,7 +46,6 @@ fun DailyOverviewSheet(
     viewModel: TimelineViewModel,
     onEditRequirement: (String) -> Unit
 ) {
-    // リファクタ候補：MainScreenからuiStateを引数で受け取る
     val uiState by viewModel.uiState.collectAsState()
 
     var expandedMenuId by remember { mutableStateOf<String?>(null) }
@@ -133,7 +132,7 @@ fun DailyOverviewSheet(
                         Text(blockText)
 
                         Box(
-                            modifier = Modifier.size(32.dp), // ← Iconと同じサイズ
+                            modifier = Modifier.size(32.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             if (reason.proposals.isNotEmpty()) {
@@ -141,7 +140,7 @@ fun DailyOverviewSheet(
                                     painter = painterResource(R.drawable.ic_proposal),
                                     contentDescription = "Proposal",
                                     tint = Color(0xFFFF9800),
-                                    modifier = Modifier.matchParentSize() // 少し小さくする
+                                    modifier = Modifier.matchParentSize()
                                 )
                             }
                         }

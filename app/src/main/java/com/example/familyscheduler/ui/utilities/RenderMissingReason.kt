@@ -7,7 +7,7 @@ import com.example.familyscheduler.domain.slot.SlotState
 import com.example.familyscheduler.domain.time.TimeAxis
 
 fun renderBlockingPersons(reason: MissingReason): String {
-    val persons = reason.blockingPersons.person   // List<Person>
+    val persons = reason.blockingPersons.person
 
     val personSet = persons.toSet()
 
@@ -39,10 +39,6 @@ fun renderMissingReason(reason: MissingReason): String {
             .takeIf { it.isNotBlank() }
             ?.take(15)
             ?: slotStateLabel(SlotState.CHILDCARE)
-
-    // blockInfoにはtaskNameがあった方がいいかも
-    val statesText =
-        block.currentState.joinToString("、") { slotStateLabel(it) }
 
     return "${personsText}は${requirementText}の予定ですが、他の予定と重複しています"
 }

@@ -72,7 +72,7 @@ fun ChildRoutineInputScreen(
                 value = form.name,
                 onValueChange = {
                     viewModel.updateName(it.replace("\n", ""))
-                                }, //viewModel::updateName(it.replace("\n", "") },
+                                },
                 label = { Text("名前")},
                 placeholder = { Text(text = "例：○○さん、長男、次女", color = Color.Gray) },
                 singleLine = true,
@@ -123,7 +123,6 @@ fun ChildRoutineInputScreen(
 
             Spacer(Modifier.height(16.dp))
 
-            // ===== 保育園ありのときのみ =====
             if (form.hasNursery) {
 
                 Text("登園日", fontWeight = FontWeight.Bold)
@@ -206,8 +205,6 @@ fun ChildRoutineInputScreen(
                 Text("保存")
             }
         }
-
-
     }
 
     LaunchedEffect(viewModel) {

@@ -41,14 +41,14 @@ fun RequirementRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp), //2 → 4
+            .padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Row(
             modifier = Modifier
                 .weight(1f)
                 .clickable { onClick() }
-                .padding(end = 8.dp), // ← ケバブとの距離
+                .padding(end = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
@@ -87,7 +87,7 @@ fun RequirementRow(
         }
 
         Box(
-            modifier = Modifier.size(32.dp), // ← IconButtonと同じサイズ
+            modifier = Modifier.size(32.dp),
             contentAlignment = Alignment.Center
         ) {
             if (req.canEdit || req.isProposalApplied) {

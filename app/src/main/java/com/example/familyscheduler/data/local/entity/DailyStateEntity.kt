@@ -7,8 +7,8 @@ import androidx.room.Entity
     primaryKeys = ["date", "person"]
 )
 data class DailyStateEntity(
-    val date: String,           // LocalDate → String
+    val date: String,
     val person: String,
     val templateName: String,
-    val slotsJson: String       // List<TimeSlot> をJSON化
+    val slotsJson: String
 )

@@ -1,8 +1,6 @@
 package com.example.familyscheduler.domain.routine
 
-class CareCapacityCalculator(
-    //private val maxChildrenPerAdult: Int = 2
-) {
+class CareCapacityCalculator {
 
     fun calculateRequiredCount(
         activeChildrenCount: Int,

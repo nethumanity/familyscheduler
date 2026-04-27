@@ -21,7 +21,6 @@ data class ScheduleTemplate(
             else
                 TimeAxis.indexOf(timeRange.end)
 
-        // ★ 安全装置（必須）
         if (startIndex == -1 || endIndex == -1)
             return emptyList()
 

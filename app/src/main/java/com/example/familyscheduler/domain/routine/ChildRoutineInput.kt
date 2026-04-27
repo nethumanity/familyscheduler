@@ -9,13 +9,13 @@ data class ChildRoutineInput(
     val childName: String,
     val wakeUpTime: LocalTime,
     val sleepTime: LocalTime,
-    val daysOfWeek: Set<DayOfWeek>,         // 空のsetも含めて必須項目
+    val daysOfWeek: Set<DayOfWeek>,
     val nurseryStart: LocalTime,
-    val nurseryStartEarliest: LocalTime,    // 初期値はnurseryStart
-    val nurseryStartLatest: LocalTime,      // 初期値はnurseryStart
+    val nurseryStartEarliest: LocalTime,
+    val nurseryStartLatest: LocalTime,
     val nurseryEnd: LocalTime,
-    val nurseryEndEarliest: LocalTime,      // 初期値はnurseryEnd
-    val nurseryEndLatest: LocalTime         // 初期値はnurseryEnd
+    val nurseryEndEarliest: LocalTime,
+    val nurseryEndLatest: LocalTime
 ) {
 
     init {

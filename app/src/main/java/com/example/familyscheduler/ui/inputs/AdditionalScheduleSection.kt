@@ -37,8 +37,6 @@ fun AdditionalScheduleSection(
                     .fillMaxWidth()
                     .padding(8.dp)
             ) {
-
-                // カテゴリ選択
                 Text("カテゴリ")
 
                 ScheduleType.additionalAllowedTypes

@@ -10,7 +10,7 @@ data class RoutineToggleOverrideEntity(
 
     val childId: String,
 
-    val date: String,      // LocalDate → String
+    val date: String,
 
-    val routine: String    // enum → String
+    val routine: String
 )

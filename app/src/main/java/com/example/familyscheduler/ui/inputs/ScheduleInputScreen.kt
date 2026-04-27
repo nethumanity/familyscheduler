@@ -75,8 +75,6 @@ fun ScheduleInputScreen(
             }
         }
 
-        // ===== Person選択 =====
-
         item {
 
             Column {
@@ -103,8 +101,6 @@ fun ScheduleInputScreen(
             }
         }
 
-        // ===== Template名 =====
-
         item {
 
             OutlinedTextField(
@@ -127,8 +123,6 @@ fun ScheduleInputScreen(
             )
         }
 
-        // ===== RepeatRule =====
-
         item {
 
             Column {
@@ -147,7 +141,7 @@ fun ScheduleInputScreen(
                     Text("曜日を指定しない")
                 }
 
-                if (!state.noWeeklyRule) {      //引数に
+                if (!state.noWeeklyRule) {
 
                     FlowRow(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -157,7 +151,7 @@ fun ScheduleInputScreen(
                         DayOfWeek.entries.forEach { day ->
 
                             FilterChip(
-                                selected = state.selectedDays.contains(day),    //引数に
+                                selected = state.selectedDays.contains(day),
                                 onClick = { viewModel.toggleDay(day) },
                                 label = {
                                     Text(
@@ -171,8 +165,6 @@ fun ScheduleInputScreen(
                 }
             }
         }
-
-        // ===== 固定スケジュール =====
 
         item {
 
@@ -293,8 +285,6 @@ fun ScheduleInputScreen(
             }
         }
 
-        // ===== 追加スケジュール =====
-
         item {
 
             AdditionalScheduleSection(
@@ -302,8 +292,6 @@ fun ScheduleInputScreen(
                 viewModel = viewModel
             )
         }
-
-        // ===== 重複警告 =====
 
         item {
             if (state.overlaps.isNotEmpty()) {
@@ -339,8 +327,6 @@ fun ScheduleInputScreen(
                 }
             }
         }
-
-        // ===== 保存 =====
 
         item {
             Spacer(Modifier.height(8.dp))

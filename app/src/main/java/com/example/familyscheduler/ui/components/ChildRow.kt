@@ -31,15 +31,14 @@ fun ChildRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 12.dp), //小さくしてもいいかも
-        //horizontalArrangement = Arrangement.SpaceBetween,
+            .padding(vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Row(
             modifier = Modifier
                 .weight(1f)
                 .clickable { onToggle() }
-                .padding(end = 8.dp), // ← ケバブとの距離
+                .padding(end = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(

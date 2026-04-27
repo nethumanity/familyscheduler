@@ -22,7 +22,6 @@ class RoomRequirementOverrideRepository(
 
         val entity = RequirementOverrideMapper.toEntity(override)
 
-        // 同種override置き換え（重要）
         dao.deleteByRuleDateType(
             ruleId = entity.ruleId,
             date = entity.date,

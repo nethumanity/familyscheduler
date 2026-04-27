@@ -10,10 +10,10 @@ data class RequirementOverrideEntity(
     val id: Long = 0,
 
     val ruleId: String,
-    val date: String,       // LocalDate → String
+    val date: String,
 
-    val type: String,       // "TOGGLE" or "SHIFT"
+    val type: String,
 
-    val mode: String?,      // TOGGLE用
-    val deltaSteps: Int?    // SHIFT用
+    val mode: String?,
+    val deltaSteps: Int?
 )

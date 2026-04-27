@@ -13,7 +13,7 @@ data class ChildRoutineEntity(
     val wakeUpTime: String,
     val sleepTime: String,
 
-    val daysOfWeek: String, // CSV
+    val daysOfWeek: String,
 
     val nurseryStart: String,
     val nurseryStartEarliest: String,

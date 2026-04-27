@@ -33,7 +33,6 @@ fun TotalSection(slots: List<TimeSlot>) {
     }
 
     Column {
-        //Text("集計", fontSize = 10.sp, fontWeight = FontWeight.Bold)
 
         SlotState.totalSectionAllowedState
             .forEach { state ->

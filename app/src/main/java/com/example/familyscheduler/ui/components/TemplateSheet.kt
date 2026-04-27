@@ -45,7 +45,6 @@ fun TemplateSheet(
     onDeleteTemplate: (String) -> Unit,
     onApplyTemplate: (DailyTemplate) -> Unit
 ) {
-    // リファクタ候補：MainScreenからtemplatesを引数で受け取る
     val uiState by viewModel.uiState.collectAsState()
 
     val templates = uiState.templates
@@ -76,7 +75,6 @@ fun TemplateSheet(
                 Box {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        //.padding(vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         ListItem(
@@ -90,12 +88,12 @@ fun TemplateSheet(
                             modifier = Modifier
                                 .weight(1f)
                                 .clickable { onApplyTemplate(template) }
-                                .padding(end = 8.dp) // ← ケバブとの距離
+                                .padding(end = 8.dp)
                         )
 
                         IconButton(
                             onClick = { expandedMenuId = template.id },
-                            modifier = Modifier.size(32.dp) //いらない？
+                            modifier = Modifier.size(32.dp)
                         ) {
                             Icon(
                                 Icons.Default.MoreVert,

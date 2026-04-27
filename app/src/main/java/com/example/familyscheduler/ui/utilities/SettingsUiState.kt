@@ -10,4 +10,8 @@ data class SettingsUiState(
     val timelineStartIndex: Int = 10,
     val timelineEndIndex: Int = 47,
     val timelineStepMinutes: Int = 30,
-)
+) {
+    init {
+        require(timelineStartIndex <= timelineEndIndex)
+    }
+}

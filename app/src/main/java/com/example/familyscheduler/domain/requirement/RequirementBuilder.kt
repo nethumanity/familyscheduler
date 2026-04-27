@@ -63,7 +63,7 @@ class RequirementBuilder {
 
             val delta = shift.deltaSteps
 
-            // ★ 範囲外ガードとして、現案はclamp処理（UI都合）
+            // 範囲外ガードとして、現在はclamp処理（UI都合）
             val newStart = (req.startIndex + delta).coerceIn(0, TimeAxis.indices.last)
             val newEnd = (req.endIndex + delta).coerceIn(1, TimeAxis.indices.last + 1)
 

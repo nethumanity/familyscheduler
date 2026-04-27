@@ -17,7 +17,6 @@ class RoomTemplateRepository(
         }
     }
 
-    // 編集画面用
     override fun getTemplateById(id: String): Flow<DailyTemplate?> {
         return dao.getById(id).map { entity ->
             entity?.let { TemplateMapper.toDomain(it) }

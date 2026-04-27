@@ -24,7 +24,6 @@ class RoomHouseholdRequirementRepository(
         }
     }
 
-    // 編集画面用
     override fun getById(
         id: String
     ): Flow<HouseholdRequirementRule?> {

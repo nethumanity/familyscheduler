@@ -14,13 +14,13 @@ data class HouseholdRequirementEntity(
     val targetState: String,
     val requiredCount: Int,
 
-    val allowedPersons: String, // CSV
+    val allowedPersons: String,
 
     val flexBackward: Int,
     val flexForward: Int,
 
-    val date: String?,          // LocalDate → String
-    val daysOfWeek: String?,    // CSV
+    val date: String?,
+    val daysOfWeek: String?,
 
     val startTime: String,
     val endTime: String,

@@ -39,8 +39,6 @@ object TemplateNormalizer {
 
             } else {
 
-                // 日またぎ
-
                 result.add(
                     schedule.copy(
                         timeRange = TimeRange(

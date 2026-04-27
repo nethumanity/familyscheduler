@@ -36,13 +36,12 @@ fun FooterBar(
             onClick = onOverviewClick,
             icon = {
                 Icon(
-                    painter = painterResource(R.drawable.ic_summary),  //ic_calendar
+                    painter = painterResource(R.drawable.ic_summary),
                     contentDescription = "Calendar",
-                    //tint = Color.Red,
                     modifier = Modifier.size(24.dp)
                 )
             },
-            label = { Text("サマリー") }    //"カレンダー"
+            label = { Text("サマリー") }
         )
 
         NavigationBarItem(
@@ -55,7 +54,6 @@ fun FooterBar(
                     Icon(
                         painter = painterResource(R.drawable.ic_child),
                         contentDescription = "Child",
-                        //tint = Color.Red,
                         modifier = Modifier.size(24.dp)
                     )
 
@@ -80,7 +78,6 @@ fun FooterBar(
                 Icon(
                     painter = painterResource(R.drawable.ic_today),
                     contentDescription = "Today",
-                    //tint = Color.Red,
                     modifier = Modifier.size(24.dp)
                 )
             },
@@ -94,7 +91,6 @@ fun FooterBar(
                 Icon(
                     painter = painterResource(R.drawable.ic_add),
                     contentDescription = "Add",
-                    //tint = Color.Red,
                     modifier = Modifier.size(24.dp)
                 )
             },
@@ -108,7 +104,6 @@ fun FooterBar(
                 Icon(
                     painter = painterResource(R.drawable.ic_settings),
                     contentDescription = "Settings",
-                    //tint = Color.Red,
                     modifier = Modifier.size(24.dp)
                 )
             },

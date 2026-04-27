@@ -105,7 +105,7 @@ fun TimelineScreen(
                 val index = TimeAxis.displayStartIndex + offset
 
                 val time = TimeAxis.all[index]
-                val rowSlots = slotMap[index] ?: emptyList()//uiState.slots.filter { it.index == index }
+                val rowSlots = slotMap[index] ?: emptyList()
                 val rowSlotMap = remember(rowSlots) { rowSlots.associateBy { it.person } }
 
                 Row(

@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.example.familyscheduler.ui.utilities.DayOfWeekUtilities
 import java.time.DayOfWeek
 
 @Composable
@@ -21,20 +22,9 @@ fun DaysOfWeekSection(
     onToggleEveryDay: (Boolean) -> Unit,
     onToggleDay: (DayOfWeek) -> Unit
 ) {
-
-    val dayLabels = mapOf(
-        DayOfWeek.MONDAY to "月",
-        DayOfWeek.TUESDAY to "火",
-        DayOfWeek.WEDNESDAY to "水",
-        DayOfWeek.THURSDAY to "木",
-        DayOfWeek.FRIDAY to "金",
-        DayOfWeek.SATURDAY to "土",
-        DayOfWeek.SUNDAY to "日"
-    )
-
     Column {
 
-        Text("曜日")  // 引数にしたい
+        Text("曜日")
 
         Row(
             verticalAlignment = Alignment.CenterVertically
@@ -45,7 +35,7 @@ fun DaysOfWeekSection(
                 onCheckedChange = onToggleEveryDay
             )
 
-            Text("毎日の予定")   // 引数にしたい
+            Text("毎日の予定")
         }
 
         if (!everyDay) {
@@ -71,7 +61,7 @@ fun DaysOfWeekSection(
                         selected = selected,
                         onClick = { onToggleDay(day) },
                         label = {
-                            Text(text = dayLabels[day] ?: "", color = color)
+                            Text(text = DayOfWeekUtilities.short(day), color = color)
                         }
                     )
                 }

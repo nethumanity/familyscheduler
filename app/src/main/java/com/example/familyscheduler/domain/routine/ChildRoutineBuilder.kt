@@ -1,6 +1,7 @@
 package com.example.familyscheduler.domain.routine
 
 import com.example.familyscheduler.domain.time.TimeAxis
+import com.example.familyscheduler.ui.utilities.SettingsUiState
 import java.time.LocalDate
 import java.time.LocalTime
 
@@ -80,7 +81,7 @@ class ChildRoutineBuilder {
 
                 val childIds = group.map { it.childId }
                 val eventId = "DROP_${date}_${time}"
-                val duration = TimeAxis.stepMinutes // 拡張要素：NurseryPlan? ?: TimeAxis.stepMinutes
+                val duration = TimeAxis.stepMinutes // 拡張要素：dropOffSteps * TimeAxis.stepMinutes
                 val earliest = group.maxOf { it.nurseryStartEarliest }
                 val latest = group.minOf { it.nurseryStartLatest }
 
@@ -108,7 +109,7 @@ class ChildRoutineBuilder {
 
                 val childIds = group.map { it.childId }
                 val eventId = "PICKUP_${date}_${time}"
-                val duration = TimeAxis.stepMinutes // 拡張要素：NurseryPlan? ?: TimeAxis.stepMinutes
+                val duration = TimeAxis.stepMinutes // 拡張要素：pickupSteps * TimeAxis.stepMinutes
                 val earliest = group.maxOf { it.nurseryEndEarliest }
                 val latest = group.minOf { it.nurseryEndLatest }
 

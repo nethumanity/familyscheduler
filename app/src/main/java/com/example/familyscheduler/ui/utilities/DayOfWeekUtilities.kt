@@ -26,16 +26,6 @@ object DayOfWeekUtilities {
             DayOfWeek.SATURDAY -> "土曜日"
             DayOfWeek.SUNDAY -> "日曜日"
         }
-
-    val ordered = listOf(
-        DayOfWeek.MONDAY,
-        DayOfWeek.TUESDAY,
-        DayOfWeek.WEDNESDAY,
-        DayOfWeek.THURSDAY,
-        DayOfWeek.FRIDAY,
-        DayOfWeek.SATURDAY,
-        DayOfWeek.SUNDAY
-    )
     
     fun color(
         day: DayOfWeek,

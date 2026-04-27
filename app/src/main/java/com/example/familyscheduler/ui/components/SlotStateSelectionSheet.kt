@@ -34,22 +34,15 @@ fun SlotStateSelectionSheet(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        listOf(
-            SlotState.UNASSIGNED,
-            SlotState.CHILDCARE,
-            SlotState.LIFE,
-            SlotState.WORK,
-            SlotState.UNAVAILABLE,
-            SlotState.REST,
-            SlotState.FREE
-        ).forEach { state ->
-            Text(
-                text = slotStateLabel(state),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onSelect(state) }
-                    .padding(vertical = 12.dp)
-            )
-        }
+        SlotState.selectionSheetAllowedState
+            .forEach { state ->
+                Text(
+                    text = slotStateLabel(state),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onSelect(state) }
+                        .padding(vertical = 12.dp)
+                )
+            }
     }
 }

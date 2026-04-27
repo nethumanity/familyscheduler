@@ -9,9 +9,6 @@ interface TemplateRepository {
 
     fun getTemplateById(id: String): Flow<DailyTemplate?>
 
-    // DAO未実装
-    // fun getTemplatesForPerson(person: Person): Flow<List<DailyTemplate>>
-
     suspend fun save(template: DailyTemplate)
 
     suspend fun delete(id: String)

@@ -159,7 +159,7 @@ object AvailabilityEngine {
         else
             allowedPersons
 
-    private fun scorePersonForRequirement(  // 拡張余地あり
+    private fun scorePersonForRequirement(
         person: Person,
         indices: List<Int>,
         slots: List<TimeSlot>,
@@ -174,9 +174,9 @@ object AvailabilityEngine {
             val slot = slots[i]
 
             score += when (slot.state) {
-                targetState -> 100      // 最優先
+                targetState -> 100
                 SlotState.UNASSIGNED -> 50
-                else -> -slot.state.weight  // 軽いほど良い
+                else -> -slot.state.weight
             }
         }
 
@@ -347,7 +347,7 @@ object AvailabilityEngine {
             }
 
             when {
-                // ★ 1人必要 → 全員分 proposal
+                // 1人必要 → 全員分 proposal
                 requirement.requiredCount == 1 -> {
                     validPersons.map { person ->
                         FlexResolveProposal(
@@ -363,7 +363,7 @@ object AvailabilityEngine {
                     }
                 }
 
-                // ★ 複数人必要 → まとめて1 proposal
+                // 複数人必要 → まとめて1 proposal
                 validPersons.size >= requirement.requiredCount -> {
                     listOf(
                         FlexResolveProposal(
@@ -469,7 +469,7 @@ object AvailabilityEngine {
                     if (validPersons.size < targetReq.requiredCount) return@flatMap emptyList()
 
                     when {
-                        // ★ 1人必要 → 全員分 proposal
+                        // 1人必要 → 全員分 proposal
                         targetReq.requiredCount == 1 -> {
                             validPersons.map { person ->
                                 FlexResolveProposal(
@@ -484,7 +484,7 @@ object AvailabilityEngine {
                                 )
                             }
                         }
-                        // ★ 複数人必要 → まとめて1 proposal
+                        // 複数人必要 → まとめて1 proposal
                         validPersons.size >= targetReq.requiredCount -> {
                             listOf(
                                 FlexResolveProposal(

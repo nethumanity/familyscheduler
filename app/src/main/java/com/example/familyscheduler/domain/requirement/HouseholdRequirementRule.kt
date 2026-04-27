@@ -15,26 +15,13 @@ data class HouseholdRequirementRule(
     val taskName: String,
     val targetState: SlotState,
     val requiredCount: Int,
-    val allowedPersons: List<Person>,   // Set<Person>
+    val allowedPersons: List<Person>,
     val flexWindowSlots: FlexWindowParameters,
-    val date: LocalDate?,               // 入力系①日付指定パターン用
-    val daysOfWeek: Set<DayOfWeek>?,    // 入力系②毎日/曜日指定パターン、③子どもルーティン用
+    val date: LocalDate?,
+    val daysOfWeek: Set<DayOfWeek>?,
     val timeRange: TimeRange,
     val createdAt: Long = System.currentTimeMillis()
 ) {
-    fun isActiveOn(date: LocalDate): Boolean {
-
-        if (this.date != null) {
-            return this.date == date
-        }
-
-        if (daysOfWeek != null) {
-            return date.dayOfWeek in daysOfWeek
-        }
-
-        return false
-    }
-
     fun toRequirement(): TimeRangeHouseholdRequirement {
 
         val startIndex = TimeAxis.indexOf(timeRange.start)
@@ -57,55 +44,29 @@ data class HouseholdRequirementRule(
     fun prioritySeed(startIndex: Int, endIndex: Int): Long {
         val flex = flexWindowSlots.backward + flexWindowSlots.forward
         val length = endIndex - startIndex
-
         val tightness =
             if (allowedPersons.isEmpty()) 1.0
-            else requiredCount.toDouble() / allowedPersons.size
-
-        val semanticScore =
-            targetState.weight * 1_000_000L
+            else 2.0 / allowedPersons.size
 
         val constraintScore =
-            (tightness * 500_000).toLong()
+            (tightness * 1_000_000).toLong()
 
-        val flexibleScore =
-            (1_000_000L / (1 + flex))
+        val semanticScore =
+            targetState.weight * 100_000L
 
         val timeScore =
-            length * 1_000_000L
+            length * 10_000L
+
+        val flexibleScore =
+            (10_000L / (1 + flex))
 
         val tieBreaker =
-            ((if (date != null) 10 else 0) * 1_000L) +
-                    (createdAt % 1000)
+            ((if (date != null) 1 else 0) * 1_000L) + (createdAt % 1000)
 
-        println(
-            """req: $taskName
-            semantic=$semanticScore
-            constraint=$constraintScore
-            flex=$flexibleScore
-            time=$timeScore
-            total=${semanticScore +
-                    constraintScore +
-                    flexibleScore +
-                    timeScore +
-                    tieBreaker}"""
-        )
-
-        return semanticScore +
-                constraintScore +
-                flexibleScore +
+        return constraintScore +
+                semanticScore +
                 timeScore +
+                flexibleScore +
                 tieBreaker
-
-
-
-        /* 旧バージョン
-        return targetState.weight * 1_000_000L +
-                (if (date != null) 100_000 else 0) +
-                (if (source == RequirementSource.USER) 10_000 else 0) +
-                ((1000 - length) * 100L) +
-                ((100 - flex) * 10L) +
-                createdAt
-         */
     }
 }

@@ -27,9 +27,9 @@ import com.example.familyscheduler.domain.routine.ChildRoutineInput
 import com.example.familyscheduler.domain.routine.ChildTodayRoutine
 import com.example.familyscheduler.domain.routine.RoutineResolver
 import com.example.familyscheduler.domain.routine.RoutineShiftOverride
-import com.example.familyscheduler.domain.routine.repository.RoutineToggleOverrideRepository
 import com.example.familyscheduler.domain.routine.repository.ChildRoutineRepository
 import com.example.familyscheduler.domain.routine.repository.RoutineShiftOverrideRepository
+import com.example.familyscheduler.domain.routine.repository.RoutineToggleOverrideRepository
 import com.example.familyscheduler.domain.schedule.DailyState
 import com.example.familyscheduler.domain.schedule.DailyTemplate
 import com.example.familyscheduler.domain.schedule.RepeatRule
@@ -38,7 +38,6 @@ import com.example.familyscheduler.domain.schedule.repository.TemplateRepository
 import com.example.familyscheduler.domain.slot.SlotState
 import com.example.familyscheduler.domain.slot.TimeSlot
 import com.example.familyscheduler.domain.time.TimeAxis
-import com.example.familyscheduler.seeder.SampleDataSeeder
 import com.example.familyscheduler.ui.utilities.EditingTarget
 import com.example.familyscheduler.ui.utilities.GuideState
 import com.example.familyscheduler.ui.utilities.RequirementUndoPayload
@@ -120,8 +119,6 @@ class TimelineViewModel(
     )
     val uiState: StateFlow<TimelineUiState> = _uiState
 
-    private val ENABLE_SAMPLE_DATA = false   //falseでサンプル注入なし（そろそろいらない）
-
     private val _warningDialogState =
         MutableStateFlow<WarningDialogState?>(null)
     val warningDialogState: StateFlow<WarningDialogState?> =
@@ -154,19 +151,6 @@ class TimelineViewModel(
                                     state.childRoutines.isEmpty()
                     )
                 }
-            }
-        }
-
-        // -------------------------------
-        // ① 初期データ投入（必要なら）
-        // -------------------------------
-        viewModelScope.launch {
-            if (ENABLE_SAMPLE_DATA) {
-                SampleDataSeeder.seed(
-                    templateRepository,
-                    householdRequirementRepository,
-                    childRoutineRepository
-                )
             }
         }
         // -------------------------------
@@ -325,6 +309,7 @@ class TimelineViewModel(
         settings: SettingsUiState
     ): TimelineUiState {
 
+        // ① DailyState展開
         val slots = states.flatMap { it.slots }
 
         // ② ChildRoutine → Rule
@@ -417,11 +402,11 @@ class TimelineViewModel(
                 else emptyList()
 
             val reverseAssignable =
-                if (req != null && reversedPerson.size == 1) // req != nullの代わりに↓を有効にしてもいい
+                if (req != null && reversedPerson.size == 1)
                     canAssignInVm(
                         person = reversedPerson.single(),
                         requirement = req,
-                        candidateStartIndex = req.startIndex, //?: TimeAxis.indexOf(rule.timeRange.start),
+                        candidateStartIndex = req.startIndex,
                         slotsByPersonIndex = _uiState.value.slotsByPersonIndex
                     )
                 else false
@@ -537,9 +522,6 @@ class TimelineViewModel(
 
         viewModelScope.launch {
 
-            // 現状では_dailyStatesのスロットと_slotsのスロットは一致しないことに留意
-            // proposalの実行処理の仕様によってはバグるかも
-            // （代替案）TimeSlotにisUserLocked = falseを追加し、newSlotsはtrueにする
             val states = _uiState.value.dailyStates.map { state ->
 
                 if (state.person != person) return@map state
