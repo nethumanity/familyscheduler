@@ -13,8 +13,14 @@ object TimeAxis {
             LocalTime.of(min / 60, min % 60)
         }
 
-    fun indexOf(time: LocalTime): Int =
-        all.indexOf(time)
+    fun indexOf(time: LocalTime): Int {
+        val index = all.indexOf(time)
+        require(index >= 0) {
+            "TimeAxis does not contain the given time: $time. " +
+                    "Expected multiples of $SLOT_MINUTES minutes."
+        }
+        return index
+    }
 
     val indices: IntRange
         get() = all.indices

@@ -1,7 +1,6 @@
 package com.example.familyscheduler.domain.routine
 
 import com.example.familyscheduler.domain.time.TimeAxis
-import com.example.familyscheduler.ui.utilities.SettingsUiState
 import java.time.LocalDate
 import java.time.LocalTime
 

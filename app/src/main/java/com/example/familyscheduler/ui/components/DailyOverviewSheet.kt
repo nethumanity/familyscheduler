@@ -12,16 +12,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -47,8 +42,6 @@ fun DailyOverviewSheet(
     onEditRequirement: (String) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
-
-    var expandedMenuId by remember { mutableStateOf<String?>(null) }
 
     fun indexToTime(index: Int): String {
         return TimeAxis.all.getOrNull(index)?.toString() ?: "--:--"
@@ -166,7 +159,9 @@ fun DailyOverviewSheet(
             val assignedPersons = viewModel.getAssignedPersons(req.id)
                 .joinToString(" ") { it.label }
 
-            Box {
+            Box(
+                modifier = Modifier.fillMaxWidth()
+            ) {
                 RequirementRow(
                     req = req,
                     isWarn = isWarn,
@@ -180,40 +175,10 @@ fun DailyOverviewSheet(
                                 .firstOrNull { it.sourceRuleId == req.id }
                         )
                     },
-                    onMenuClick = { expandedMenuId = req.id }
+                    onEdit = { onEditRequirement(req.id) },
+                    onDelete = { viewModel.deleteRequirement(req.id) },
+                    onClearProposal = { viewModel.clearProposal(req.id) }
                 )
-
-                DropdownMenu(
-                    expanded = expandedMenuId == req.id,
-                    onDismissRequest = { expandedMenuId = null },
-                    modifier = Modifier.align(Alignment.TopEnd)
-                ) {
-                    if (req.canEdit) {
-                        DropdownMenuItem(
-                            text = { Text("編集") },
-                            onClick = {
-                                expandedMenuId = null
-                                onEditRequirement(req.id)
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text("削除") },
-                            onClick = {
-                                expandedMenuId = null
-                                viewModel.deleteRequirement(req.id)
-                            }
-                        )
-                    }
-                    if (req.isProposalApplied) {
-                        DropdownMenuItem(
-                            text = { Text("提案の実行を取り消す") },
-                            onClick = {
-                                expandedMenuId = null
-                                viewModel.clearProposal(req.id)
-                            }
-                        )
-                    }
-                }
             }
         }
     }

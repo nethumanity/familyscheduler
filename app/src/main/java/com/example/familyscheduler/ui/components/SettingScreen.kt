@@ -114,7 +114,7 @@ fun SettingsScreen(
         }
         item {
             SettingsNumberItem(
-                title = "タイムライン開始",
+                title = "表示開始時刻",
                 value = uiState.timelineStartIndex,
                 displayText = "${TimeAxis.all.getOrNull(uiState.timelineStartIndex)?.toString() ?: "--:--"}（固定）",
                 onValueChange = {} // viewModel未実装
@@ -122,7 +122,7 @@ fun SettingsScreen(
         }
         item {
             SettingsNumberItem(
-                title = "タイムライン終了",
+                title = "表示終了時刻",
                 value = uiState.timelineEndIndex,
                 displayText = "${TimeAxis.all.getOrNull(uiState.timelineEndIndex)?.toString() ?: "--:--"}（固定）",
                 onValueChange = {} // viewModel未実装

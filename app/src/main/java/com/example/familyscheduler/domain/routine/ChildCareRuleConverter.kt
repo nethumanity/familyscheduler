@@ -82,22 +82,16 @@ class ChildCareRuleConverter(
             return FlexWindowParameters(0, 0)
         }
 
-        val backwardMinutes =
-            Duration.between(earliest, block.startTime)
-                .toMinutes()
+        val backward =
+            (TimeAxis.indexOf(block.startTime) - TimeAxis.indexOf(earliest))
                 .coerceAtLeast(0)
-
-        val forwardMinutes =
-            Duration.between(block.startTime, latest)
-                .toMinutes()
+        val forward =
+            (TimeAxis.indexOf(latest) - TimeAxis.indexOf(block.startTime))
                 .coerceAtLeast(0)
-
-        val backwardSlots = (backwardMinutes / TimeAxis.stepMinutes).toInt()
-        val forwardSlots = (forwardMinutes / TimeAxis.stepMinutes).toInt()
 
         return FlexWindowParameters(
-            backward = backwardSlots,
-            forward = forwardSlots
+            backward = backward,
+            forward = forward
         )
     }
 }
