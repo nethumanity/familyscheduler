@@ -91,37 +91,41 @@ fun TemplateSheet(
                                 .padding(end = 8.dp)
                         )
 
-                        IconButton(
-                            onClick = { expandedMenuId = template.id },
-                            modifier = Modifier.size(32.dp)
+                        Box(
+                            modifier = Modifier.size(32.dp),
+                            contentAlignment = Alignment.Center
                         ) {
-                            Icon(
-                                Icons.Default.MoreVert,
-                                contentDescription = "menu",
-                                tint = Color.LightGray
-                            )
-                        }
-                    }
+                            IconButton(
+                                onClick = { expandedMenuId = template.id },
+                                modifier = Modifier.matchParentSize()
+                            ) {
+                                Icon(
+                                    Icons.Default.MoreVert,
+                                    contentDescription = "menu",
+                                    tint = Color.LightGray
+                                )
+                            }
 
-                    DropdownMenu(
-                        expanded = expandedMenuId == template.id,
-                        onDismissRequest = { expandedMenuId = null },
-                        modifier = Modifier.align(Alignment.TopEnd)
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text("編集") },
-                            onClick = {
-                                expandedMenuId = null
-                                onEditTemplate(template.id, person)
+                            DropdownMenu(
+                                expanded = expandedMenuId == template.id,
+                                onDismissRequest = { expandedMenuId = null }
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text("編集") },
+                                    onClick = {
+                                        expandedMenuId = null
+                                        onEditTemplate(template.id, person)
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("削除") },
+                                    onClick = {
+                                        expandedMenuId = null
+                                        onDeleteTemplate(template.id)
+                                    }
+                                )
                             }
-                        )
-                        DropdownMenuItem(
-                            text = { Text("削除") },
-                            onClick = {
-                                expandedMenuId = null
-                                onDeleteTemplate(template.id)
-                            }
-                        )
+                        }
                     }
                 }
             }

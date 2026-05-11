@@ -10,16 +10,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -39,8 +34,6 @@ fun ChildListSheet(
 
     val children = uiState.routines
     val overrides = uiState.overrides
-
-    var expandedMenuId by remember { mutableStateOf<String?>(null) }
 
     Column(
         modifier = Modifier
@@ -80,32 +73,10 @@ fun ChildListSheet(
                     ChildRow(
                         child = child,
                         routine = todayRoutine,
-                        onToggle = {
-                            viewModel.toggleTodayRoutine(child, currentDate)
-                        },
-                        onMenuClick = { expandedMenuId = child.childId }
+                        onToggle = { viewModel.toggleTodayRoutine(child, currentDate) },
+                        onEdit = { onEditChildRoutine(child.childId) },
+                        onDelete = { viewModel.deleteChildRoutine(child.childId) }
                     )
-
-                    DropdownMenu(
-                        expanded = expandedMenuId == child.childId,
-                        onDismissRequest = { expandedMenuId = null },
-                        modifier = Modifier.align(Alignment.TopEnd)
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text("編集") },
-                            onClick = {
-                                expandedMenuId = null
-                                onEditChildRoutine(child.childId)
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text("削除") },
-                            onClick = {
-                                expandedMenuId = null
-                                viewModel.deleteChildRoutine(child.childId)
-                            }
-                        )
-                    }
                 }
             }
         }
