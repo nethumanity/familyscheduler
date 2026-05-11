@@ -77,7 +77,7 @@ object AvailabilityEngine {
             .map { it.ruleId }
             .toSet()
         for (req in orderedReqs) {
-            if (!mayAssignBlock(req, slots, slotIndex, reverseRuleIds)) continue
+            if (!mayAssignBlock(req, slots, slotIndex)) continue
             assignBlock(req, slots, slotIndex, reverseRuleIds)
         }
     }
@@ -85,13 +85,11 @@ object AvailabilityEngine {
     private fun mayAssignBlock(
         req: HouseholdRequirement,
         slots: List<TimeSlot>,
-        slotIndex: SlotIndex,
-        reverseRuleIds: Set<String>
+        slotIndex: SlotIndex
     ): Boolean {
         val indices = req.allIndices()
-        val orderedPersons = req.orderedPersons(reverseRuleIds)
 
-        val validPersons = orderedPersons.filter { person ->
+        val validPersons = req.allowedPersons.filter { person ->
             indices.all { index ->
                 val i = slotIndex.byPersonIndex[person to index] ?: return@filter false
                 val slot = slots[i]
@@ -111,9 +109,8 @@ object AvailabilityEngine {
         reverseRuleIds: Set<String>
     ) {
         val indices = req.allIndices()
-        val orderedPersons = req.orderedPersons(reverseRuleIds)
 
-        val candidates = orderedPersons
+        val candidates = req.allowedPersons
             .mapNotNull { person ->
 
                 val isValid = indices.all { index ->
@@ -136,6 +133,7 @@ object AvailabilityEngine {
             }
             .sortedByDescending { it.second }
             .map { it.first }
+            .applyReverseRule(req.sourceRuleId, reverseRuleIds)
             .take(req.requiredCount)
 
         for (person in candidates) {
@@ -151,13 +149,14 @@ object AvailabilityEngine {
         }
     }
 
-    private fun HouseholdRequirement.orderedPersons(
+    private fun List<Person>.applyReverseRule(
+        sourceRuleId: String,
         reverseRuleIds: Set<String>
     ): List<Person> =
         if (sourceRuleId in reverseRuleIds)
-            allowedPersons.reversed()
+            reversed()
         else
-            allowedPersons
+            this
 
     private fun scorePersonForRequirement(
         person: Person,
