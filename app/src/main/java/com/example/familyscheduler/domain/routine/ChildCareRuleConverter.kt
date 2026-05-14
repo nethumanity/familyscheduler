@@ -8,7 +8,6 @@ import com.example.familyscheduler.domain.slot.SlotState
 import com.example.familyscheduler.domain.time.TimeAxis
 import com.example.familyscheduler.domain.time.TimeRange
 import com.example.familyscheduler.ui.utilities.SettingsUiState
-import java.time.Duration
 
 class ChildCareRuleConverter(
     private val capacityCalculator: CareCapacityCalculator,
@@ -44,8 +43,8 @@ class ChildCareRuleConverter(
             requiredCount = requiredCount,
             allowedPersons = allowedPersons,
             flexWindowSlots = toFlexWindow(block),
-            date = null,
-            daysOfWeek = block.daysOfWeek,
+            date = null,                            // dateにする？
+            daysOfWeek = block.daysOfWeek,          // null?
             timeRange = TimeRange(
                 start = block.startTime,
                 end = block.endTime

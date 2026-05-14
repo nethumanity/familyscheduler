@@ -54,6 +54,14 @@ data class HouseholdRequirementRule(
         val semanticScore =
             targetState.weight * 100_000L
 
+        val sourceScore =
+            when (source) {
+                RequirementSource.USER,
+                RequirementSource.NURSERY_PICKUP,
+                RequirementSource.NURSERY_DROP_OFF -> 100_000L
+                RequirementSource.CHILD_ROUTINE -> 0L
+            }
+
         val timeScore =
             length * 10_000L
 
@@ -65,6 +73,7 @@ data class HouseholdRequirementRule(
 
         return constraintScore +
                 semanticScore +
+                sourceScore +
                 timeScore +
                 flexibleScore +
                 tieBreaker
