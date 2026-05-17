@@ -4,7 +4,6 @@ import com.example.familyscheduler.domain.person.Person
 import com.example.familyscheduler.domain.requirement.HouseholdRequirement
 import com.example.familyscheduler.domain.requirement.RequirementModeToday
 import com.example.familyscheduler.domain.requirement.RequirementOverride
-import com.example.familyscheduler.domain.requirement.RequirementSemantics
 import com.example.familyscheduler.domain.requirement.RequirementToggleOverride
 import com.example.familyscheduler.domain.slot.SlotState
 import com.example.familyscheduler.domain.slot.TimeSlot
