@@ -3,6 +3,7 @@ package com.example.familyscheduler.data.mapper
 import com.example.familyscheduler.data.local.dto.TimeSlotDto
 import com.example.familyscheduler.data.local.entity.DailyStateEntity
 import com.example.familyscheduler.domain.person.Person
+import com.example.familyscheduler.domain.requirement.RequirementSemantics
 import com.example.familyscheduler.domain.schedule.DailyState
 import com.example.familyscheduler.domain.slot.SlotState
 import com.example.familyscheduler.domain.slot.TimeSlot
@@ -21,7 +22,8 @@ object DailyStateMapper {
                 index = it.index,
                 person = it.person.name,
                 state = it.state.name,
-                taskIds = it.taskIds
+                taskIds = it.taskIds,
+                effectiveSemantics = it.effectiveSemantics.name
             )
         }
 
@@ -46,7 +48,10 @@ object DailyStateMapper {
                 index = it.index,
                 person = Person.valueOf(it.person),
                 state = SlotState.valueOf(it.state),
-                taskIds = it.taskIds
+                taskIds = it.taskIds,
+                effectiveSemantics = RequirementSemantics.valueOf(
+                    it.effectiveSemantics
+                )
             )
         }
 

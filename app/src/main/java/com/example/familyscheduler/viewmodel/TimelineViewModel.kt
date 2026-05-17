@@ -402,14 +402,20 @@ class TimelineViewModel(
                 else emptyList()
 
             val reverseAssignable =
-                if (req != null && reversedPerson.size == 1)
-                    canAssignInVm(
+                if (req != null && reversedPerson.size == 1) {
+                    AvailabilityEngine.canAssignBlock(
                         person = reversedPerson.single(),
                         requirement = req,
+                        baseStartIndex = req.startIndex,
                         candidateStartIndex = req.startIndex,
-                        slotsByPersonIndex = _uiState.value.slotsByPersonIndex
+                        slots = _uiState.value.slots,
+                        slotIndex = AvailabilityEngine.buildSlotIndex(
+                            _uiState.value.slots
+                        )
                     )
-                else false
+                } else {
+                    false
+                }
 
             val next = current.next(reverseAssignable)
 
@@ -438,27 +444,6 @@ class TimelineViewModel(
             }
 
         return RequirementModeToday.AUTO
-    }
-
-    fun canAssignInVm(
-        person: Person,
-        requirement: TimeRangeHouseholdRequirement,
-        candidateStartIndex: Int,
-        slotsByPersonIndex: Map<Pair<Person, Int>, TimeSlot>
-    ): Boolean {
-
-        val indices = requirement.allIndices()
-        for (i in indices) {
-            val offset = i - requirement.startIndex
-            val targetIndex = candidateStartIndex + offset
-            val slotIndexKey = person to targetIndex
-            val slot = slotsByPersonIndex[slotIndexKey] ?: return false
-
-            if (slot.state.weight > requirement.targetState.weight) {
-                return false
-            }
-        }
-        return true
     }
 
     fun startEditRequirement(ruleId: String) {

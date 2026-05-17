@@ -4,6 +4,7 @@ import com.example.familyscheduler.domain.person.Person
 import com.example.familyscheduler.domain.requirement.HouseholdRequirement
 import com.example.familyscheduler.domain.requirement.RequirementModeToday
 import com.example.familyscheduler.domain.requirement.RequirementOverride
+import com.example.familyscheduler.domain.requirement.RequirementSemantics
 import com.example.familyscheduler.domain.requirement.RequirementToggleOverride
 import com.example.familyscheduler.domain.slot.SlotState
 import com.example.familyscheduler.domain.slot.TimeSlot
@@ -92,14 +93,30 @@ object AvailabilityEngine {
         val validPersons = req.allowedPersons.filter { person ->
             indices.all { index ->
                 val i = slotIndex.byPersonIndex[person to index] ?: return@filter false
-                val slot = slots[i]
-                slot.state.weight <= req.targetState.weight
-                //slot.state == SlotState.UNASSIGNED ||
-                //        slot.state == req.targetState
+                canAssignToSlot(
+                    req,
+                    slots[i]
+                )
             }
         }
 
         return validPersons.size >= req.requiredCount
+    }
+
+    private fun canAssignToSlot(
+        req: HouseholdRequirement,
+        slot: TimeSlot
+    ): Boolean {
+
+        if (slot.state.weight < req.targetState.weight) {
+            return true
+        }
+
+        if (slot.state.weight > req.targetState.weight) {
+            return false
+        }
+
+        return req.source.semantics.canCoexist(slot.effectiveSemantics)
     }
 
     private fun assignBlock(
@@ -111,26 +128,19 @@ object AvailabilityEngine {
         val indices = req.allIndices()
 
         val candidates = req.allowedPersons
-            .mapNotNull { person ->
-
-                val isValid = indices.all { index ->
-                    val i = slotIndex.byPersonIndex[person to index] ?: return@mapNotNull null
-                    val slot = slots[i]
-                    slot.state.weight <= req.targetState.weight
-                }
-
-                if (!isValid) return@mapNotNull null
+            .map { person ->
 
                 val score = scorePersonForRequirement(
                     person,
                     indices,
                     slots,
                     slotIndex,
-                    req.targetState
+                    req
                 )
 
                 person to score
             }
+            .filter { it.second > Int.MIN_VALUE }
             .sortedByDescending { it.second }
             .map { it.first }
             .applyReverseRule(req.sourceRuleId, reverseRuleIds)
@@ -143,7 +153,10 @@ object AvailabilityEngine {
 
                 slots[i] = slot.copy(
                     state = req.targetState,
-                    taskIds = slot.taskIds + req.sourceRuleId
+                    taskIds = slot.taskIds + req.sourceRuleId,
+                    effectiveSemantics = slot.effectiveSemantics.merge(
+                        req.source.semantics
+                    )
                 )
             }
         }
@@ -163,17 +176,20 @@ object AvailabilityEngine {
         indices: List<Int>,
         slots: List<TimeSlot>,
         slotIndex: SlotIndex,
-        targetState: SlotState
+        req: HouseholdRequirement
     ): Int {
-
         var score = 0
 
         for (index in indices) {
             val i = slotIndex.byPersonIndex[person to index] ?: return Int.MIN_VALUE
             val slot = slots[i]
 
+            if (!canAssignToSlot(req, slot)) {
+                return Int.MIN_VALUE
+            }
+
             score += when (slot.state) {
-                targetState -> 100
+                req.targetState -> 100
                 SlotState.UNASSIGNED -> 50
                 else -> -slot.state.weight
             }
@@ -399,7 +415,11 @@ object AvailabilityEngine {
             val idx = slotIndex.byPersonIndex[slotIndexKey] ?: return false
             val slot = slots[idx]
 
-            if (slot.state.weight > requirement.targetState.weight) {
+            if (!canAssignToSlot(
+                    requirement,
+                    slot
+                )
+            ) {
                 return false
             }
         }

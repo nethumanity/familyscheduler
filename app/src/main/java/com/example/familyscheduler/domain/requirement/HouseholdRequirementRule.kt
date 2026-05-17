@@ -55,11 +55,10 @@ data class HouseholdRequirementRule(
             targetState.weight * 100_000L
 
         val sourceScore =
-            when (source) {
-                RequirementSource.USER,
-                RequirementSource.NURSERY_PICKUP,
-                RequirementSource.NURSERY_DROP_OFF -> 100_000L
-                RequirementSource.CHILD_ROUTINE -> 0L
+            when (source.semantics) {
+                RequirementSemantics.TASK -> 40_000L
+                RequirementSemantics.EVENT -> 20_000L
+                RequirementSemantics.STATE -> 0L
             }
 
         val timeScore =
