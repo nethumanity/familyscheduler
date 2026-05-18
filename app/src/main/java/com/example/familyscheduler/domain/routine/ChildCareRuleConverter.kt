@@ -36,39 +36,22 @@ class ChildCareRuleConverter(
             )
 
         return HouseholdRequirementRule(
-            id = block.eventId,
-            source = sourceOf(block.label),
-            taskName = taskNameOf(block.label),
+            id = block.id,
+            source = block.label?.source
+                ?: RequirementSource.CHILD_ROUTINE,
+            taskName = block.label?.taskName.orEmpty(),
             targetState = SlotState.CHILDCARE,
             requiredCount = requiredCount,
             allowedPersons = allowedPersons,
             flexWindowSlots = toFlexWindow(block),
-            date = null,                            // dateにする？
-            daysOfWeek = block.daysOfWeek,          // null?
+            date = block.date,
+            daysOfWeek = null,
             timeRange = TimeRange(
                 start = block.startTime,
                 end = block.endTime
             )
         )
     }
-
-    private fun taskNameOf(
-        label: ChildCareLabel?
-    ): String =
-        when (label) {
-            ChildCareLabel.NURSERY_DROP_OFF -> "登園"
-            ChildCareLabel.NURSERY_PICKUP -> "お迎え"
-            null -> ""
-        }
-
-    private fun sourceOf(
-        label: ChildCareLabel?
-    ): RequirementSource =
-        when (label) {
-            ChildCareLabel.NURSERY_DROP_OFF -> RequirementSource.NURSERY_DROP_OFF
-            ChildCareLabel.NURSERY_PICKUP -> RequirementSource.NURSERY_PICKUP
-            else -> RequirementSource.CHILD_ROUTINE
-        }
 
     private fun toFlexWindow(
         block: ChildCareBlock
@@ -82,11 +65,16 @@ class ChildCareRuleConverter(
         }
 
         val backward =
-            (TimeAxis.indexOf(block.startTime) - TimeAxis.indexOf(earliest))
-                .coerceAtLeast(0)
+            TimeAxis.distance(
+                from = earliest,
+                to = block.startTime
+            ).coerceAtLeast(0)
+
         val forward =
-            (TimeAxis.indexOf(latest) - TimeAxis.indexOf(block.startTime))
-                .coerceAtLeast(0)
+            TimeAxis.distance(
+                from = block.startTime,
+                to = latest
+            ).coerceAtLeast(0)
 
         return FlexWindowParameters(
             backward = backward,

@@ -1,11 +1,11 @@
 package com.example.familyscheduler.domain.routine
 
-import java.time.DayOfWeek
+import java.time.LocalDate
 import java.time.LocalTime
 
 data class ChildCareBlock(
-    val eventId: String,
-    val daysOfWeek: Set<DayOfWeek>,
+    val id: String,
+    val date: LocalDate,
     val startTime: LocalTime,
     val endTime: LocalTime,
     val label: ChildCareLabel? = null,

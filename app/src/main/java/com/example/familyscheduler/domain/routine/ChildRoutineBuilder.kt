@@ -13,11 +13,32 @@ class ChildRoutineBuilder {
 
         val blocks = buildBlocks(routines, date)
 
-        val dropEvents = buildDropEvents(routines, date)
-        val pickupEvents = buildPickupEvents(routines, date)
-        val events = dropEvents.values + pickupEvents.values
+        val dropEvents = buildEvents(
+            routines = routines,
+            date = date,
+            timeSelector = { it.nurseryStart },
+            earliestSelector = { it.nurseryStartEarliest },
+            latestSelector = { it.nurseryStartLatest },
+            label = ChildCareLabel.NURSERY_DROP_OFF,
+            idPrefix = "DROP"
+        )
 
-        return RoutineResult(blocks + events.toBlocks(date), events)
+        val pickupEvents = buildEvents(
+            routines = routines,
+            date = date,
+            timeSelector = { it.nurseryEnd },
+            earliestSelector = { it.nurseryEndEarliest },
+            latestSelector = { it.nurseryEndLatest },
+            label = ChildCareLabel.NURSERY_PICKUP,
+            idPrefix = "PICKUP"
+        )
+
+        val events = dropEvents + pickupEvents
+
+        return RoutineResult(
+            blocks = blocks + events.toBlocks(date),
+            events = events
+        )
     }
 
     private fun buildBlocks(
@@ -25,9 +46,7 @@ class ChildRoutineBuilder {
         date: LocalDate
     ): List<ChildCareBlock> {
 
-        val blocks = mutableListOf<ChildCareBlock>()
-
-        for (start in TimeAxis.all) {
+        return TimeAxis.all.mapNotNull { start ->
 
             val end = start.plusMinutes(TimeAxis.stepMinutes.toLong())
 
@@ -37,84 +56,52 @@ class ChildRoutineBuilder {
                     return@count false
                 }
 
-                val needsCare =
-                    start >= child.wakeUpTime &&
-                            start <= child.sleepTime && // 拡張要素：寝かしつけのイベント化
-                            (
-                                    child.todayRoutine == ChildTodayRoutine.HOME ||
-                                            start < child.nurseryStart ||
-                                            start > child.nurseryEnd // 拡張要素：child.nurseryEnd + (dropOffSteps - 1) * TimeAxis.stepMinutes
-                                    )
-
-                needsCare
+                start >= child.wakeUpTime &&
+                        start <= child.sleepTime &&                 // 拡張要素：寝かしつけのイベント化 → start < child.sleepTimeに修正
+                        (
+                                child.todayRoutine == ChildTodayRoutine.HOME ||
+                                        start < child.nurseryStart ||
+                                        start > child.nurseryEnd    // 拡張要素：child.nurseryEnd + (dropOffSteps - 1) * TimeAxis.stepMinutes
+                                )
             }
 
-            if (activeChildren > 0) {
-                blocks += ChildCareBlock(
-                    eventId = "CHILDCARE_${date}_${start}",
-                    daysOfWeek = setOf(date.dayOfWeek),
-                    startTime = start,
-                    endTime = end,
-                    activeChildrenCount = activeChildren
-                )
+            if (activeChildren == 0) {
+                return@mapNotNull null
             }
+
+            ChildCareBlock(
+                id = "CHILDCARE_${date}_${start}",
+                date = date,
+                startTime = start,
+                endTime = end,
+                activeChildrenCount = activeChildren
+            )
         }
-
-        return blocks
     }
 
-    private fun buildDropEvents(
+    private fun buildEvents(
         routines: List<ResolvedChildRoutine>,
-        date: LocalDate
-    ): Map<LocalTime, ChildCareEvent> {
+        date: LocalDate,
+        timeSelector: (ResolvedChildRoutine) -> LocalTime,
+        earliestSelector: (ResolvedChildRoutine) -> LocalTime,
+        latestSelector: (ResolvedChildRoutine) -> LocalTime,
+        label: ChildCareLabel,
+        idPrefix: String
+    ): List<ChildCareEvent> {
 
         return routines
             .filter { it.todayRoutine == ChildTodayRoutine.NURSERY }
-            .groupBy { it.nurseryStart }
-            .mapValues { (time, group) ->
-
-                val childIds = group.map { it.childId }
-                val eventId = "DROP_${date}_${time}"
-                val duration = TimeAxis.stepMinutes // 拡張要素：dropOffSteps * TimeAxis.stepMinutes
-                val earliest = group.maxOf { it.nurseryStartEarliest }
-                val latest = group.minOf { it.nurseryStartLatest }
+            .groupBy(timeSelector)
+            .map { (time, group) ->
 
                 ChildCareEvent(
-                    eventId = eventId,
+                    eventId = "${idPrefix}_${date}_$time",
                     time = time,
-                    duration = duration,
-                    label = ChildCareLabel.NURSERY_DROP_OFF,
-                    flexEarliest = earliest,
-                    flexLatest = latest,
-                    childIds = childIds
-                )
-            }
-    }
-
-    private fun buildPickupEvents(
-        routines: List<ResolvedChildRoutine>,
-        date: LocalDate
-    ): Map<LocalTime, ChildCareEvent> {
-
-        return routines
-            .filter { it.todayRoutine == ChildTodayRoutine.NURSERY }
-            .groupBy { it.nurseryEnd }
-            .mapValues { (time, group) ->
-
-                val childIds = group.map { it.childId }
-                val eventId = "PICKUP_${date}_${time}"
-                val duration = TimeAxis.stepMinutes // 拡張要素：pickupSteps * TimeAxis.stepMinutes
-                val earliest = group.maxOf { it.nurseryEndEarliest }
-                val latest = group.minOf { it.nurseryEndLatest }
-
-                ChildCareEvent(
-                    eventId = eventId,
-                    time = time,
-                    duration = duration,
-                    label = ChildCareLabel.NURSERY_PICKUP,
-                    flexEarliest = earliest,
-                    flexLatest = latest,
-                    childIds = childIds
+                    duration = TimeAxis.stepMinutes,    // 拡張要素：dropOffSteps(or pickupSteps) * TimeAxis.stepMinutes
+                    label = label,
+                    flexEarliest = group.maxOf(earliestSelector),
+                    flexLatest = group.minOf(latestSelector),
+                    childIds = group.map { it.childId }
                 )
             }
     }
@@ -123,12 +110,11 @@ class ChildRoutineBuilder {
         date: LocalDate
     ): List<ChildCareBlock> {
 
-        val blocks = mutableListOf<ChildCareBlock>()
+        return map { event ->
 
-        forEach { event ->
-            blocks += ChildCareBlock(
-                eventId = event.eventId,
-                daysOfWeek = setOf(date.dayOfWeek),
+            ChildCareBlock(
+                id = event.eventId,
+                date = date,
                 startTime = event.time,
                 endTime = event.time.plusMinutes(event.duration.toLong()),
                 label = event.label,
@@ -137,7 +123,5 @@ class ChildRoutineBuilder {
                 activeChildrenCount = event.childIds.size
             )
         }
-
-        return blocks
     }
 }

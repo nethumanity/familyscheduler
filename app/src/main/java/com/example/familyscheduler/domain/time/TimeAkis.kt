@@ -22,6 +22,13 @@ object TimeAxis {
         return index
     }
 
+    fun distance(
+        from: LocalTime,
+        to: LocalTime
+    ): Int {
+        return indexOf(to) - indexOf(from)
+    }
+
     val indices: IntRange
         get() = all.indices
 
