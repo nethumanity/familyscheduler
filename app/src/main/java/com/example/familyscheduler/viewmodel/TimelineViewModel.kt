@@ -417,7 +417,7 @@ class TimelineViewModel(
                     false
                 }
 
-            val next = current.next(reverseAssignable)
+            val next = current.next(reverseAssignable, rule.source.semantics)
 
             Log.d("override", "current=$current next=$next")
 

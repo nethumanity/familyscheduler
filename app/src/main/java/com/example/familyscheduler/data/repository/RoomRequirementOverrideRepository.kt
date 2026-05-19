@@ -19,16 +19,7 @@ class RoomRequirementOverrideRepository(
     }
 
     override suspend fun replace(override: RequirementOverride) {
-
-        val entity = RequirementOverrideMapper.toEntity(override)
-
-        dao.deleteByRuleDateType(
-            ruleId = entity.ruleId,
-            date = entity.date,
-            type = entity.type
-        )
-
-        dao.insert(entity)
+        dao.insert(RequirementOverrideMapper.toEntity(override))
     }
 
     override suspend fun deleteAllByRuleId(ruleId: String) {

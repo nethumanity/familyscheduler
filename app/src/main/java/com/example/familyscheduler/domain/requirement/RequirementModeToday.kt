@@ -7,8 +7,22 @@ enum class RequirementModeToday {
     REVERSE;         // 割り当てを配偶者に変更（条件あり）
 
     fun next(
-        reverseAssignable: Boolean
+        reverseAssignable: Boolean,
+        semantics: RequirementSemantics
     ): RequirementModeToday {
+
+        if (semantics == RequirementSemantics.EVENT) {
+
+            return if (reverseAssignable) {
+                when (this) {
+                    AUTO -> REVERSE
+                    REVERSE -> AUTO
+                    CANCELED -> AUTO
+                }
+            } else {
+                AUTO
+            }
+        }
 
         return if (reverseAssignable) {
             when (this) {

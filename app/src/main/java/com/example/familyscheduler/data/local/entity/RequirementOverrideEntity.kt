@@ -1,13 +1,12 @@
 package com.example.familyscheduler.data.local.entity
 
 import androidx.room.Entity
-import androidx.room.PrimaryKey
 
-@Entity(tableName = "requirement_overrides")
+@Entity(
+    tableName = "requirement_overrides",
+    primaryKeys = ["ruleId", "date", "type"]
+)
 data class RequirementOverrideEntity(
-
-    @PrimaryKey(autoGenerate = true)
-    val id: Long = 0,
 
     val ruleId: String,
     val date: String,
