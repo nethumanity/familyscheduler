@@ -39,7 +39,7 @@ fun WarningDialog(
 ) {
     val pagerState = rememberPagerState(
         initialPage = initialPage,
-        pageCount = { evaluation?.reasons?.size ?: 0 }
+        pageCount = { evaluation.reasons.size ?: 0 }
     )
     val currentReason = evaluation.reasons.getOrNull(pagerState.currentPage)
     val hasProposal = currentReason?.proposals?.isNotEmpty() == true

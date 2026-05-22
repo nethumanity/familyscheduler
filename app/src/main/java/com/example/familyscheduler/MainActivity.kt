@@ -44,6 +44,7 @@ import com.example.familyscheduler.data.repository.RoomHouseholdRequirementRepos
 import com.example.familyscheduler.data.repository.RoomRequirementOverrideRepository
 import com.example.familyscheduler.data.repository.RoomRoutineShiftOverrideRepository
 import com.example.familyscheduler.data.repository.RoomTemplateRepository
+import com.example.familyscheduler.domain.interaction.ReverseAssignableBlockBuilder
 import com.example.familyscheduler.domain.person.Person
 import com.example.familyscheduler.domain.requirement.RequirementBuilder
 import com.example.familyscheduler.domain.routine.CareCapacityCalculator
@@ -131,6 +132,7 @@ fun MainScreen() {
             allowedPersons = Person.values().toList()
         ),
         requirementBuilder = RequirementBuilder(),
+        reverseBlockBuilder = ReverseAssignableBlockBuilder(),
         settingsRepository = settingsRepository
     )
 
