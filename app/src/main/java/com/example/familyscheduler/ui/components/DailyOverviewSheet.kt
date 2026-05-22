@@ -143,6 +143,23 @@ fun DailyOverviewSheet(
         }
 
         // =========================
+        // 育児担当切替
+        // =========================
+        if (uiState.reverseBlocks.isNotEmpty()) {
+            item {
+                Spacer(Modifier.height(8.dp))
+                Text("👥 育児担当切替", fontWeight = FontWeight.Bold)
+            }
+            items(uiState.reverseBlocks) { block ->
+
+                ReverseAssignableBlockRow(
+                    block = block,
+                    onReverse = { viewModel.toggleReverse(block) }
+                )
+            }
+        }
+
+        // =========================
         // 予定一覧
         // =========================
         item {

@@ -102,7 +102,7 @@ object AvailabilityEngine {
         return validPersons.size >= req.requiredCount
     }
 
-    private fun canAssignToSlot(
+    fun canAssignToSlot(
         req: HouseholdRequirement,
         slot: TimeSlot
     ): Boolean {

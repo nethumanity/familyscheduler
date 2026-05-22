@@ -2,6 +2,7 @@ package com.example.familyscheduler.viewmodel.Factory
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import com.example.familyscheduler.domain.interaction.ReverseAssignableBlockBuilder
 import com.example.familyscheduler.domain.requirement.RequirementBuilder
 import com.example.familyscheduler.domain.requirement.repository.HouseholdRequirementRepository
 import com.example.familyscheduler.domain.requirement.repository.RequirementOverrideRepository
@@ -28,6 +29,7 @@ class TimelineViewModelFactory(
     private val childRoutineBuilder: ChildRoutineBuilder,
     private val childCareRuleConverter: ChildCareRuleConverter,
     private val requirementBuilder: RequirementBuilder,
+    private val reverseBlockBuilder: ReverseAssignableBlockBuilder,
     private val settingsRepository: SettingsRepository
 ) : ViewModelProvider.Factory {
 
@@ -49,6 +51,7 @@ class TimelineViewModelFactory(
                 childRoutineBuilder = childRoutineBuilder,
                 childCareRuleConverter = childCareRuleConverter,
                 requirementBuilder = requirementBuilder,
+                reverseBlockBuilder = reverseBlockBuilder,
                 settingsRepository = settingsRepository
             ) as T
         }

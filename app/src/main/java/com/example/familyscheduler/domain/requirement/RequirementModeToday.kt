@@ -11,7 +11,10 @@ enum class RequirementModeToday {
         semantics: RequirementSemantics
     ): RequirementModeToday {
 
-        if (semantics == RequirementSemantics.EVENT) {
+        if (
+            semantics == RequirementSemantics.EVENT ||
+            semantics == RequirementSemantics.STATE
+        ) {
 
             return if (reverseAssignable) {
                 when (this) {

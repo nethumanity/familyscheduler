@@ -7,12 +7,15 @@ import com.example.familyscheduler.domain.evaluation.AvailabilityEngine
 import com.example.familyscheduler.domain.evaluation.AvailabilityEvaluation
 import com.example.familyscheduler.domain.evaluation.AvailabilityState
 import com.example.familyscheduler.domain.evaluation.FlexResolveProposal
+import com.example.familyscheduler.domain.interaction.ReverseAssignableBlock
+import com.example.familyscheduler.domain.interaction.ReverseAssignableBlockBuilder
 import com.example.familyscheduler.domain.person.Person
 import com.example.familyscheduler.domain.requirement.HouseholdRequirement
 import com.example.familyscheduler.domain.requirement.HouseholdRequirementRule
 import com.example.familyscheduler.domain.requirement.RequirementBuilder
 import com.example.familyscheduler.domain.requirement.RequirementModeToday
 import com.example.familyscheduler.domain.requirement.RequirementOverride
+import com.example.familyscheduler.domain.requirement.RequirementSemantics
 import com.example.familyscheduler.domain.requirement.RequirementShiftOverride
 import com.example.familyscheduler.domain.requirement.RequirementSource
 import com.example.familyscheduler.domain.requirement.RequirementToggleOverride
@@ -66,6 +69,7 @@ class TimelineViewModel(
     private val childRoutineBuilder: ChildRoutineBuilder,
     private val childCareRuleConverter: ChildCareRuleConverter,
     private val requirementBuilder: RequirementBuilder,
+    private val reverseBlockBuilder: ReverseAssignableBlockBuilder,
     private val settingsRepository: SettingsRepository
 ) : ViewModel() {
 
@@ -92,7 +96,8 @@ class TimelineViewModel(
         val evaluationsByIndex: Map<Int, AvailabilityEvaluation>,
         val requirements: List<HouseholdRequirement>,
         val rules: List<HouseholdRequirementRule>,
-        val settings: SettingsUiState
+        val settings: SettingsUiState,
+        val reverseBlocks: List<ReverseAssignableBlock>
     )
 
     private val _currentDate = MutableStateFlow(LocalDate.now())
@@ -114,7 +119,8 @@ class TimelineViewModel(
             evaluationsByIndex = emptyMap(),
             requirements = emptyList(),
             rules = emptyList(),
-            settings = SettingsUiState()
+            settings = SettingsUiState(),
+            reverseBlocks = emptyList()
         )
     )
     val uiState: StateFlow<TimelineUiState> = _uiState
@@ -348,6 +354,13 @@ class TimelineViewModel(
         val slotsByPersonIndex = result.slots.associateBy { it.person to it.index }
         val evaluationsByIndex = result.evaluations.associateBy { it.index }
 
+        val reverseBlocks =
+            reverseBlockBuilder.build(
+                requirements,
+                slotsByIndex,
+                slotsByPersonIndex
+            )
+
         return TimelineUiState(
             date = date,
             templates = templates,
@@ -363,29 +376,35 @@ class TimelineViewModel(
             evaluationsByIndex = evaluationsByIndex,
             requirements = requirements,
             rules = mergedRules,
-            settings = settings
+            settings = settings,
+            reverseBlocks = reverseBlocks
         )
     }
 
-    fun getAssignedPersons(ruleId: String): List<Person> {
+    //編集機能（状態変更）
+    fun toggleReverse(block: ReverseAssignableBlock) {
+        viewModelScope.launch {
+            block.requirementIds.forEach { id ->
+                val current = resolveMode(
+                    id = id,
+                    overrides = _uiState.value.overrides
+                )
+                val next = current.next(
+                    reverseAssignable = true,
+                    semantics = RequirementSemantics.STATE
+                )
 
-        val req = _uiState.value.requirements
-            .filterIsInstance<TimeRangeHouseholdRequirement>()
-            .firstOrNull { it.sourceRuleId == ruleId }
-            ?: return emptyList()
-
-        val slotsAtIndex = _uiState.value.slotsByIndex[req.startIndex].orEmpty()
-
-        return slotsAtIndex
-            .filter {
-                it.state == req.targetState &&
-                        it.person in req.allowedPersons &&
-                        req.sourceRuleId in it.taskIds
+                requirementOverrideRepository.replace(
+                    override = RequirementToggleOverride(
+                        ruleId = id,
+                        date = _currentDate.value,
+                        mode = next
+                    )
+                )
             }
-            .map { it.person }
+        }
     }
 
-    //編集機能（状態変更）
     fun toggleRequirementMode(
         rule: HouseholdRequirementRule,
         req: TimeRangeHouseholdRequirement?
@@ -419,8 +438,6 @@ class TimelineViewModel(
 
             val next = current.next(reverseAssignable, rule.source.semantics)
 
-            Log.d("override", "current=$current next=$next")
-
             requirementOverrideRepository.replace(
                 override = RequirementToggleOverride(
                     ruleId = rule.id,
@@ -444,6 +461,19 @@ class TimelineViewModel(
             }
 
         return RequirementModeToday.AUTO
+    }
+
+    fun getAssignedPersons(ruleId: String): List<Person> {
+
+        val req = _uiState.value.requirements
+            .filterIsInstance<TimeRangeHouseholdRequirement>()
+            .firstOrNull { it.sourceRuleId == ruleId }
+            ?: return emptyList()
+
+        return reverseBlockBuilder.findAssignedPersons(
+            req = req,
+            slotsByIndex = _uiState.value.slotsByIndex
+        )
     }
 
     fun startEditRequirement(ruleId: String) {
