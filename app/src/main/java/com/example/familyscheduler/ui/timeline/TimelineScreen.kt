@@ -46,7 +46,7 @@ import com.example.familyscheduler.domain.person.Person
 import com.example.familyscheduler.domain.time.TimeAxis
 import com.example.familyscheduler.ui.components.SlotStateSelectionSheet
 import com.example.familyscheduler.ui.components.WarningDialog
-import com.example.familyscheduler.ui.utilities.slotStateColor
+import com.example.familyscheduler.ui.presentation.SlotStatePresentation
 import com.example.familyscheduler.viewmodel.TimelineViewModel
 
 @Composable
@@ -182,7 +182,7 @@ fun TimelineScreen(
                                 .fillMaxHeight()
                                 .background(
                                     slot?.let {
-                                        slotStateColor(it.state)
+                                        SlotStatePresentation.color(it.state)
                                     } ?: Color.LightGray
                                 )
                                 .border(0.5.dp, Color.DarkGray),

@@ -12,7 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.example.familyscheduler.ui.utilities.DayOfWeekUtilities
+import com.example.familyscheduler.ui.presentation.DayOfWeekPresentation
 import java.time.DayOfWeek
 
 @Composable
@@ -61,7 +61,7 @@ fun DaysOfWeekSection(
                         selected = selected,
                         onClick = { onToggleDay(day) },
                         label = {
-                            Text(text = DayOfWeekUtilities.short(day), color = color)
+                            Text(text = DayOfWeekPresentation.short(day), color = color)
                         }
                     )
                 }

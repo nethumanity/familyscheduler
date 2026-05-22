@@ -14,7 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.familyscheduler.domain.evaluation.FlexResolveProposal
-import com.example.familyscheduler.ui.utilities.renderFlexProposal
+import com.example.familyscheduler.ui.presentation.renderFlexProposal
 
 @Composable
 fun ProposalRow(

@@ -1,4 +1,4 @@
-package com.example.familyscheduler.ui.utilities
+package com.example.familyscheduler.ui.event
 
 sealed class UiEvent {
 

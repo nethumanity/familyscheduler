@@ -27,7 +27,7 @@ import androidx.compose.ui.unit.dp
 import com.example.familyscheduler.domain.evaluation.AvailabilityEvaluation
 import com.example.familyscheduler.domain.evaluation.FlexResolveProposal
 import com.example.familyscheduler.domain.time.TimeAxis
-import com.example.familyscheduler.ui.utilities.renderMissingReason
+import com.example.familyscheduler.ui.presentation.renderMissingReason
 
 @Composable
 fun WarningDialog(

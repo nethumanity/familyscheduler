@@ -2,8 +2,8 @@ package com.example.familyscheduler.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.familyscheduler.ui.utilities.SettingsUiState
-import com.example.familyscheduler.ui.utilities.repository.SettingsRepository
+import com.example.familyscheduler.ui.state.SettingsUiState
+import com.example.familyscheduler.ui.state.repository.SettingsRepository
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 

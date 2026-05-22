@@ -1,10 +1,11 @@
-package com.example.familyscheduler.ui.utilities
+package com.example.familyscheduler.ui.presentation
 
 import com.example.familyscheduler.domain.evaluation.FlexResolveProposal
 import com.example.familyscheduler.domain.evaluation.MissingReason
 import com.example.familyscheduler.domain.person.Person
 import com.example.familyscheduler.domain.slot.SlotState
 import com.example.familyscheduler.domain.time.TimeAxis
+import kotlin.math.abs
 
 fun renderBlockingPersons(reason: MissingReason): String {
     val persons = reason.blockingPersons.person
@@ -38,7 +39,7 @@ fun renderMissingReason(reason: MissingReason): String {
         reason.requirementName
             .takeIf { it.isNotBlank() }
             ?.take(15)
-            ?: slotStateLabel(SlotState.CHILDCARE)
+            ?: SlotStatePresentation.label(SlotState.CHILDCARE)
 
     return "${personsText}は${requirementText}の予定ですが、他の予定と重複しています"
 }
@@ -55,5 +56,5 @@ fun renderFlexProposal(proposal: FlexResolveProposal): String {
 
     val direction = if (minutes > 0) "後ろに" else "前に"
 
-    return "$persons の ${proposal.requirementName.take(15)} を ${kotlin.math.abs(minutes)}分$direction ずらす"
+    return "$persons の ${proposal.requirementName.take(15)} を ${abs(minutes)}分$direction ずらす"
 }

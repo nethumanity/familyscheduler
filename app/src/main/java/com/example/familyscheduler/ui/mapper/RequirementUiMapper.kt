@@ -1,4 +1,4 @@
-package com.example.familyscheduler.ui.utilities
+package com.example.familyscheduler.ui.mapper
 
 import com.example.familyscheduler.domain.requirement.HouseholdRequirement
 import com.example.familyscheduler.domain.requirement.HouseholdRequirementRule
@@ -9,6 +9,7 @@ import com.example.familyscheduler.domain.requirement.TimeRangeHouseholdRequirem
 import com.example.familyscheduler.domain.routine.ChildCareEvent
 import com.example.familyscheduler.domain.routine.RoutineShiftOverride
 import com.example.familyscheduler.domain.time.TimeAxis
+import com.example.familyscheduler.ui.utilities.RequirementUiModel
 import com.example.familyscheduler.viewmodel.TimelineViewModel
 import java.time.LocalDate
 

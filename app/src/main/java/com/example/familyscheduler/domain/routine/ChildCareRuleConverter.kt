@@ -7,7 +7,7 @@ import com.example.familyscheduler.domain.slot.FlexWindowParameters
 import com.example.familyscheduler.domain.slot.SlotState
 import com.example.familyscheduler.domain.time.TimeAxis
 import com.example.familyscheduler.domain.time.TimeRange
-import com.example.familyscheduler.ui.utilities.SettingsUiState
+import com.example.familyscheduler.ui.state.SettingsUiState
 
 class ChildCareRuleConverter(
     private val capacityCalculator: CareCapacityCalculator,

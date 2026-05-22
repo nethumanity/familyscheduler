@@ -13,7 +13,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.familyscheduler.domain.person.Person
 import com.example.familyscheduler.domain.slot.SlotState
-import com.example.familyscheduler.ui.utilities.slotStateLabel
+import com.example.familyscheduler.ui.presentation.SlotStatePresentation
 import java.time.LocalTime
 
 @Composable
@@ -37,7 +37,7 @@ fun SlotStateSelectionSheet(
         SlotState.selectionSheetAllowedState
             .forEach { state ->
                 Text(
-                    text = slotStateLabel(state),
+                    text = SlotStatePresentation.label(state),
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { onSelect(state) }

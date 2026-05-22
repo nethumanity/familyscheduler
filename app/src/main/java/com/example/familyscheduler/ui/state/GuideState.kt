@@ -1,4 +1,4 @@
-package com.example.familyscheduler.ui.utilities
+package com.example.familyscheduler.ui.state
 
 data class GuideState(
     val showFatherHint: Boolean = true,

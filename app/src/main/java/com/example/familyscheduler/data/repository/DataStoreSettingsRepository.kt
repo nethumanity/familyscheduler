@@ -4,8 +4,8 @@ import android.content.Context
 import androidx.datastore.preferences.core.edit
 import com.example.familyscheduler.data.local.datastore.SettingsKeys
 import com.example.familyscheduler.data.local.datastore.settingsDataStore
-import com.example.familyscheduler.ui.utilities.SettingsUiState
-import com.example.familyscheduler.ui.utilities.repository.SettingsRepository
+import com.example.familyscheduler.ui.state.SettingsUiState
+import com.example.familyscheduler.ui.state.repository.SettingsRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted

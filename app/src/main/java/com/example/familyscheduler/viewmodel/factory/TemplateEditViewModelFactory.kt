@@ -1,4 +1,4 @@
-package com.example.familyscheduler.viewmodel.Factory
+package com.example.familyscheduler.viewmodel.factory
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider

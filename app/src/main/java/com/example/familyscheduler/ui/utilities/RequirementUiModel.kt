@@ -12,4 +12,3 @@ data class RequirementUiModel(
     val canEdit: Boolean,
     val isProposalApplied: Boolean = false
 )
-

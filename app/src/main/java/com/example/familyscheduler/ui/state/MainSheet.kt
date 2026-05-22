@@ -1,4 +1,4 @@
-package com.example.familyscheduler.ui.manager
+package com.example.familyscheduler.ui.state
 
 import com.example.familyscheduler.domain.person.Person
 

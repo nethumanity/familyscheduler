@@ -1,6 +1,6 @@
-package com.example.familyscheduler.ui.utilities.repository
+package com.example.familyscheduler.ui.state.repository
 
-import com.example.familyscheduler.ui.utilities.SettingsUiState
+import com.example.familyscheduler.ui.state.SettingsUiState
 import kotlinx.coroutines.flow.StateFlow
 
 interface SettingsRepository {

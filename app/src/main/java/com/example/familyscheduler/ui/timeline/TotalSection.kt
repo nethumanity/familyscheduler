@@ -19,7 +19,8 @@ import com.example.familyscheduler.domain.person.Person
 import com.example.familyscheduler.domain.slot.SlotState
 import com.example.familyscheduler.domain.slot.TimeSlot
 import com.example.familyscheduler.domain.time.TimeAxis
-import com.example.familyscheduler.ui.utilities.slotStateColor
+import com.example.familyscheduler.ui.presentation.LocalePresentation
+import com.example.familyscheduler.ui.presentation.SlotStatePresentation
 
 @Composable
 fun TotalSection(slots: List<TimeSlot>) {
@@ -28,9 +29,7 @@ fun TotalSection(slots: List<TimeSlot>) {
 
     val stepMinutes = TimeAxis.stepMinutes
 
-    fun formatHours(hours: Double): String {
-        return String.format("%.1f時間", hours)
-    }
+
 
     Column {
 
@@ -49,19 +48,23 @@ fun TotalSection(slots: List<TimeSlot>) {
                     Box(
                         modifier = Modifier
                             .size(10.dp)
-                            .background(slotStateColor(state))
+                            .background(SlotStatePresentation.color(state))
                     )
                     Spacer(Modifier.width(4.dp))
-                    Text(formatHours(fatherHours), fontSize = 11.sp)
+                    Text(
+                        text = LocalePresentation.formatHours(fatherHours),
+                        fontSize = 11.sp,
+                        color = Color.DarkGray
+                    )
                     Spacer(Modifier.width(120.dp))
                     Box(
                         modifier = Modifier
                             .size(10.dp)
-                            .background(slotStateColor(state))
+                            .background(SlotStatePresentation.color(state))
                     )
                     Spacer(Modifier.width(4.dp))
                     Text(
-                        text = formatHours(motherHours),
+                        text = LocalePresentation.formatHours(motherHours),
                         fontSize = 11.sp,
                         color = Color.DarkGray
                     )

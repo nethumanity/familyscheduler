@@ -14,7 +14,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import com.example.familyscheduler.domain.slot.SlotState
-import com.example.familyscheduler.ui.utilities.labelForInput
+import com.example.familyscheduler.ui.presentation.SlotStatePresentation
 
 @Composable
 fun TaskSection(
@@ -62,7 +62,7 @@ fun TaskSection(
                             onClick = { onTargetStateChange(state) }
                         )
 
-                        Text(labelForInput(state))
+                        Text(SlotStatePresentation.labelForInput(state))
                     }
                 }
             }

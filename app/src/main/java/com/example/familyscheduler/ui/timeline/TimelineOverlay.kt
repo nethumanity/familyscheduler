@@ -10,7 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.example.familyscheduler.domain.slot.TimeSlot
-import com.example.familyscheduler.ui.utilities.SettingsUiState
+import com.example.familyscheduler.ui.state.SettingsUiState
 
 @Composable
 fun TimelineOverlay(

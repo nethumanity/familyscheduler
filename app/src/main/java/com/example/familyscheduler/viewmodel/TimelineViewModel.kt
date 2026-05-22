@@ -41,12 +41,12 @@ import com.example.familyscheduler.domain.schedule.repository.TemplateRepository
 import com.example.familyscheduler.domain.slot.SlotState
 import com.example.familyscheduler.domain.slot.TimeSlot
 import com.example.familyscheduler.domain.time.TimeAxis
-import com.example.familyscheduler.ui.utilities.EditingTarget
-import com.example.familyscheduler.ui.utilities.GuideState
+import com.example.familyscheduler.ui.state.EditingTarget
+import com.example.familyscheduler.ui.state.GuideState
 import com.example.familyscheduler.ui.utilities.RequirementUndoPayload
-import com.example.familyscheduler.ui.utilities.SettingsUiState
-import com.example.familyscheduler.ui.utilities.UiEvent
-import com.example.familyscheduler.ui.utilities.repository.SettingsRepository
+import com.example.familyscheduler.ui.state.SettingsUiState
+import com.example.familyscheduler.ui.event.UiEvent
+import com.example.familyscheduler.ui.state.repository.SettingsRepository
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

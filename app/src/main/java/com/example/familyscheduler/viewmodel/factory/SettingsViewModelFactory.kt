@@ -1,8 +1,8 @@
-package com.example.familyscheduler.viewmodel.Factory
+package com.example.familyscheduler.viewmodel.factory
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import com.example.familyscheduler.ui.utilities.repository.SettingsRepository
+import com.example.familyscheduler.ui.state.repository.SettingsRepository
 import com.example.familyscheduler.viewmodel.SettingsViewModel
 
 class SettingsViewModelFactory(

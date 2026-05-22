@@ -30,10 +30,10 @@ import com.example.familyscheduler.domain.evaluation.AvailabilityEvaluation
 import com.example.familyscheduler.domain.evaluation.AvailabilityState
 import com.example.familyscheduler.domain.requirement.TimeRangeHouseholdRequirement
 import com.example.familyscheduler.domain.time.TimeAxis
-import com.example.familyscheduler.ui.utilities.renderBlockingPersons
-import com.example.familyscheduler.ui.utilities.renderMissingReasonCount
-import com.example.familyscheduler.ui.utilities.slotStateLabel
-import com.example.familyscheduler.ui.utilities.toUiModels
+import com.example.familyscheduler.ui.mapper.toUiModels
+import com.example.familyscheduler.ui.presentation.SlotStatePresentation
+import com.example.familyscheduler.ui.presentation.renderBlockingPersons
+import com.example.familyscheduler.ui.presentation.renderMissingReasonCount
 import com.example.familyscheduler.viewmodel.TimelineViewModel
 
 @Composable
@@ -108,7 +108,7 @@ fun DailyOverviewSheet(
                         )
 
                         val nameText = if (reason.reason.requirementName == "") {
-                            slotStateLabel(
+                            SlotStatePresentation.label(
                                 uiState.rules.first { it.id == reason.reason.sourceRuleId }.targetState
                             )
                         } else {

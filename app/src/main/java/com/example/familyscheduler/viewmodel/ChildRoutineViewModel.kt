@@ -11,8 +11,8 @@ import com.example.familyscheduler.domain.routine.repository.RoutineToggleOverri
 import com.example.familyscheduler.domain.routine.repository.ChildRoutineRepository
 import com.example.familyscheduler.domain.routine.repository.RoutineShiftOverrideRepository
 import com.example.familyscheduler.ui.utilities.ChildRoutineUndoPayload
-import com.example.familyscheduler.ui.utilities.EditingTarget
-import com.example.familyscheduler.ui.utilities.UiEvent
+import com.example.familyscheduler.ui.state.EditingTarget
+import com.example.familyscheduler.ui.event.UiEvent
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted

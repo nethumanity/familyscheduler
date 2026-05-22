@@ -14,8 +14,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.familyscheduler.domain.slot.SlotState
-import com.example.familyscheduler.ui.utilities.slotStateColor
-import com.example.familyscheduler.ui.utilities.slotStateLabel
+import com.example.familyscheduler.ui.presentation.SlotStatePresentation
 
 
 @Composable
@@ -37,10 +36,10 @@ fun LegendSection() {
                             Box(
                                 modifier = Modifier
                                     .size(10.dp)
-                                    .background(slotStateColor(state))
+                                    .background(SlotStatePresentation.color(state))
                             )
                             Text(
-                                text = slotStateLabel(state),
+                                text = SlotStatePresentation.label(state),
                                 fontSize = 11.sp,
                                 color = Color.DarkGray
                             )
