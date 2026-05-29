@@ -37,14 +37,14 @@ import androidx.navigation.compose.rememberNavController
 import androidx.room.Room
 import com.example.familyscheduler.data.local.AppDatabase
 import com.example.familyscheduler.data.repository.DataStoreSettingsRepository
-import com.example.familyscheduler.data.repository.RoomRoutineToggleOverrideRepository
 import com.example.familyscheduler.data.repository.RoomChildRoutineRepository
 import com.example.familyscheduler.data.repository.RoomDailyStateRepository
 import com.example.familyscheduler.data.repository.RoomHouseholdRequirementRepository
 import com.example.familyscheduler.data.repository.RoomRequirementOverrideRepository
 import com.example.familyscheduler.data.repository.RoomRoutineShiftOverrideRepository
+import com.example.familyscheduler.data.repository.RoomRoutineToggleOverrideRepository
 import com.example.familyscheduler.data.repository.RoomTemplateRepository
-import com.example.familyscheduler.domain.interaction.ReverseAssignableBlockBuilder
+import com.example.familyscheduler.domain.interaction.TimelineBlockBuilder
 import com.example.familyscheduler.domain.person.Person
 import com.example.familyscheduler.domain.requirement.RequirementBuilder
 import com.example.familyscheduler.domain.routine.CareCapacityCalculator
@@ -55,6 +55,7 @@ import com.example.familyscheduler.ui.components.ChildListSheet
 import com.example.familyscheduler.ui.components.DailyOverviewSheet
 import com.example.familyscheduler.ui.components.SettingsScreen
 import com.example.familyscheduler.ui.components.TemplateSheet
+import com.example.familyscheduler.ui.event.UiEvent
 import com.example.familyscheduler.ui.inputs.AddTaskScreen
 import com.example.familyscheduler.ui.inputs.ChildRoutineInputScreen
 import com.example.familyscheduler.ui.inputs.ScheduleInputScreen
@@ -63,19 +64,18 @@ import com.example.familyscheduler.ui.theme.FamilySchedulerTheme
 import com.example.familyscheduler.ui.timeline.FooterBar
 import com.example.familyscheduler.ui.timeline.HeaderBar
 import com.example.familyscheduler.ui.timeline.TimelineScreen
-import com.example.familyscheduler.ui.event.UiEvent
 import com.example.familyscheduler.viewmodel.ChildRoutineViewModel
+import com.example.familyscheduler.viewmodel.OneTimeTaskViewModel
+import com.example.familyscheduler.viewmodel.SettingsViewModel
+import com.example.familyscheduler.viewmodel.TemplateEditViewModel
+import com.example.familyscheduler.viewmodel.TimelineViewModel
+import com.example.familyscheduler.viewmodel.WeeklyTaskViewModel
 import com.example.familyscheduler.viewmodel.factory.ChildRoutineViewModelFactory
 import com.example.familyscheduler.viewmodel.factory.OneTimeTaskViewModelFactory
 import com.example.familyscheduler.viewmodel.factory.SettingsViewModelFactory
 import com.example.familyscheduler.viewmodel.factory.TemplateEditViewModelFactory
 import com.example.familyscheduler.viewmodel.factory.TimelineViewModelFactory
 import com.example.familyscheduler.viewmodel.factory.WeeklyTaskViewModelFactory
-import com.example.familyscheduler.viewmodel.OneTimeTaskViewModel
-import com.example.familyscheduler.viewmodel.SettingsViewModel
-import com.example.familyscheduler.viewmodel.TemplateEditViewModel
-import com.example.familyscheduler.viewmodel.TimelineViewModel
-import com.example.familyscheduler.viewmodel.WeeklyTaskViewModel
 import kotlinx.coroutines.flow.merge
 import java.time.LocalDate
 
@@ -129,10 +129,10 @@ fun MainScreen() {
         childRoutineBuilder = ChildRoutineBuilder(),
         childCareRuleConverter = ChildCareRuleConverter(
             capacityCalculator = CareCapacityCalculator(),
-            allowedPersons = Person.values().toList()
+            allowedPersons = Person.entries.toList()
         ),
         requirementBuilder = RequirementBuilder(),
-        reverseBlockBuilder = ReverseAssignableBlockBuilder(),
+        timelineBlockBuilder = TimelineBlockBuilder(),
         settingsRepository = settingsRepository
     )
 

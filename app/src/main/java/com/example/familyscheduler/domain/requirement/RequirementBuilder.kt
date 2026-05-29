@@ -35,9 +35,9 @@ class RequirementBuilder {
 
                 RequirementModeToday.CANCELED -> null
 
+                RequirementModeToday.SOLO ->  rule.copy(requiredCount = 1)
+
                 RequirementModeToday.REVERSE ->  rule
-                // 適用条件はVMのToggle関数で管理
-                // ロジックはSolverで処理
 
                 RequirementModeToday.AUTO -> rule
             }
@@ -57,7 +57,7 @@ class RequirementBuilder {
 
             if (req !is TimeRangeHouseholdRequirement) return@map req
 
-            val ruleId = req.sourceRuleId ?: return@map req
+            val ruleId = req.sourceRuleId
 
             val shift = shiftMap[ruleId] ?: return@map req
 

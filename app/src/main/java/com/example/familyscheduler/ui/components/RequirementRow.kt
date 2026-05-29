@@ -24,28 +24,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.example.familyscheduler.domain.requirement.RequirementModeToday
-import com.example.familyscheduler.domain.time.TimeAxis
-import com.example.familyscheduler.ui.utilities.RequirementUiModel
+import com.example.familyscheduler.ui.presentation.StateTextPresentation.baseColor
+import com.example.familyscheduler.ui.presentation.StateTextPresentation.stateColor
+import com.example.familyscheduler.ui.presentation.StateTextPresentation.stateText
+import com.example.familyscheduler.ui.projection.RequirementUiModel
 
 @Composable
 fun RequirementRow(
-    req: RequirementUiModel,
-    isWarn: Boolean,
-    count: String?,
-    assignedPersons: String,
-    onClick: () -> Unit,
+    item: RequirementUiModel,
+    onToggle: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
     onClearProposal: () -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
-
-    val baseColor = when {
-        req.mode == RequirementModeToday.CANCELED ->  Color.LightGray
-        req.isProposalApplied && req.mode != RequirementModeToday.CANCELED -> Color(0xFF1976D2)
-        else -> Color.Unspecified
-    }
 
     Row(
         modifier = Modifier
@@ -56,50 +48,35 @@ fun RequirementRow(
         Row(
             modifier = Modifier
                 .weight(1f)
-                .clickable { onClick() }
+                .clickable { onToggle() }
                 .padding(end = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                TimeAxis.all.getOrNull(req.startIndex)?.toString() ?: "--:--",
+                text = item.startText,
                 modifier = Modifier.width(60.dp),
-                color = baseColor
+                color = baseColor(item.mode, item.isProposalApplied)
             )
 
             Text(
-                text = req.name,
-                color = baseColor,
+                text = item.nameText,
+                color = baseColor(item.mode, item.isProposalApplied),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f)
             )
 
-            when (req.mode) {
-                RequirementModeToday.AUTO -> {
-                    if (!isWarn) {
-                        Text("✔ $assignedPersons", color = Color.Green)
-                    } else {
-                        Text("⚠ $count", color = Color.Red)
-                    }
-                }
-
-                RequirementModeToday.REVERSE -> {
-                    if (!isWarn) {
-                        Text("➥ $assignedPersons", color = Color.Cyan)
-                    }
-                }
-
-                RequirementModeToday.CANCELED -> {
-                    Text("キャンセル", color = Color.LightGray)
-                }
-            }
+            Text(
+                text = stateText(item.status),
+                color = stateColor(item.status)
+            )
         }
 
         Box(
             modifier = Modifier.size(32.dp),
             contentAlignment = Alignment.Center
         ) {
-            if (req.canEdit || req.isProposalApplied) {
+            if (item.canEdit || item.isProposalApplied) {
                 IconButton(
                     onClick = { expanded = true },
                     modifier = Modifier.matchParentSize()
@@ -115,7 +92,7 @@ fun RequirementRow(
                     expanded = expanded,
                     onDismissRequest = { expanded = false }
                 ) {
-                    if (req.canEdit) {
+                    if (item.canEdit) {
                         DropdownMenuItem(
                             text = { Text("編集") },
                             onClick = {
@@ -131,7 +108,7 @@ fun RequirementRow(
                             }
                         )
                     }
-                    if (req.isProposalApplied) {
+                    if (item.isProposalApplied) {
                         DropdownMenuItem(
                             text = { Text("提案の実行を取り消す") },
                             onClick = {

@@ -120,7 +120,7 @@ fun TimelineScreen(
                                     val evaluation = uiState.evaluationsByIndex[index]
 
                                     if (evaluation?.state == AvailabilityState.WARN) {
-                                        viewModel.onAvailabilityWarningClick(index, 0)
+                                        viewModel.openFirstWarningDialog(index)
                                     }
                                 },
                                 onLongPress = { offset ->
@@ -236,12 +236,9 @@ fun TimelineScreen(
 
     dialogState?.let { state ->
 
-        val evaluation = uiState.evaluationsByIndex[state.index]
-            ?: return@let
-
         WarningDialog(
             index = state.index,
-            evaluation = evaluation,
+            evaluation = state.evaluation,
             initialPage = state.reasonIndex,
             onDismiss = {
                 viewModel.dismissWarningDialog()

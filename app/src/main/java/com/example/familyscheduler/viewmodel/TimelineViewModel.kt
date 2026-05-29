@@ -5,21 +5,19 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.familyscheduler.domain.evaluation.AvailabilityEngine
 import com.example.familyscheduler.domain.evaluation.AvailabilityEvaluation
-import com.example.familyscheduler.domain.evaluation.AvailabilityState
 import com.example.familyscheduler.domain.evaluation.FlexResolveProposal
-import com.example.familyscheduler.domain.interaction.ReverseAssignableBlock
-import com.example.familyscheduler.domain.interaction.ReverseAssignableBlockBuilder
+import com.example.familyscheduler.domain.evaluation.ReasonEvaluation
+import com.example.familyscheduler.domain.interaction.TimelineBlock
+import com.example.familyscheduler.domain.interaction.TimelineBlockBuilder
 import com.example.familyscheduler.domain.person.Person
 import com.example.familyscheduler.domain.requirement.HouseholdRequirement
 import com.example.familyscheduler.domain.requirement.HouseholdRequirementRule
 import com.example.familyscheduler.domain.requirement.RequirementBuilder
-import com.example.familyscheduler.domain.requirement.RequirementModeToday
 import com.example.familyscheduler.domain.requirement.RequirementOverride
 import com.example.familyscheduler.domain.requirement.RequirementSemantics
 import com.example.familyscheduler.domain.requirement.RequirementShiftOverride
 import com.example.familyscheduler.domain.requirement.RequirementSource
 import com.example.familyscheduler.domain.requirement.RequirementToggleOverride
-import com.example.familyscheduler.domain.requirement.TimeRangeHouseholdRequirement
 import com.example.familyscheduler.domain.requirement.repository.HouseholdRequirementRepository
 import com.example.familyscheduler.domain.requirement.repository.RequirementOverrideRepository
 import com.example.familyscheduler.domain.routine.ChildCareEvent
@@ -41,12 +39,19 @@ import com.example.familyscheduler.domain.schedule.repository.TemplateRepository
 import com.example.familyscheduler.domain.slot.SlotState
 import com.example.familyscheduler.domain.slot.TimeSlot
 import com.example.familyscheduler.domain.time.TimeAxis
+import com.example.familyscheduler.ui.event.UiEvent
+import com.example.familyscheduler.ui.projection.CareStateUiModel
+import com.example.familyscheduler.ui.projection.RequirementUiModel
+import com.example.familyscheduler.ui.projection.WarningDialogKey
+import com.example.familyscheduler.ui.projection.WarningUiModel
+import com.example.familyscheduler.ui.projection.toCareStateUiModel
+import com.example.familyscheduler.ui.projection.toRequirementUiModel
+import com.example.familyscheduler.ui.projection.toWarningUiModel
 import com.example.familyscheduler.ui.state.EditingTarget
 import com.example.familyscheduler.ui.state.GuideState
-import com.example.familyscheduler.ui.utilities.RequirementUndoPayload
 import com.example.familyscheduler.ui.state.SettingsUiState
-import com.example.familyscheduler.ui.event.UiEvent
 import com.example.familyscheduler.ui.state.repository.SettingsRepository
+import com.example.familyscheduler.ui.utilities.RequirementUndoPayload
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -69,7 +74,7 @@ class TimelineViewModel(
     private val childRoutineBuilder: ChildRoutineBuilder,
     private val childCareRuleConverter: ChildCareRuleConverter,
     private val requirementBuilder: RequirementBuilder,
-    private val reverseBlockBuilder: ReverseAssignableBlockBuilder,
+    private val timelineBlockBuilder: TimelineBlockBuilder,
     private val settingsRepository: SettingsRepository
 ) : ViewModel() {
 
@@ -78,7 +83,8 @@ class TimelineViewModel(
 
     data class WarningDialogState(
         val index: Int,
-        val reasonIndex: Int
+        val reasonIndex: Int,
+        val evaluation: AvailabilityEvaluation
     )
 
     data class TimelineUiState(
@@ -94,10 +100,20 @@ class TimelineViewModel(
         val slotsByPersonIndex: Map<Pair<Person, Int>, TimeSlot>,
         val evaluations: List<AvailabilityEvaluation>,
         val evaluationsByIndex: Map<Int, AvailabilityEvaluation>,
+        val reasonsById: Map<String, List<ReasonEvaluation>>,
+        val proposalsById: Map<String, List<FlexResolveProposal>>,
         val requirements: List<HouseholdRequirement>,
         val rules: List<HouseholdRequirementRule>,
+        val ruleNameMap: Map<String, String>,
         val settings: SettingsUiState,
-        val reverseBlocks: List<ReverseAssignableBlock>
+        val timelineBlocks: List<TimelineBlock>
+    )
+
+    data class DailyOverviewUiState(
+        val date: LocalDate,
+        val warningItems: List<WarningUiModel> = emptyList(),
+        val careStateItems: List<CareStateUiModel> = emptyList(),
+        val requirementItems: List<RequirementUiModel> = emptyList()
     )
 
     private val _currentDate = MutableStateFlow(LocalDate.now())
@@ -117,13 +133,27 @@ class TimelineViewModel(
             slotsByPersonIndex = emptyMap(),
             evaluations = emptyList(),
             evaluationsByIndex = emptyMap(),
+            reasonsById = emptyMap(),
+            proposalsById = emptyMap(),
             requirements = emptyList(),
             rules = emptyList(),
+            ruleNameMap = emptyMap(),
             settings = SettingsUiState(),
-            reverseBlocks = emptyList()
+            timelineBlocks = emptyList()
         )
     )
     val uiState: StateFlow<TimelineUiState> = _uiState
+
+    private val _dailyOverviewUiState = MutableStateFlow(
+        DailyOverviewUiState(
+            date = LocalDate.now(),
+            warningItems = emptyList(),
+            careStateItems = emptyList(),
+            requirementItems = emptyList()
+        )
+    )
+    val dailyOverviewUiState: StateFlow<DailyOverviewUiState> =
+        _dailyOverviewUiState
 
     private val _warningDialogState =
         MutableStateFlow<WarningDialogState?>(null)
@@ -241,8 +271,9 @@ class TimelineViewModel(
                 )
 
             }.collect { state ->
-                Log.d("TimelineVM", buildUiLog(state))
+                Log.d("Solver", buildSolverLog(state.evaluations))
                 _uiState.value = state
+                _dailyOverviewUiState.value = buildDailyOverviewUiState(state)
             }
         }
     }
@@ -331,41 +362,43 @@ class TimelineViewModel(
         val mergedRules =
             (rules.filter { it.source != RequirementSource.CHILD_ROUTINE }) + childRules
 
-        // ③ Overrideフィルタ
-        val overridesForDate =
-            overrides.filter { it.date == date }
-
-        // ④ Requirement生成
+        // ③ Requirement生成
         val requirements =
             requirementBuilder.build(
                 mergedRules,
-                overridesForDate
+                overrides
             )
 
-        // ⑤ Solver
+        // ④ Solver
         val result =
             AvailabilityEngine.recompute(
                 originalSlots = slots,
                 requirements = requirements,
-                overrides = overridesForDate
+                overrides = overrides
             )
 
         val slotsByIndex = result.slots.groupBy { it.index }
         val slotsByPersonIndex = result.slots.associateBy { it.person to it.index }
         val evaluationsByIndex = result.evaluations.associateBy { it.index }
+        val allReasons = result.evaluations.flatMap { it.reasons }
+        val reasonsById = allReasons.groupBy { it.reason.sourceRuleId }
+        val proposalsById = allReasons.flatMap { it.proposals }.groupBy { it.sourceRuleId }
+        val ruleNameMap = mergedRules.associate { it.id to it.taskName }
 
-        val reverseBlocks =
-            reverseBlockBuilder.build(
-                requirements,
-                slotsByIndex,
-                slotsByPersonIndex
+        // ⑤ Interaction
+        val timelineBlocks =
+            timelineBlockBuilder.build(
+                rules = mergedRules,
+                requirements = requirements,
+                slotsByIndex = slotsByIndex,
+                requirementOverrides = overrides
             )
 
         return TimelineUiState(
             date = date,
             templates = templates,
             dailyStates = states,
-            overrides = overridesForDate,
+            overrides = overrides,
             childRoutines = routines,
             routineShiftOverrides = shiftOverrides,
             childCareEvents = routineResult.events,
@@ -374,25 +407,118 @@ class TimelineViewModel(
             slotsByPersonIndex = slotsByPersonIndex,
             evaluations = result.evaluations,
             evaluationsByIndex = evaluationsByIndex,
+            reasonsById = reasonsById,
+            proposalsById = proposalsById,
             requirements = requirements,
             rules = mergedRules,
+            ruleNameMap = ruleNameMap,
             settings = settings,
-            reverseBlocks = reverseBlocks
+            timelineBlocks = timelineBlocks
+        )
+    }
+
+    private fun buildDailyOverviewUiState(
+        state: TimelineUiState
+    ): DailyOverviewUiState {
+
+        val blocks =
+            state.timelineBlocks.sortedBy { it.startIndex }
+
+        // ------------------------------------------------
+        // Warning
+        // ------------------------------------------------
+        val warningItems =
+            blocks
+                .filter { it.assignablePersons.size < it.requiredCount }
+                .mapNotNull { block ->
+
+                    val relatedEvaluation =
+                        state.evaluationsByIndex[block.startIndex]
+                            ?: return@mapNotNull null
+
+                    val ruleId =
+                        relatedEvaluation.reasons
+                            .firstOrNull { it.reason.sourceRuleId in block.requirementIds }
+                            ?.reason
+                            ?.sourceRuleId
+                            ?: return@mapNotNull null
+
+                    val relatedProposals =
+                        block.requirementIds.flatMap { id ->
+                            state.proposalsById[id].orEmpty()
+                        }
+
+                    val name =
+                        block.requirementIds
+                            .firstNotNullOfOrNull { id ->
+                                state.ruleNameMap[id]
+                            }
+                            .orEmpty()
+
+                    val hasProposal =
+                        relatedProposals.isNotEmpty()
+
+                    block.toWarningUiModel(
+                        ruleId = ruleId,
+                        name = name,
+                        hasProposal = hasProposal
+                    )
+                }
+
+        // ------------------------------------------------
+        // CareState
+        // ------------------------------------------------
+        val careStateItems =
+            blocks
+                .filter { it.semantics == RequirementSemantics.STATE }
+                .map { block ->
+
+                block.toCareStateUiModel()
+            }
+
+        // ------------------------------------------------
+        // Requirement
+        // ------------------------------------------------
+        val requirementItems =
+            blocks
+                .filter { it.semantics != RequirementSemantics.STATE }
+                .map { block ->
+
+                    val name =
+                        block.requirementIds
+                            .firstNotNullOfOrNull { id ->
+                                state.ruleNameMap[id]
+                            }
+                            .orEmpty()
+
+                block.toRequirementUiModel(
+                    name = name,
+                    requirementShiftOverrides = state.overrides.filterIsInstance<RequirementShiftOverride>(),
+                    routineShiftOverrides = state.routineShiftOverrides,
+                    events = state.childCareEvents,
+                )
+            }
+
+        return DailyOverviewUiState(
+            date = state.date,
+            warningItems = warningItems,
+            careStateItems = careStateItems,
+            requirementItems = requirementItems
         )
     }
 
     //編集機能（状態変更）
-    fun toggleReverse(block: ReverseAssignableBlock) {
+    fun toggleCareStateMode(item: CareStateUiModel) {
+
         viewModelScope.launch {
-            block.requirementIds.forEach { id ->
-                val current = resolveMode(
-                    id = id,
-                    overrides = _uiState.value.overrides
-                )
-                val next = current.next(
-                    reverseAssignable = true,
-                    semantics = RequirementSemantics.STATE
-                )
+
+            val next = item.mode.next(
+                false,
+                item.soloApplicable,
+                item.reverseAssignable
+            )
+
+            item.requirementIds.forEach { id ->
 
                 requirementOverrideRepository.replace(
                     override = RequirementToggleOverride(
@@ -405,75 +531,24 @@ class TimelineViewModel(
         }
     }
 
-    fun toggleRequirementMode(
-        rule: HouseholdRequirementRule,
-        req: TimeRangeHouseholdRequirement?
-    ) {
+    fun toggleRequirementMode(item: RequirementUiModel) {
+
         viewModelScope.launch {
 
-            val current = resolveMode(rule.id, _uiState.value.overrides)
-
-            val assignedPersons = getAssignedPersons(rule.id)
-
-            val reversedPerson =
-                if (rule.requiredCount == 1 && rule.allowedPersons.size == 2)
-                    rule.allowedPersons.toList() - assignedPersons
-                else emptyList()
-
-            val reverseAssignable =
-                if (req != null && reversedPerson.size == 1) {
-                    AvailabilityEngine.canAssignBlock(
-                        person = reversedPerson.single(),
-                        requirement = req,
-                        baseStartIndex = req.startIndex,
-                        candidateStartIndex = req.startIndex,
-                        slots = _uiState.value.slots,
-                        slotIndex = AvailabilityEngine.buildSlotIndex(
-                            _uiState.value.slots
-                        )
-                    )
-                } else {
-                    false
-                }
-
-            val next = current.next(reverseAssignable, rule.source.semantics)
+            val next = item.mode.next(
+                item.cancelApplicable,
+                item.soloApplicable,
+                item.reverseAssignable
+            )
 
             requirementOverrideRepository.replace(
                 override = RequirementToggleOverride(
-                    ruleId = rule.id,
+                    ruleId = item.requirementId,
                     date = _currentDate.value,
                     mode = next
                 )
             )
         }
-    }
-
-    fun resolveMode(
-        id: String,
-        overrides: List<RequirementOverride>
-    ): RequirementModeToday {
-
-        overrides
-            .filterIsInstance<RequirementToggleOverride>()
-            .firstOrNull { it.ruleId == id && it.date == _currentDate.value }
-            ?.let {
-                return it.mode
-            }
-
-        return RequirementModeToday.AUTO
-    }
-
-    fun getAssignedPersons(ruleId: String): List<Person> {
-
-        val req = _uiState.value.requirements
-            .filterIsInstance<TimeRangeHouseholdRequirement>()
-            .firstOrNull { it.sourceRuleId == ruleId }
-            ?: return emptyList()
-
-        return reverseBlockBuilder.findAssignedPersons(
-            req = req,
-            slotsByIndex = _uiState.value.slotsByIndex
-        )
     }
 
     fun startEditRequirement(ruleId: String) {
@@ -627,18 +702,34 @@ class TimelineViewModel(
     }
 
     // 警告→提案→実行：編集機能
-    fun onAvailabilityWarningClick(
-        index: Int,
-        reasonIndex: Int = 0
-    ) {
-        val evaluation = _uiState.value.evaluationsByIndex[index] ?: return
+    fun openFirstWarningDialog(index: Int) {
 
-        if (evaluation.state != AvailabilityState.WARN) return
+        val evaluation =
+            _uiState.value.evaluationsByIndex[index]
+                ?: return
 
         _warningDialogState.value =
             WarningDialogState(
                 index = index,
-                reasonIndex = reasonIndex
+                reasonIndex = 0,
+                evaluation = evaluation
+            )
+    }
+
+    fun openWarningDialog(key: WarningDialogKey) {
+
+        val evaluation = _uiState.value.evaluationsByIndex[key.index] ?: return
+
+        val reasonIndex =
+            evaluation.reasons.indexOfFirst {
+                it.reason.sourceRuleId == key.ruleId
+            }.takeIf { it >= 0 } ?: 0
+
+        _warningDialogState.value =
+            WarningDialogState(
+                index = key.index,
+                reasonIndex = reasonIndex,
+                evaluation = evaluation
             )
     }
 
@@ -786,33 +877,11 @@ class TimelineViewModel(
         }
     }
 
-    private fun buildUiLog(state: TimelineUiState): String {
-        return """
-        ===== UI STATE =====
-        date: ${state.date}
-        templates: ${state.templates.size}
-        dailyStates: ${state.dailyStates.size}
-        overrides: ${state.overrides.size}
-        childRoutines: ${state.childRoutines.size}
-        
-        slots: ${state.slots.size}
-        evaluations: ${state.evaluations.size}
-        
-        requirements: ${state.requirements.size}
-        rules: ${state.rules.size}
-        ====================
-    """.trimIndent()
-    }
-
-    private fun buildUiLogDetail(state: TimelineUiState): String {
+    private fun buildSolverLog(evaluations: List<AvailabilityEvaluation>): String {
         return buildString {
-            appendLine("=== UI DETAIL ===")
+            appendLine("=== SOLVER DETAIL ===")
 
-            state.slots.forEach {
-                appendLine("slot: $it")
-            }
-
-            state.evaluations.forEach {
+            evaluations.forEach {
                 appendLine("eval: $it")
             }
 

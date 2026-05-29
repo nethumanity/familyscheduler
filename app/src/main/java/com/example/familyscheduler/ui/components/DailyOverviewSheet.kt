@@ -26,14 +26,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.familyscheduler.R
-import com.example.familyscheduler.domain.evaluation.AvailabilityEvaluation
-import com.example.familyscheduler.domain.evaluation.AvailabilityState
-import com.example.familyscheduler.domain.requirement.TimeRangeHouseholdRequirement
-import com.example.familyscheduler.domain.time.TimeAxis
-import com.example.familyscheduler.ui.mapper.toUiModels
-import com.example.familyscheduler.ui.presentation.SlotStatePresentation
-import com.example.familyscheduler.ui.presentation.renderBlockingPersons
-import com.example.familyscheduler.ui.presentation.renderMissingReasonCount
 import com.example.familyscheduler.viewmodel.TimelineViewModel
 
 @Composable
@@ -41,35 +33,16 @@ fun DailyOverviewSheet(
     viewModel: TimelineViewModel,
     onEditRequirement: (String) -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-
-    fun indexToTime(index: Int): String {
-        return TimeAxis.all.getOrNull(index)?.toString() ?: "--:--"
-    }
-    fun List<AvailabilityEvaluation>.extractWarnings() =
-        filter { it.state == AvailabilityState.WARN }
-
-    val warnings = uiState.evaluations.extractWarnings()
-    val warningMap = warnings
-        .flatMap { it.reasons }
-        .associateBy { it.reason.sourceRuleId }
-    val uiRequirements = uiState.rules
-        .toUiModels(
-            requirements = uiState.requirements,
-            overrides = uiState.overrides,
-            shiftOverrides = uiState.routineShiftOverrides,
-            events = uiState.childCareEvents,
-            date = uiState.date,
-            viewModel = viewModel
-        )
-        .filter { it.name.isNotEmpty() }
-        .sortedBy { it.startIndex }
+    val dailyOverviewUiState by viewModel.dailyOverviewUiState.collectAsState()
+    val warningItems = dailyOverviewUiState.warningItems
+    val careStateItems = dailyOverviewUiState.careStateItems
+    val requirementItems = dailyOverviewUiState.requirementItems
 
     LazyColumn(
         contentPadding = PaddingValues(16.dp)
     ) {
         item {
-            Text("${uiState.date}", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+            Text("${dailyOverviewUiState.date}", fontSize = 20.sp, fontWeight = FontWeight.Bold)
 
         }
         item {
@@ -79,63 +52,64 @@ fun DailyOverviewSheet(
         // =========================
         // 警告一覧
         // =========================
-        if (warnings.isNotEmpty()) {
+        if (warningItems.isNotEmpty()) {
 
             item {
                 Text("⚠ 警告", fontWeight = FontWeight.Bold)
             }
 
-            items(warnings) { eval ->
-                eval.reasons.forEachIndexed { i, reason ->
+            items(warningItems) { item ->
 
-                    val blockText = renderBlockingPersons(reason.reason)
-
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                viewModel.onAvailabilityWarningClick(
-                                index = eval.index,
-                                reasonIndex = i
-                                )
-                            }
-                            .padding(vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            indexToTime(eval.index),
-                            modifier = Modifier.width(60.dp)
-                        )
-
-                        val nameText = if (reason.reason.requirementName == "") {
-                            SlotStatePresentation.label(
-                                uiState.rules.first { it.id == reason.reason.sourceRuleId }.targetState
-                            )
-                        } else {
-                            reason.reason.requirementName
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            viewModel.openWarningDialog(item.dialogKey)
                         }
+                        .padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = item.timeText,
+                        modifier = Modifier.width(110.dp)
+                    )
 
-                        Text(
-                            text = nameText,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f)
-                        )
+                    Text(
+                        text = item.nameText,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
 
-                        Text(blockText)
+                    Box(
+                        modifier = Modifier.size(32.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (item.cancelApplicable) {
+                            Text("\uD83D\uDEAB")
+                        }
+                    }
 
-                        Box(
-                            modifier = Modifier.size(32.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            if (reason.proposals.isNotEmpty()) {
-                                Icon(
-                                    painter = painterResource(R.drawable.ic_proposal),
-                                    contentDescription = "Proposal",
-                                    tint = Color(0xFFFF9800),
-                                    modifier = Modifier.matchParentSize()
-                                )
-                            }
+                    Box(
+                        modifier = Modifier.size(32.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (item.soloApplicable) {
+                            Text("\uD83D\uDC64")
+                        }
+                    }
+
+                    Box(
+                        modifier = Modifier.size(32.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (item.hasProposal) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_proposal),
+                                contentDescription = "Proposal",
+                                tint = Color(0xFFFF9800),
+                                modifier = Modifier.matchParentSize()
+                            )
                         }
                     }
                 }
@@ -145,16 +119,16 @@ fun DailyOverviewSheet(
         // =========================
         // 育児担当切替
         // =========================
-        if (uiState.reverseBlocks.isNotEmpty()) {
+        if (careStateItems.isNotEmpty()) {
             item {
                 Spacer(Modifier.height(8.dp))
-                Text("👥 育児担当切替", fontWeight = FontWeight.Bold)
+                Text("👥 育児担当", fontWeight = FontWeight.Bold)
             }
-            items(uiState.reverseBlocks) { block ->
+            items(careStateItems) { item ->
 
-                ReverseAssignableBlockRow(
-                    block = block,
-                    onReverse = { viewModel.toggleReverse(block) }
+                CareStateBlockRow(
+                    item = item,
+                    onToggle = { viewModel.toggleCareStateMode(item) }
                 )
             }
         }
@@ -166,35 +140,17 @@ fun DailyOverviewSheet(
             Spacer(Modifier.height(8.dp))
             Text("■ 予定一覧", fontWeight = FontWeight.Bold)
         }
-        items(uiRequirements
-                .filter { it.name != "" }.sortedBy { it.startIndex }
-        ) { req ->
-
-            val reason = warningMap[req.id]
-            val isWarn = reason != null
-            val count = reason?.let { renderMissingReasonCount(it.reason) }
-            val assignedPersons = viewModel.getAssignedPersons(req.id)
-                .joinToString(" ") { it.label }
+        items(requirementItems) { item ->
 
             Box(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 RequirementRow(
-                    req = req,
-                    isWarn = isWarn,
-                    count = count,
-                    assignedPersons = assignedPersons,
-                    onClick = {
-                        viewModel.toggleRequirementMode(
-                            uiState.rules.first { it.id == req.id },
-                            uiState.requirements
-                                .filterIsInstance<TimeRangeHouseholdRequirement>()
-                                .firstOrNull { it.sourceRuleId == req.id }
-                        )
-                    },
-                    onEdit = { onEditRequirement(req.id) },
-                    onDelete = { viewModel.deleteRequirement(req.id) },
-                    onClearProposal = { viewModel.clearProposal(req.id) }
+                    item = item,
+                    onToggle = { viewModel.toggleRequirementMode(item) },
+                    onEdit = { onEditRequirement(item.requirementId) },
+                    onDelete = { viewModel.deleteRequirement(item.requirementId) },
+                    onClearProposal = { viewModel.clearProposal(item.requirementId) }
                 )
             }
         }

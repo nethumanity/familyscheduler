@@ -2,16 +2,16 @@ package com.example.familyscheduler.viewmodel.factory
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import com.example.familyscheduler.domain.interaction.ReverseAssignableBlockBuilder
+import com.example.familyscheduler.domain.interaction.TimelineBlockBuilder
 import com.example.familyscheduler.domain.requirement.RequirementBuilder
 import com.example.familyscheduler.domain.requirement.repository.HouseholdRequirementRepository
 import com.example.familyscheduler.domain.requirement.repository.RequirementOverrideRepository
 import com.example.familyscheduler.domain.routine.ChildCareRuleConverter
 import com.example.familyscheduler.domain.routine.ChildRoutineBuilder
 import com.example.familyscheduler.domain.routine.RoutineResolver
-import com.example.familyscheduler.domain.routine.repository.RoutineToggleOverrideRepository
 import com.example.familyscheduler.domain.routine.repository.ChildRoutineRepository
 import com.example.familyscheduler.domain.routine.repository.RoutineShiftOverrideRepository
+import com.example.familyscheduler.domain.routine.repository.RoutineToggleOverrideRepository
 import com.example.familyscheduler.domain.schedule.repository.DailyStateRepository
 import com.example.familyscheduler.domain.schedule.repository.TemplateRepository
 import com.example.familyscheduler.ui.state.repository.SettingsRepository
@@ -29,7 +29,7 @@ class TimelineViewModelFactory(
     private val childRoutineBuilder: ChildRoutineBuilder,
     private val childCareRuleConverter: ChildCareRuleConverter,
     private val requirementBuilder: RequirementBuilder,
-    private val reverseBlockBuilder: ReverseAssignableBlockBuilder,
+    private val timelineBlockBuilder: TimelineBlockBuilder,
     private val settingsRepository: SettingsRepository
 ) : ViewModelProvider.Factory {
 
@@ -51,7 +51,7 @@ class TimelineViewModelFactory(
                 childRoutineBuilder = childRoutineBuilder,
                 childCareRuleConverter = childCareRuleConverter,
                 requirementBuilder = requirementBuilder,
-                reverseBlockBuilder = reverseBlockBuilder,
+                timelineBlockBuilder = timelineBlockBuilder,
                 settingsRepository = settingsRepository
             ) as T
         }
