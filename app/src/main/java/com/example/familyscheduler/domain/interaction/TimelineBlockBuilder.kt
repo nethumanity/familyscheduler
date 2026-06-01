@@ -78,12 +78,17 @@ class TimelineBlockBuilder {
                         slotsByIndex = slotsByIndex
                     )
 
+                val requiredCount = req.requiredCount
+
                 val semantics =
-                    resolveSemantics(
-                        req = req,
-                        slotsByIndex = slotsByIndex,
-                        assignedPersons = assignedPersons
-                    )
+                    if (assignablePersons.size < requiredCount) {
+                        req.source.semantics
+                    } else {
+                        resolveSemantics(
+                            req = req,
+                            slotsByIndex = slotsByIndex
+                        )
+                    }
 
                 if (semantics == null) return@mapNotNull null
 
@@ -94,7 +99,7 @@ class TimelineBlockBuilder {
                     mode = mode,
                     assignedPersons = assignedPersons,
                     assignablePersons = assignablePersons,
-                    requiredCount = req.requiredCount,
+                    requiredCount = requiredCount,
                     requirementIds = listOf(req.sourceRuleId),
                     allowedActions =
                         resolveAllowedActions(
@@ -190,11 +195,8 @@ class TimelineBlockBuilder {
 
     private fun resolveSemantics(
         req: TimeRangeHouseholdRequirement,
-        slotsByIndex: Map<Int, List<TimeSlot>>,
-        assignedPersons: List<Person>
+        slotsByIndex: Map<Int, List<TimeSlot>>
     ): RequirementSemantics? {
-
-        if (assignedPersons.isEmpty()) return req.source.semantics
 
         val effectiveSemanticsMap =
             (req.startIndex until req.endIndex)

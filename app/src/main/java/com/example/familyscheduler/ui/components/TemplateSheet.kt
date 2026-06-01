@@ -16,7 +16,6 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.ListItem
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -52,7 +51,16 @@ fun TemplateSheet(
 
     var expandedMenuId by remember { mutableStateOf<String?>(null) }
 
-    Column {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(
+                start = 16.dp,
+                top = 16.dp,
+                end = 16.dp,
+                bottom = 56.dp
+            )
+    ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -61,8 +69,7 @@ fun TemplateSheet(
             Text(
                 text = "${person.label} のテンプレート",
                 fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(16.dp)
+                fontWeight = FontWeight.Bold
             )
             TextButton(onClick = { onAddClick(person) }) {
                 Text("登録")
@@ -74,22 +81,25 @@ fun TemplateSheet(
 
                 Box {
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        ListItem(
-                            headlineContent = {
-                                Text(
-                                    text = template.name,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            },
+                        Row(
                             modifier = Modifier
                                 .weight(1f)
                                 .clickable { onApplyTemplate(template) }
                                 .padding(end = 8.dp)
-                        )
+                        ) {
+                            Text(
+                                text = template.name,
+                                fontSize = 16.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
 
                         Box(
                             modifier = Modifier.size(32.dp),

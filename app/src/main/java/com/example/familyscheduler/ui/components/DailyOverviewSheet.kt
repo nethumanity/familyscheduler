@@ -39,7 +39,12 @@ fun DailyOverviewSheet(
     val requirementItems = dailyOverviewUiState.requirementItems
 
     LazyColumn(
-        contentPadding = PaddingValues(16.dp)
+        contentPadding = PaddingValues(
+            start = 16.dp,
+            top = 16.dp,
+            end = 16.dp,
+            bottom = 56.dp
+        )
     ) {
         item {
             Text("${dailyOverviewUiState.date}", fontSize = 20.sp, fontWeight = FontWeight.Bold)

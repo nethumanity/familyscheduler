@@ -4,9 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -38,7 +36,12 @@ fun ChildListSheet(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp)
+            .padding(
+                start = 16.dp,
+                top = 16.dp,
+                end = 16.dp,
+                bottom = 56.dp
+            )
     ) {
 
         Row(
@@ -57,8 +60,6 @@ fun ChildListSheet(
                 Text("登録")
             }
         }
-
-        Spacer(Modifier.height(16.dp))
 
         LazyColumn {
 
