@@ -53,14 +53,25 @@ object StateTextPresentation {
                     }
 
                     else -> {
-                        if (status.persons.size == 2) {
-                            buildReverseAssignableText(
-                                status.persons.first(),
-                                status.persons.last()
-                            )
-                        } else {
-                            buildAnnotatedString {
-                                append("✔ ${status.persons.first().label}")
+                        // 挙動を検証中、元はif (status.persons.size == 2)
+                        // TimelineBlockBuilderのロジックも同時に検証中
+                        when {
+                            status.persons.size == 2 -> {
+                                buildReverseAssignableText (
+                                    status.persons.first(),
+                                    status.persons.last()
+                                )
+                            }
+                            status.reverseAssignable -> {
+                                buildReverseAssignableText (
+                                    status.persons.single(),
+                                    (Person.entries - status.persons).single()
+                                )
+                            }
+                            else -> {
+                                buildAnnotatedString {
+                                    append("✔ ${status.persons.first().label}")
+                                }
                             }
                         }
                     }

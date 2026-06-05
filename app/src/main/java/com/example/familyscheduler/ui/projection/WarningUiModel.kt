@@ -5,7 +5,7 @@ data class WarningUiModel(
     val requirementIds: List<String>,
     val timeText: String,
     val nameText: String,
-    val personStates: List<PersonAvailabilityUiModel>,
+    val personStates: PersonAvailabilityUiModel,
     val hasProposal: Boolean,
     val cancelApplicable: Boolean,
     val soloApplicable: Boolean

@@ -8,6 +8,7 @@ import com.example.familyscheduler.domain.requirement.RequirementOverride
 import com.example.familyscheduler.domain.requirement.RequirementSemantics
 import com.example.familyscheduler.domain.requirement.RequirementToggleOverride
 import com.example.familyscheduler.domain.requirement.TimeRangeHouseholdRequirement
+import com.example.familyscheduler.domain.slot.SlotState
 import com.example.familyscheduler.domain.slot.TimeSlot
 import com.example.familyscheduler.domain.time.TimeAxis
 
@@ -55,14 +56,10 @@ class TimelineBlockBuilder {
                     mode = mode,
                     assignedPersons = emptyList(),
                     assignablePersons = emptyList(),
-                    requiredCount = rule.requiredCount,
+                    blockingPersons = emptyList(),
+                    requiredCount = 0,
                     requirementIds = listOf(rule.id),
-                    allowedActions =
-                        resolveAllowedActions(
-                            rule = rule,
-                            mode = mode,
-                            assignablePersons = emptyList()
-                        )
+                    allowedActions = setOf(BlockAction.EDIT, BlockAction.CANCEL)
                 )
             } else {
 
@@ -77,6 +74,9 @@ class TimelineBlockBuilder {
                         req = req,
                         slotsByIndex = slotsByIndex
                     )
+
+                val blockingPersons =
+                    req.allowedPersons - assignablePersons.toSet()
 
                 val requiredCount = req.requiredCount
 
@@ -99,13 +99,17 @@ class TimelineBlockBuilder {
                     mode = mode,
                     assignedPersons = assignedPersons,
                     assignablePersons = assignablePersons,
+                    blockingPersons = blockingPersons,
                     requiredCount = requiredCount,
                     requirementIds = listOf(req.sourceRuleId),
                     allowedActions =
                         resolveAllowedActions(
                             rule = rule,
                             mode = mode,
-                            assignablePersons = assignablePersons
+                            assignablePersons = assignablePersons,
+                            req = req,
+                            blockingPersons = blockingPersons,
+                            slotsByIndex = slotsByIndex
                         )
                 )
             }
@@ -193,32 +197,13 @@ class TimelineBlockBuilder {
         }
     }
 
-    private fun resolveSemantics(
-        req: TimeRangeHouseholdRequirement,
-        slotsByIndex: Map<Int, List<TimeSlot>>
-    ): RequirementSemantics? {
-
-        val effectiveSemanticsMap =
-            (req.startIndex until req.endIndex)
-                .flatMap { index ->
-                    slotsByIndex[index].orEmpty()
-                }
-                .filter { slot ->
-                    req.sourceRuleId in slot.taskIds
-                }
-                .map { it.effectiveSemantics }
-
-        return if (req.source.semantics in effectiveSemanticsMap) {
-            req.source.semantics
-        } else {
-            null
-        }
-    }
-
     private fun resolveAllowedActions(
         rule: HouseholdRequirementRule,
         mode: RequirementModeToday,
-        assignablePersons: List<Person>
+        assignablePersons: List<Person>,
+        req: TimeRangeHouseholdRequirement,
+        blockingPersons: List<Person>,
+        slotsByIndex: Map<Int, List<TimeSlot>>
     ): Set<BlockAction> {
 
         val actions = mutableSetOf<BlockAction>()
@@ -227,7 +212,16 @@ class TimelineBlockBuilder {
             assignablePersons.size == 1 && rule.requiredCount == 2
 
         val hasReverseAlternative =
-            assignablePersons.size == 2 && rule.requiredCount == 1
+            assignablePersons.size > rule.requiredCount ||
+                    // 以下、挙動を検証中
+                    // StateTextPresentationのUI表示も同時に検証中
+                    canReverseToAvoidDeadlock(
+                        rule = rule,
+                        req = req,
+                        assignablePersons = assignablePersons,
+                        blockingPersons = blockingPersons,
+                        slotsByIndex = slotsByIndex
+                    )
 
         if (rule.source.semantics == RequirementSemantics.TASK) {
             actions += BlockAction.EDIT
@@ -249,6 +243,62 @@ class TimelineBlockBuilder {
         }
 
         return actions
+    }
+
+    private fun canReverseToAvoidDeadlock(
+        rule: HouseholdRequirementRule,
+        req: TimeRangeHouseholdRequirement,
+        assignablePersons: List<Person>,
+        blockingPersons: List<Person>,
+        slotsByIndex: Map<Int, List<TimeSlot>>
+    ): Boolean {
+
+        if (
+            rule.targetState != SlotState.CHILDCARE ||
+            rule.source.semantics != RequirementSemantics.TASK ||
+            rule.requiredCount != 1 ||
+            assignablePersons.size != 1 ||
+            blockingPersons.size != 1
+        ) {
+            return false
+        }
+
+        val blockingPerson = blockingPersons.single()
+
+        return (req.startIndex until req.endIndex).all { index ->
+
+            val slot =
+                slotsByIndex[index]
+                    .orEmpty()
+                    .firstOrNull {
+                        it.person == blockingPerson
+                    }
+                    ?: return@all false
+
+            slot.state.weight <= req.targetState.weight
+        }
+    }
+
+    private fun resolveSemantics(
+        req: TimeRangeHouseholdRequirement,
+        slotsByIndex: Map<Int, List<TimeSlot>>
+    ): RequirementSemantics? {
+
+        val effectiveSemanticsMap =
+            (req.startIndex until req.endIndex)
+                .flatMap { index ->
+                    slotsByIndex[index].orEmpty()
+                }
+                .filter { slot ->
+                    req.sourceRuleId in slot.taskIds
+                }
+                .map { it.effectiveSemantics }
+
+        return if (req.source.semantics in effectiveSemanticsMap) {
+            req.source.semantics
+        } else {
+            null
+        }
     }
 
     private fun mergeAdjacent(
@@ -275,6 +325,7 @@ class TimelineBlockBuilder {
                         prev.mode == item.mode &&
                         prev.assignedPersons.toSet() == item.assignedPersons.toSet() &&
                         prev.assignablePersons.toSet() == item.assignablePersons.toSet() &&
+                        prev.blockingPersons.toSet() == item.blockingPersons.toSet() &&
                         prev.requiredCount == item.requiredCount &&
                         prev.allowedActions == item.allowedActions &&
                         prev.semantics == item.semantics
@@ -298,6 +349,7 @@ class TimelineBlockBuilder {
                 mode = group.first().mode,
                 assignedPersons = group.first().assignedPersons,
                 assignablePersons = group.first().assignablePersons,
+                blockingPersons = group.first().blockingPersons,
                 requiredCount = group.first().requiredCount,
                 requirementIds = group.flatMap { it.requirementIds },
                 allowedActions = group.first().allowedActions

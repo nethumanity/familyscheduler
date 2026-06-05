@@ -1,5 +1,6 @@
 package com.example.familyscheduler.ui.projection
 
+import com.example.familyscheduler.domain.interaction.BlockAction
 import com.example.familyscheduler.domain.interaction.TimelineBlock
 import com.example.familyscheduler.domain.person.Person
 import com.example.familyscheduler.domain.requirement.RequirementModeToday
@@ -8,7 +9,8 @@ sealed interface StatusUiModel {
 
     data class Assigned(
         val persons: List<Person>,
-        val requiredCount: Int
+        val requiredCount: Int,
+        val reverseAssignable: Boolean
     ) : StatusUiModel
 
     data class Warning(
@@ -44,7 +46,8 @@ sealed interface StatusUiModel {
                     )
                     1 -> Assigned(
                         persons = assignedPersons,
-                        requiredCount = requiredCount
+                        requiredCount = requiredCount,
+                        reverseAssignable = BlockAction.REVERSE in allowedActions
                     )
                     else -> Reverse(
                         mainPerson = assignedPersons.first(),
@@ -65,7 +68,8 @@ sealed interface StatusUiModel {
                     )
                     else -> Assigned(
                         persons = assignedPersons,
-                        requiredCount = requiredCount
+                        requiredCount = requiredCount,
+                        reverseAssignable = BlockAction.REVERSE in allowedActions
                     )
                 }
             }
@@ -81,7 +85,8 @@ sealed interface StatusUiModel {
                 } else {
                     Assigned(
                         persons = assignablePersons,
-                        requiredCount = requiredCount
+                        requiredCount = requiredCount,
+                        reverseAssignable = BlockAction.REVERSE in allowedActions
                     )
                 }
             }

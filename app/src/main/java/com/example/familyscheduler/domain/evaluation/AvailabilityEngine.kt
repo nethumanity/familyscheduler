@@ -27,25 +27,37 @@ object AvailabilityEngine {
 
         val index = buildSlotIndex(workingSlots)
 
-        assignHouseholdTasks(
-            slots = workingSlots,
-            slotIndex = index,
-            requirements = requirements,
-            overrides = overrides
-        )
+        val warningReqs =
+            assignHouseholdTasks(
+                slots = workingSlots,
+                slotIndex = index,
+                requirements = requirements,
+                overrides = overrides
+            )
 
         val evaluations =
             evaluateAvailability(
-                slots = workingSlots,
-                slotIndex = index,
-                requirements = requirements
+                requirements = requirements,
+                warningReqs = warningReqs
             )
+
+        val proposals =
+            warningReqs.flatMap { warningReq ->
+                generateProposals(
+                    slots = workingSlots,
+                    slotIndex = index,
+                    requirements = requirements,
+                    warningReq = warningReq
+                )
+            }
+
 
         assignRemainingUnassignedToFree(workingSlots)
 
         return AvailabilityResult(
             slots = workingSlots,
-            evaluations = evaluations
+            evaluations = evaluations,
+            proposalsByRequirementId = proposals.groupBy { it.resolvedRequirementId }
         )
     }
 
@@ -61,61 +73,34 @@ object AvailabilityEngine {
         return SlotIndex(byIndex, byPersonIndex)
     }
 
-    fun assignHouseholdTasks(
+    private fun assignHouseholdTasks(
         slots: MutableList<TimeSlot>,
         slotIndex: SlotIndex,
         requirements: List<HouseholdRequirement>,
         overrides: List<RequirementOverride>
-    ) {
-        //if (requirements.isNullOrEmpty()) return
+    ): List<HouseholdRequirement> {
+        val warnings =
+            mutableListOf<HouseholdRequirement>()
+
         val orderedReqs = requirements.sortedByDescending {
             it.prioritySeed
         }
+
         val reverseRuleIds = overrides
             .filterIsInstance<RequirementToggleOverride>()
             .filter { it.mode == RequirementModeToday.REVERSE }
             .map { it.ruleId }
             .toSet()
+
         for (req in orderedReqs) {
-            if (!mayAssignBlock(req, slots, slotIndex)) continue
-            assignBlock(req, slots, slotIndex, reverseRuleIds)
-        }
-    }
-
-    private fun mayAssignBlock(
-        req: HouseholdRequirement,
-        slots: List<TimeSlot>,
-        slotIndex: SlotIndex
-    ): Boolean {
-        val indices = req.allIndices()
-
-        val validPersons = req.allowedPersons.filter { person ->
-            indices.all { index ->
-                val i = slotIndex.byPersonIndex[person to index] ?: return@filter false
-                canAssignToSlot(
-                    req,
-                    slots[i]
-                )
+            if (!mayAssignBlock(req, slots, slotIndex)) {
+                warnings += req
+            } else {
+                assignBlock(req, slots, slotIndex, reverseRuleIds)
             }
+
         }
-
-        return validPersons.size >= req.requiredCount
-    }
-
-    fun canAssignToSlot(
-        req: HouseholdRequirement,
-        slot: TimeSlot
-    ): Boolean {
-
-        if (slot.state.weight < req.targetState.weight) {
-            return true
-        }
-
-        if (slot.state.weight > req.targetState.weight) {
-            return false
-        }
-
-        return req.source.semantics.canCoexist(slot.effectiveSemantics)
+        return warnings
     }
 
     private fun assignBlock(
@@ -161,15 +146,6 @@ object AvailabilityEngine {
         }
     }
 
-    private fun List<Person>.applyReverseRule(
-        sourceRuleId: String,
-        reverseRuleIds: Set<String>
-    ): List<Person> =
-        if (sourceRuleId in reverseRuleIds)
-            reversed()
-        else
-            this
-
     private fun scorePersonForRequirement(
         person: Person,
         indices: List<Int>,
@@ -197,6 +173,210 @@ object AvailabilityEngine {
         return score
     }
 
+    private fun List<Person>.applyReverseRule(
+        sourceRuleId: String,
+        reverseRuleIds: Set<String>
+    ): List<Person> =
+        if (sourceRuleId in reverseRuleIds)
+            reversed()
+        else
+            this
+
+    fun evaluateAvailability(
+        requirements: List<HouseholdRequirement>,
+        warningReqs: List<HouseholdRequirement>
+    ): List<AvailabilityEvaluation> {
+
+        return TimeAxis.indices.mapNotNull { index ->
+
+            val activeReqs = requirements.filter { it.isRequiredAt(index) }
+
+            if (activeReqs.isEmpty()) return@mapNotNull null
+
+            val warningReqIds =
+                warningReqs
+                    .filter { it.isRequiredAt(index) }
+                    .map{ it.sourceRuleId }
+
+            AvailabilityEvaluation(
+                index = index,
+                warningReqIds = warningReqIds
+            )
+        }
+    }
+
+    fun generateProposals(
+        slots: List<TimeSlot>,
+        slotIndex: SlotIndex,
+        requirements: List<HouseholdRequirement>,
+        warningReq: HouseholdRequirement
+    ): List<FlexResolveProposal> {
+
+        val waiting =
+            generateWaitingProposals(
+                slots = slots,
+                slotIndex = slotIndex,
+                warningReq = warningReq
+            )
+
+        val assigned =
+            generateAssignedProposals(
+                slots = slots,
+                slotIndex = slotIndex,
+                requirements = requirements,
+                warningReq = warningReq
+            )
+
+        return waiting + assigned
+    }
+
+    fun generateWaitingProposals(
+        slots: List<TimeSlot>,
+        slotIndex: SlotIndex,
+        warningReq: HouseholdRequirement
+    ): List<FlexResolveProposal> {
+
+        val isFlex =
+            warningReq.flexWindowSlots.backward != 0 ||
+                    warningReq.flexWindowSlots.forward != 0
+
+        if (!isFlex) return emptyList()
+
+        val persons = warningReq.allowedPersons
+        val window = warningReq.flexWindowSlots
+        val startIndex = warningReq.allIndices().first()
+        val offsets = (-window.backward until 0) + (1..window.forward)
+
+        return offsets
+            .flatMap { offset ->
+                val newStartIndex = startIndex + offset
+                if (newStartIndex !in TimeAxis.all.indices) return@flatMap emptyList()
+
+                val validPersons = persons.filter {
+                    canAssignBlock(
+                        person = it,
+                        requirement = warningReq,
+                        baseStartIndex = startIndex,
+                        candidateStartIndex = newStartIndex,
+                        slots = slots,
+                        slotIndex = slotIndex
+                    )
+                }
+
+                if (validPersons.size < warningReq.requiredCount) return@flatMap emptyList()
+
+                listOf(
+                    FlexResolveProposal(
+                        type = ProposalType.WAITING,
+                        resolvedRequirementId = warningReq.sourceRuleId,
+                        sourceRuleId = warningReq.sourceRuleId,
+                        requirementSource = warningReq.source,
+                        requirementName = warningReq.name,
+                        persons = validPersons,
+                        requiredCount = warningReq.requiredCount,
+                        initialIndex = startIndex,
+                        candidateIndex = newStartIndex,
+                        targetState = warningReq.targetState
+                    )
+                )
+            }
+            .sortedBy { it.score(slots) }
+            .take(4)
+    }
+
+    fun generateAssignedProposals(
+        slots: List<TimeSlot>,
+        slotIndex: SlotIndex,
+        requirements: List<HouseholdRequirement>,
+        warningReq: HouseholdRequirement
+    ): List<FlexResolveProposal> {
+
+        val warningIndices =  warningReq.allIndices()
+
+        val targetSlots =
+            warningIndices.flatMap { index ->
+                slotIndex.byIndex[index]
+                    .orEmpty()
+                    .map { slots[it] }
+                    .filter { it.person in warningReq.allowedPersons &&
+                            !canAssignToSlot(warningReq, it) }
+            }
+
+        val assignedReqs =
+            targetSlots.flatMap { slot ->
+                requirements.filter { it.sourceRuleId in slot.taskIds }
+            }.distinct()
+
+        val targetReqs =
+            assignedReqs
+                .filter {
+                    it.flexWindowSlots.backward != 0 || it.flexWindowSlots.forward != 0
+                }
+                .filter {
+                    it.prioritySeed >= warningReq.prioritySeed
+                }
+                .sortedByDescending { it.prioritySeed }
+
+        if (targetReqs.isEmpty()) return emptyList()
+
+        val waitingStart =  warningIndices.first()
+        val waitingEnd =  warningIndices.last()
+
+        return targetReqs
+            .flatMap { targetReq ->
+                val targetReqRange = targetReq.allIndices()
+                val baseStartIndex = targetReqRange.first()
+                val baseEndIndex = targetReqRange.last()
+
+                // warningReq区間と重なるoffsetを除外
+                val offsetPair = listOf(
+                    waitingStart - baseEndIndex - 1,
+                    waitingEnd - baseStartIndex + 1
+                )
+
+                val persons = targetReq.allowedPersons
+                val window = targetReq.flexWindowSlots
+                val offsets = (-window.backward until 0) + (1..window.forward)
+
+                offsets
+                    .flatMap { offset ->
+                        if (!(offset <= offsetPair.first() || offset >= offsetPair.last())) return@flatMap emptyList()
+                        val newStartIndex = baseStartIndex + offset
+                        if (newStartIndex !in TimeAxis.all.indices) return@flatMap emptyList()
+
+                        val validPersons = persons.filter {
+                            canAssignBlock(
+                                person = it,
+                                requirement = targetReq,
+                                baseStartIndex = baseStartIndex,
+                                candidateStartIndex = newStartIndex,
+                                slots = slots,
+                                slotIndex = slotIndex
+                            )
+                        }
+
+                        if (validPersons.size < targetReq.requiredCount) return@flatMap emptyList()
+
+                        listOf(
+                            FlexResolveProposal(
+                                type = ProposalType.ASSIGNED,
+                                resolvedRequirementId = warningReq.sourceRuleId,
+                                sourceRuleId = targetReq.sourceRuleId,
+                                requirementSource = targetReq.source,
+                                requirementName = targetReq.name,
+                                persons = validPersons,
+                                requiredCount = targetReq.requiredCount,
+                                initialIndex = baseStartIndex,
+                                candidateIndex = newStartIndex,
+                                targetState = targetReq.targetState
+                            )
+                        )
+                    }
+            }
+            .sortedBy { it.score(slots) }
+            .take(2)
+    }
+
     private fun assignRemainingUnassignedToFree(
         slots: MutableList<TimeSlot>
     ) {
@@ -211,194 +391,27 @@ object AvailabilityEngine {
         }
     }
 
-    fun evaluateAvailability(
+    private fun mayAssignBlock(
+        req: HouseholdRequirement,
         slots: List<TimeSlot>,
-        slotIndex: SlotIndex,
-        requirements: List<HouseholdRequirement>
-    ): List<AvailabilityEvaluation> {
+        slotIndex: SlotIndex
+    ): Boolean {
+        val indices = req.allIndices()
 
-        return TimeAxis.indices.mapNotNull { index ->
-
-            val slotsAtIndex = slotIndex.byIndex[index].orEmpty().map { slots[it] }
-
-            val activeReqs = requirements.filter { it.isRequiredAt(index) }
-
-            if (activeReqs.isEmpty()) return@mapNotNull null
-
-            val reasons = mutableListOf<ReasonEvaluation>()
-
-            activeReqs.forEach { req ->
-
-                val satisfiedPersons =
-                    slotsAtIndex
-                        .filter { slot ->
-                            slot.person in req.allowedPersons &&
-                                    slot.state == req.targetState
-                        }
-                        .map { it.person }
-
-                val requiredCount = req.requiredCount
-                val assignedCount = satisfiedPersons.size
-                val missing = requiredCount - assignedCount
-
-                if (missing > 0) {
-                    val info =
-                        collectBlockInfo(
-                            slots = slotsAtIndex,
-                            persons = req.allowedPersons.toList() - satisfiedPersons
-                        )
-                    val reason =
-                        MissingReason(
-                            sourceRuleId = req.sourceRuleId,
-                            requirementName = req.name,
-                            requiredCount = requiredCount,
-                            assignedCount = assignedCount,
-                            blockingPersons = info
-                        )
-
-                    val waiting =
-                        generateWaitingProposals(
-                            slots = slots,
-                            slotIndex = slotIndex,
-                            requirements = activeReqs,
-                            reason = reason
-                        )
-                    val assigned =
-                        generateAssignedProposals(
-                            index = index,
-                            slots = slots,
-                            slotIndex = slotIndex,
-                            requirements = activeReqs,
-                            reason = reason
-                        )
-                    reasons.add(
-                        ReasonEvaluation(
-                            reason = reason,
-                            proposals = (waiting + assigned)
-                        )
-                    )
-                }
-            }
-
-            AvailabilityEvaluation(
-                index = index,
-                hasFlexRequirement = activeReqs.any { it.flexWindowSlots.backward != 0 || it.flexWindowSlots.forward != 0 },
-                missing = reasons.size,
-                reasons = reasons,
-            )
-        }
-    }
-
-    fun collectBlockInfo(
-        slots: List<TimeSlot>,
-        persons: List<Person>,
-    ): BlockInfo {
-
-        val slotByPerson = slots.filter { it.person in persons }
-
-        return BlockInfo(
-                person = persons,
-                currentState = slotByPerson.map { it.state },
-                taskIds = slotByPerson.flatMap { it.taskIds }
-        )
-    }
-
-    fun generateWaitingProposals(
-        slots: List<TimeSlot>,
-        slotIndex: SlotIndex,
-        requirements: List<HouseholdRequirement>,
-        reason: MissingReason
-    ): List<FlexResolveProposal> {
-
-        val hasFlexRequirement =
-            requirements.any {
-                it.flexWindowSlots.backward != 0 ||
-                        it.flexWindowSlots.forward != 0
-            }
-
-        if (!hasFlexRequirement) return emptyList()
-
-        return generateFlexResolveProposalsForReason(
-            slots = slots,
-            slotIndex = slotIndex,
-            requirements = requirements,
-            reason = reason
-        )
-            .sortedBy { it.score(slots) }
-            .take(4)
-    }
-
-    fun generateFlexResolveProposalsForReason(
-        slots: List<TimeSlot>,
-        slotIndex: SlotIndex,
-        requirements: List<HouseholdRequirement>,
-        reason: MissingReason
-    ): List<FlexResolveProposal> {
-
-        val requirement = requirements
-            .find { it.sourceRuleId == reason.sourceRuleId }
-            ?: return emptyList()
-
-        val persons = requirement.allowedPersons.toList()
-        val window = requirement.flexWindowSlots
-        val offsets = (-window.backward until 0) + (1..window.forward)
-
-        return offsets.flatMap { offset ->
-
-            val startIndex = requirement.allIndices().first()
-            val newStartIndex = startIndex + offset
-            if (newStartIndex !in TimeAxis.all.indices) return@flatMap emptyList()
-
-            val validPersons = persons.filter {
-                canAssignBlock(
-                    person = it,
-                    requirement = requirement,
-                    baseStartIndex = startIndex,
-                    candidateStartIndex = newStartIndex,
-                    slots = slots,
-                    slotIndex = slotIndex
+        val validPersons = req.allowedPersons.filter { person ->
+            indices.all { index ->
+                val i = slotIndex.byPersonIndex[person to index] ?: return@filter false
+                canAssignToSlot(
+                    req,
+                    slots[i]
                 )
             }
-
-            when {
-                // 1人必要 → 全員分 proposal
-                requirement.requiredCount == 1 -> {
-                    validPersons.map { person ->
-                        FlexResolveProposal(
-                            type = ProposalType.WAITING,
-                            sourceRuleId = requirement.sourceRuleId,
-                            requirementSource = requirement.source,
-                            requirementName = reason.requirementName,
-                            persons = listOf(person),
-                            initialIndex = startIndex,
-                            candidateIndex = newStartIndex,
-                            targetState = requirement.targetState
-                        )
-                    }
-                }
-
-                // 複数人必要 → まとめて1 proposal
-                validPersons.size >= requirement.requiredCount -> {
-                    listOf(
-                        FlexResolveProposal(
-                            type = ProposalType.WAITING,
-                            sourceRuleId = requirement.sourceRuleId,
-                            requirementSource = requirement.source,
-                            requirementName = reason.requirementName,
-                            persons = validPersons.take(requirement.requiredCount),
-                            initialIndex = startIndex,
-                            candidateIndex = newStartIndex,
-                            targetState = requirement.targetState
-                        )
-                    )
-                }
-
-                else -> emptyList()
-            }
         }
+
+        return validPersons.size >= req.requiredCount
     }
 
-    fun canAssignBlock(
+    private fun canAssignBlock(
         person: Person,
         requirement: HouseholdRequirement,
         baseStartIndex: Int,
@@ -414,7 +427,7 @@ object AvailabilityEngine {
             val idx = slotIndex.byPersonIndex[slotIndexKey] ?: return false
             val slot = slots[idx]
 
-            if (!canAssignToSlot(
+            if (!canResolveToSlot(
                     requirement,
                     slot
                 )
@@ -425,104 +438,26 @@ object AvailabilityEngine {
         return true
     }
 
-    fun generateAssignedProposals(
-        index: Int,
-        slots: List<TimeSlot>,
-        slotIndex: SlotIndex,
-        requirements: List<HouseholdRequirement>,
-        reason: MissingReason
-    ): List<FlexResolveProposal> {
+    fun canAssignToSlot(
+        req: HouseholdRequirement,
+        slot: TimeSlot
+    ): Boolean {
 
-        val hasFlexRequirement =
-            requirements.any {
-                it.flexWindowSlots.backward != 0 ||
-                        it.flexWindowSlots.forward != 0
-            }
-
-        if (!hasFlexRequirement) return emptyList()
-
-        val slotsAtIndex = slotIndex.byIndex[index].orEmpty().map { slots[it] }
-        val waitingReq = requirements.find { it.sourceRuleId == reason.sourceRuleId }
-            ?: return emptyList()
-
-        val waitingStart =  waitingReq.allIndices().first()
-        val waitingEnd =  waitingReq.allIndices().last()
-
-        return slotsAtIndex
-            .filter { it.person in waitingReq.allowedPersons &&
-                    it.state != waitingReq.targetState }
-            .flatMap { slot ->
-                val assignedReqs =
-                    requirements.filter { it.sourceRuleId in slot.taskIds }
-                val targetReq = assignedReqs.maxByOrNull { it.prioritySeed }
-                    ?: return@flatMap emptyList()
-
-                val targetReqRange = targetReq.allIndices()
-                val baseStartIndex = targetReqRange.first()
-                val baseEndIndex = targetReqRange.last()
-                val offsetPair = listOf(
-                    waitingStart - baseEndIndex,
-                    waitingEnd - baseStartIndex
-                    )
-                val persons = targetReq.allowedPersons.toList()
-                val window = targetReq.flexWindowSlots
-                val offsets = (-window.backward until 0) + (1..window.forward)
-
-                offsets.flatMap { offset ->
-                    if (!(offset <= offsetPair.first() || offset >= offsetPair.last())) return@flatMap emptyList()
-                    val newStartIndex = baseStartIndex + offset
-                    if (newStartIndex !in TimeAxis.all.indices) return@flatMap emptyList()
-
-                    val validPersons = persons.filter {
-                        canAssignBlock(
-                            person = it,
-                            requirement = targetReq,
-                            baseStartIndex = baseStartIndex,
-                            candidateStartIndex = newStartIndex,
-                            slots = slots,
-                            slotIndex = slotIndex
-                        )
-                    }
-
-                    if (validPersons.size < targetReq.requiredCount) return@flatMap emptyList()
-
-                    when {
-                        // 1人必要 → 全員分 proposal
-                        targetReq.requiredCount == 1 -> {
-                            validPersons.map { person ->
-                                FlexResolveProposal(
-                                    type = ProposalType.ASSIGNED,
-                                    sourceRuleId = targetReq.sourceRuleId,
-                                    requirementSource = targetReq.source,
-                                    requirementName = targetReq.name,
-                                    persons = listOf(person),
-                                    initialIndex = baseStartIndex,
-                                    candidateIndex = newStartIndex,
-                                    targetState = targetReq.targetState
-                                )
-                            }
-                        }
-                        // 複数人必要 → まとめて1 proposal
-                        validPersons.size >= targetReq.requiredCount -> {
-                            listOf(
-                                FlexResolveProposal(
-                                    type = ProposalType.ASSIGNED,
-                                    sourceRuleId = targetReq.sourceRuleId,
-                                    requirementSource = targetReq.source,
-                                    requirementName = targetReq.name,
-                                    persons = validPersons.take(targetReq.requiredCount),
-                                    initialIndex = baseStartIndex,
-                                    candidateIndex = newStartIndex,
-                                    targetState = targetReq.targetState
-                                )
-                            )
-                        }
-                        else -> emptyList()
-                    }
-                }
-            }
-            .distinctBy { Triple(it.sourceRuleId, it.candidateIndex, it.persons.sorted()) }
-            .sortedBy { it.score(slots) }
-            .take(2)
+        if (slot.state.weight < req.targetState.weight) {
+            return true
         }
+
+        if (slot.state.weight > req.targetState.weight) {
+            return false
+        }
+
+        return req.source.semantics.canCoexist(slot.effectiveSemantics)
     }
+
+    fun canResolveToSlot(
+        req: HouseholdRequirement,
+        slot: TimeSlot
+    ): Boolean {
+        return slot.state.weight <= req.targetState.weight
+    }
+}

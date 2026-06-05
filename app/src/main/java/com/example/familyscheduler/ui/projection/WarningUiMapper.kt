@@ -2,7 +2,6 @@ package com.example.familyscheduler.ui.projection
 
 import com.example.familyscheduler.domain.interaction.BlockAction
 import com.example.familyscheduler.domain.interaction.TimelineBlock
-import com.example.familyscheduler.domain.person.Person
 import com.example.familyscheduler.domain.requirement.RequirementSemantics
 import com.example.familyscheduler.domain.slot.SlotState
 import com.example.familyscheduler.domain.time.TimeAxis
@@ -25,12 +24,10 @@ fun TimelineBlock.toWarningUiModel(
     }
 
     val personStates =
-        Person.entries.map { person ->
-            PersonAvailabilityUiModel(
-                person = person,
-                assignable = person in assignablePersons
-            )
-        }
+        PersonAvailabilityUiModel(
+            blockingPersons = blockingPersons,
+            requiredCount = requiredCount
+        )
 
     return WarningUiModel(
         dialogKey = WarningDialogKey(

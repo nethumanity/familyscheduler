@@ -237,9 +237,10 @@ fun TimelineScreen(
     dialogState?.let { state ->
 
         WarningDialog(
-            index = state.index,
-            evaluation = state.evaluation,
-            initialPage = state.reasonIndex,
+            time = state.time,
+            warningPages = state.warningPages,
+            proposalsById = state.proposalsById,
+            initialPage = state.initialPage,
             onDismiss = {
                 viewModel.dismissWarningDialog()
             },

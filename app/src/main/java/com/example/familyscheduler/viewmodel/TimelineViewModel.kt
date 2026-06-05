@@ -6,7 +6,6 @@ import androidx.lifecycle.viewModelScope
 import com.example.familyscheduler.domain.evaluation.AvailabilityEngine
 import com.example.familyscheduler.domain.evaluation.AvailabilityEvaluation
 import com.example.familyscheduler.domain.evaluation.FlexResolveProposal
-import com.example.familyscheduler.domain.evaluation.ReasonEvaluation
 import com.example.familyscheduler.domain.interaction.TimelineBlock
 import com.example.familyscheduler.domain.interaction.TimelineBlockBuilder
 import com.example.familyscheduler.domain.person.Person
@@ -61,6 +60,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+import java.time.LocalTime
 
 class TimelineViewModel(
     private val templateRepository: TemplateRepository,
@@ -82,9 +82,10 @@ class TimelineViewModel(
     val events = _events.asSharedFlow()
 
     data class WarningDialogState(
-        val index: Int,
-        val reasonIndex: Int,
-        val evaluation: AvailabilityEvaluation
+        val time: LocalTime,
+        val warningPages: List<WarningUiModel>,
+        val proposalsById: Map<String, List<FlexResolveProposal>>,
+        val initialPage: Int
     )
 
     data class TimelineUiState(
@@ -100,7 +101,6 @@ class TimelineViewModel(
         val slotsByPersonIndex: Map<Pair<Person, Int>, TimeSlot>,
         val evaluations: List<AvailabilityEvaluation>,
         val evaluationsByIndex: Map<Int, AvailabilityEvaluation>,
-        val reasonsById: Map<String, List<ReasonEvaluation>>,
         val proposalsById: Map<String, List<FlexResolveProposal>>,
         val requirements: List<HouseholdRequirement>,
         val rules: List<HouseholdRequirementRule>,
@@ -133,7 +133,6 @@ class TimelineViewModel(
             slotsByPersonIndex = emptyMap(),
             evaluations = emptyList(),
             evaluationsByIndex = emptyMap(),
-            reasonsById = emptyMap(),
             proposalsById = emptyMap(),
             requirements = emptyList(),
             rules = emptyList(),
@@ -380,9 +379,7 @@ class TimelineViewModel(
         val slotsByIndex = result.slots.groupBy { it.index }
         val slotsByPersonIndex = result.slots.associateBy { it.person to it.index }
         val evaluationsByIndex = result.evaluations.associateBy { it.index }
-        val allReasons = result.evaluations.flatMap { it.reasons }
-        val reasonsById = allReasons.groupBy { it.reason.sourceRuleId }
-        val proposalsById = allReasons.flatMap { it.proposals }.groupBy { it.sourceRuleId }
+        val proposalsById = result.proposalsByRequirementId
         val ruleNameMap = mergedRules.associate { it.id to it.taskName }
 
         // ⑤ Interaction
@@ -407,7 +404,6 @@ class TimelineViewModel(
             slotsByPersonIndex = slotsByPersonIndex,
             evaluations = result.evaluations,
             evaluationsByIndex = evaluationsByIndex,
-            reasonsById = reasonsById,
             proposalsById = proposalsById,
             requirements = requirements,
             rules = mergedRules,
@@ -432,15 +428,8 @@ class TimelineViewModel(
                 .filter { it.assignablePersons.size < it.requiredCount }
                 .mapNotNull { block ->
 
-                    val relatedEvaluation =
-                        state.evaluationsByIndex[block.startIndex]
-                            ?: return@mapNotNull null
-
                     val ruleId =
-                        relatedEvaluation.reasons
-                            .firstOrNull { it.reason.sourceRuleId in block.requirementIds }
-                            ?.reason
-                            ?.sourceRuleId
+                        block.requirementIds.firstOrNull()
                             ?: return@mapNotNull null
 
                     val relatedProposals =
@@ -620,7 +609,8 @@ class TimelineViewModel(
                     if (slot.index == index) {
                         slot.copy(
                             state = newState,
-                            taskIds = emptyList()
+                            taskIds = emptyList(),
+                            effectiveSemantics = RequirementSemantics.STATE
                         )
                     } else slot
                 }
@@ -704,32 +694,56 @@ class TimelineViewModel(
     // 警告→提案→実行：編集機能
     fun openFirstWarningDialog(index: Int) {
 
+        val time = TimeAxis.all[index]
+
         val evaluation =
             _uiState.value.evaluationsByIndex[index]
                 ?: return
 
+        val warningPages =
+            evaluation.warningReqIds.mapNotNull { warningReqId ->
+                _dailyOverviewUiState.value.warningItems
+                    .firstOrNull {
+                        warningReqId in it.requirementIds
+                    }
+            }
+
         _warningDialogState.value =
             WarningDialogState(
-                index = index,
-                reasonIndex = 0,
-                evaluation = evaluation
+                time = time,
+                warningPages = warningPages,
+                proposalsById = _uiState.value.proposalsById,
+                initialPage = 0
             )
     }
 
     fun openWarningDialog(key: WarningDialogKey) {
 
-        val evaluation = _uiState.value.evaluationsByIndex[key.index] ?: return
+        val time = TimeAxis.all[key.index]
 
-        val reasonIndex =
-            evaluation.reasons.indexOfFirst {
-                it.reason.sourceRuleId == key.ruleId
+        val evaluation =
+            _uiState.value.evaluationsByIndex[key.index]
+                ?: return
+
+        val warningPages =
+            evaluation.warningReqIds.mapNotNull { warningReqId ->
+                _dailyOverviewUiState.value.warningItems
+                    .firstOrNull {
+                        warningReqId in it.requirementIds
+                    }
+            }
+
+        val initialPage =
+            warningPages.indexOfFirst {
+                it.dialogKey.ruleId == key.ruleId
             }.takeIf { it >= 0 } ?: 0
 
         _warningDialogState.value =
             WarningDialogState(
-                index = key.index,
-                reasonIndex = reasonIndex,
-                evaluation = evaluation
+                time = time,
+                warningPages = warningPages,
+                proposalsById = _uiState.value.proposalsById,
+                initialPage = initialPage
             )
     }
 

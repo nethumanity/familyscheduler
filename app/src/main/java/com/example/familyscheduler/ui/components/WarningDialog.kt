@@ -24,25 +24,32 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.familyscheduler.domain.evaluation.AvailabilityEvaluation
 import com.example.familyscheduler.domain.evaluation.FlexResolveProposal
-import com.example.familyscheduler.domain.time.TimeAxis
 import com.example.familyscheduler.ui.presentation.renderMissingReason
+import com.example.familyscheduler.ui.projection.WarningUiModel
+import java.time.LocalTime
 
 @Composable
 fun WarningDialog(
-    index: Int,
-    evaluation: AvailabilityEvaluation,
+    time: LocalTime,
+    warningPages: List<WarningUiModel>,
+    proposalsById: Map<String, List<FlexResolveProposal>>,
     initialPage: Int,
     onDismiss: () -> Unit,
     onApplyProposal: (FlexResolveProposal) -> Unit
 ) {
     val pagerState = rememberPagerState(
         initialPage = initialPage,
-        pageCount = { evaluation.reasons.size ?: 0 }
+        pageCount = { warningPages.size }
     )
-    val currentReason = evaluation.reasons.getOrNull(pagerState.currentPage)
-    val hasProposal = currentReason?.proposals?.isNotEmpty() == true
+
+    val current =
+        warningPages.getOrNull(pagerState.currentPage)
+
+    val currentProposals =
+        current?.let {
+            proposalsById[it.dialogKey.ruleId]
+        }.orEmpty()
 
     var selectedProposal by remember(pagerState.currentPage) {
         mutableStateOf<FlexResolveProposal?>(null)
@@ -56,7 +63,7 @@ fun WarningDialog(
             }
         },
         dismissButton = {
-            if (hasProposal) {
+            if (currentProposals.isNotEmpty()) {
                 TextButton(
                     enabled = selectedProposal != null,
                     onClick = {
@@ -68,52 +75,53 @@ fun WarningDialog(
             }
         },
         title = {
-            Text("${TimeAxis.all[index]} の予定を確認してください")
+            Text("${time} の予定を確認してください")
         },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
 
-                if (evaluation != null) {
+                HorizontalPager(state = pagerState) { page ->
 
-                    HorizontalPager(state = pagerState) { page ->
+                    val warning = warningPages[page]
 
-                        val reason = evaluation.reasons[page]
+                    val proposals =
+                        proposalsById[warning.dialogKey.ruleId]
+                            ?: emptyList()
 
-                        Column(
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Text(renderMissingReason(reason.reason))
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(renderMissingReason(warning))
 
-                            if (reason.proposals.isNotEmpty()) {
-                                HorizontalDivider()
-                                Text("解消案", fontWeight = FontWeight.Bold)
+                        if (proposals.isNotEmpty()) {
+                            HorizontalDivider()
+                            Text("解消案", fontWeight = FontWeight.Bold)
 
-                                reason.proposals.forEach { proposal ->
-                                    ProposalRow(
-                                        proposal = proposal,
-                                        selected = selectedProposal == proposal,
-                                        onSelect = { selectedProposal = proposal }
-                                    )
-                                }
+                            proposals.forEach { proposal ->
+                                ProposalRow(
+                                    proposal = proposal,
+                                    selected = selectedProposal == proposal,
+                                    onSelect = { selectedProposal = proposal }
+                                )
                             }
                         }
                     }
+                }
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        repeat(evaluation.reasons.size) { i ->
-                            Box(
-                                modifier = Modifier
-                                    .padding(2.dp)
-                                    .size(6.dp)
-                                    .background(
-                                        if (pagerState.currentPage == i) Color.DarkGray else Color.LightGray,
-                                        shape = CircleShape
-                                    )
-                            )
-                        }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    repeat(warningPages.size) { i ->
+                        Box(
+                            modifier = Modifier
+                                .padding(2.dp)
+                                .size(6.dp)
+                                .background(
+                                    if (pagerState.currentPage == i) Color.DarkGray else Color.LightGray,
+                                    shape = CircleShape
+                                )
+                        )
                     }
                 }
             }

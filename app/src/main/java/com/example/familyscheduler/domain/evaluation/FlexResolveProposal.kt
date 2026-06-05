@@ -8,10 +8,12 @@ import kotlin.math.abs
 
 data class FlexResolveProposal(
     val type: ProposalType,
+    val resolvedRequirementId: String,
     val sourceRuleId: String,
     val requirementSource: RequirementSource,
     val requirementName: String,
     val persons: List<Person>,
+    val requiredCount: Int,
     val initialIndex: Int,
     val candidateIndex: Int,
     val targetState: SlotState

@@ -11,6 +11,7 @@ data class TimelineBlock(
     val mode: RequirementModeToday,
     val assignedPersons: List<Person>,
     val assignablePersons: List<Person>,
+    val blockingPersons: List<Person>,
     val requiredCount: Int,
     val requirementIds: List<String>,
     val allowedActions: Set<BlockAction>
