@@ -14,11 +14,10 @@ import androidx.compose.ui.unit.sp
 import com.example.familyscheduler.domain.person.Person
 import com.example.familyscheduler.domain.slot.SlotState
 import com.example.familyscheduler.ui.presentation.SlotStatePresentation
-import java.time.LocalTime
 
 @Composable
 fun SlotStateSelectionSheet(
-    time: LocalTime,
+    timeText: String,
     person: Person,
     onSelect: (SlotState) -> Unit
 ) {
@@ -28,7 +27,7 @@ fun SlotStateSelectionSheet(
             .padding(16.dp)
     ) {
         Text(
-            text = "${time} / ${person.label}",
+            text = timeText + " / " + person.label,
             fontSize = 16.sp
         )
 

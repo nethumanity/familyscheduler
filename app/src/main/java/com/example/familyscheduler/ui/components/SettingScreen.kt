@@ -116,7 +116,7 @@ fun SettingsScreen(
             SettingsNumberItem(
                 title = "表示開始時刻",
                 value = uiState.timelineStartIndex,
-                displayText = "${TimeAxis.all.getOrNull(uiState.timelineStartIndex)?.toString() ?: "--:--"}（固定）",
+                displayText = TimeAxis.timeLabelAt(uiState.timelineStartIndex) + "（固定）",
                 onValueChange = {} // viewModel未実装
             )
         }
@@ -124,11 +124,11 @@ fun SettingsScreen(
             SettingsNumberItem(
                 title = "表示終了時刻",
                 value = uiState.timelineEndIndex,
-                displayText = "${TimeAxis.all.getOrNull(uiState.timelineEndIndex)?.toString() ?: "--:--"}（固定）",
+                displayText = TimeAxis.timeLabelAt(uiState.timelineEndIndex + 1) + "（固定）",
                 onValueChange = {} // viewModel未実装
             )
         }
-        item {
+        item {  // 製品版では表示しない、あるいは、削除？
             SettingsNumberItem(
                 title = "単位時間",
                 value = uiState.timelineStepMinutes,

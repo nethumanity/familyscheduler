@@ -59,6 +59,8 @@ fun TimelineScreen(
     val uiState by viewModel.uiState.collectAsState()
     val dialogState by viewModel.warningDialogState.collectAsState()
 
+    val indices = uiState.settings.timelineIndices
+
     val ruleMap = remember(uiState.rules) { uiState.rules.associateBy { it.id } }
     val slotMap = remember(uiState.slots) { uiState.slots.groupBy { it.index } }
 
@@ -98,13 +100,11 @@ fun TimelineScreen(
                 )
             }
 
-            items(
-                count = TimeAxis.displayEndIndex - TimeAxis.displayStartIndex + 1
-            ) { offset ->
+            items(indices.count()) { offset ->
 
-                val index = TimeAxis.displayStartIndex + offset
+                val index = indices.first + offset
 
-                val time = TimeAxis.all[index]
+                val timeText = TimeAxis.timeLabelAt(index)
                 val rowSlots = slotMap[index] ?: emptyList()
                 val rowSlotMap = remember(rowSlots) { rowSlots.associateBy { it.person } }
 
@@ -113,7 +113,7 @@ fun TimelineScreen(
                         .fillMaxWidth()
                         .height(48.dp)
                         .border(0.5.dp, Color.LightGray)
-                        .pointerInput(persons, time) {
+                        .pointerInput(persons) {
 
                             detectTapGestures(
                                 onTap = {
@@ -151,7 +151,7 @@ fun TimelineScreen(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = time.toString(),
+                            text = timeText,
                             fontSize = 12.sp
                         )
 
@@ -212,7 +212,7 @@ fun TimelineScreen(
 
     editingSlot?.let { (index, person) ->
 
-        val time = TimeAxis.all[index]
+        val timeText = TimeAxis.timeLabelAt(index)
 
         ModalBottomSheet(
             onDismissRequest = {
@@ -220,7 +220,7 @@ fun TimelineScreen(
             }
         ) {
             SlotStateSelectionSheet(
-                time = time,
+                timeText = timeText,
                 person = person,
                 onSelect = { newState ->
                     viewModel.changeSlotState(

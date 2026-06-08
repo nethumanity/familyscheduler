@@ -301,6 +301,7 @@ class TimelineBlockBuilder {
         }
     }
 
+    // STATEのみ連続区間として統合（TASK・EVENTは個別表示するため連結しない）
     private fun mergeAdjacent(
         items: List<TimelineBlock>
     ): List<TimelineBlock> {
@@ -321,14 +322,15 @@ class TimelineBlockBuilder {
             val prev = current.last()
 
             val mergeable =
-                prev.endIndex == item.startIndex &&
+                prev.semantics == RequirementSemantics.STATE &&
+                        item.semantics == RequirementSemantics.STATE &&
+                        prev.endIndex == item.startIndex &&
                         prev.mode == item.mode &&
                         prev.assignedPersons.toSet() == item.assignedPersons.toSet() &&
                         prev.assignablePersons.toSet() == item.assignablePersons.toSet() &&
                         prev.blockingPersons.toSet() == item.blockingPersons.toSet() &&
                         prev.requiredCount == item.requiredCount &&
-                        prev.allowedActions == item.allowedActions &&
-                        prev.semantics == item.semantics
+                        prev.allowedActions == item.allowedActions
 
             if (mergeable) {
                 current += item

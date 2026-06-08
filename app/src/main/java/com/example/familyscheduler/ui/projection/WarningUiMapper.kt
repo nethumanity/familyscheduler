@@ -13,9 +13,7 @@ fun TimelineBlock.toWarningUiModel(
     hasProposal: Boolean
 ): WarningUiModel {
 
-    fun indexToTime(index: Int) = TimeAxis.all.getOrNull(index)
-
-    val timeText = "${indexToTime(startIndex)}–${indexToTime(endIndex)}"
+    val timeText = TimeAxis.timeLabelRange(startIndex, endIndex)
 
     val nameText = if (semantics == RequirementSemantics.STATE) {
         SlotStatePresentation.label(SlotState.CHILDCARE)

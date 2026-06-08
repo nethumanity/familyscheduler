@@ -7,9 +7,7 @@ import com.example.familyscheduler.ui.projection.StatusUiModel.Canceled.toStatus
 
 fun TimelineBlock.toCareStateUiModel(): CareStateUiModel {
 
-    fun indexToTime(index: Int) = TimeAxis.all.getOrNull(index)
-
-    val timeText = "${indexToTime(startIndex)}–${indexToTime(endIndex)}"
+    val timeText = TimeAxis.timeLabelRange(startIndex, endIndex)
 
     return CareStateUiModel(
         requirementIds = requirementIds,

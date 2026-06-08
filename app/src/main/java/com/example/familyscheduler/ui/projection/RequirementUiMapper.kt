@@ -18,7 +18,7 @@ fun TimelineBlock.toRequirementUiModel(
 
     val requirementId = requirementIds.first()
 
-    val startText = "${TimeAxis.all.getOrNull(startIndex)}"
+    val startText = TimeAxis.timeLabelAt(startIndex)
 
     val isProposalApplied =
         when (semantics) {

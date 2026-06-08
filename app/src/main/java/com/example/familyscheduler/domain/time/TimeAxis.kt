@@ -35,9 +35,21 @@ object TimeAxis {
     const val stepMinutes = SLOT_MINUTES
 
     // UI表示用
-    val displayStartIndex =
-        indexOf(LocalTime.of(5, 0))
+//    val displayStartIndex =
+//        indexOf(LocalTime.of(5, 0))
+//
+//    val displayEndIndex =
+//        indexOf(LocalTime.of(23, 30))
 
-    val displayEndIndex =
-        indexOf(LocalTime.of(23, 30))
+    fun timeLabelAt(index: Int): String =
+        when (index) {
+            all.size -> "24:00"
+            else -> all.getOrNull(index)?.toString() ?: "--:--"
+        }
+
+    fun timeLabelRange(
+        startIndex: Int,
+        endIndex: Int
+    ): String =
+        "${timeLabelAt(startIndex)}–${timeLabelAt(endIndex)}"
 }

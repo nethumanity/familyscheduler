@@ -14,4 +14,7 @@ data class SettingsUiState(
     init {
         require(timelineStartIndex <= timelineEndIndex)
     }
+
+    val timelineIndices: IntRange
+        get() = timelineStartIndex..timelineEndIndex
 }
