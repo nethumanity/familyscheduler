@@ -19,16 +19,33 @@ data class FlexResolveProposal(
     val targetState: SlotState
 ) {
     fun score(slots: List<TimeSlot>): Int {
-        val candidateSlot = slots.find {
-            it.person in persons && it.index == candidateIndex
-        } ?: return Int.MAX_VALUE
 
-        val moveCost =
-            if (candidateSlot.state == targetState) 0
-            else candidateSlot.state.weight
+        val scores =
+            persons.mapNotNull { person ->
 
-        val distanceCost = abs(candidateIndex - initialIndex)
+                val candidateSlot = slots.find {
+                    it.person == person &&
+                            it.index == candidateIndex
+                } ?: return@mapNotNull null
 
-        return moveCost * 10 + distanceCost
+                val moveCost =
+                    if (candidateSlot.state == targetState) 0
+                    else candidateSlot.state.weight
+
+                val distanceCost =
+                    abs(candidateIndex - initialIndex)
+
+                moveCost * 10 + distanceCost
+            }
+
+        if (scores.isEmpty()) {
+            return Int.MAX_VALUE
+        }
+
+        return when {
+            persons.size >= 2 && requiredCount >= 2 -> scores.max()
+            persons.size >= 2 -> scores.min()
+            else -> scores.first()
+        }
     }
 }
