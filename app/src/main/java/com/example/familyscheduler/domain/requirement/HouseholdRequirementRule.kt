@@ -22,7 +22,9 @@ data class HouseholdRequirementRule(
     val timeRange: TimeRange,
     val createdAt: Long = System.currentTimeMillis()
 ) {
-    fun toRequirement(): TimeRangeHouseholdRequirement {
+    fun toRequirement(
+        requiredCount: Int = this.requiredCount
+    ): TimeRangeHouseholdRequirement {
 
         val startIndex = TimeAxis.indexOf(timeRange.start)
         val endIndex = TimeAxis.indexOf(timeRange.end)
@@ -46,20 +48,20 @@ data class HouseholdRequirementRule(
         val length = endIndex - startIndex
         val tightness =
             if (allowedPersons.isEmpty()) 1.0
-            else 2.0 / allowedPersons.size
+            else 2.0 / (allowedPersons.size * requiredCount)
+
+        val constraintScore =
+            (tightness * 1_000_000).toLong()
 
         val semanticScore =
-            targetState.weight * 1_000_000L
+            targetState.weight * 100_000L
 
         val sourceScore =
             when (source.semantics) {
-                RequirementSemantics.TASK -> 600_000L
-                RequirementSemantics.EVENT -> 300_000L
+                RequirementSemantics.TASK -> 60_000L
+                RequirementSemantics.EVENT -> 30_000L
                 RequirementSemantics.STATE -> 0L
             }
-
-        val constraintScore =
-            (tightness * 100_000).toLong()
 
         val timeScore =
             length * 10_000L
@@ -70,9 +72,9 @@ data class HouseholdRequirementRule(
         val tieBreaker =
             ((if (date != null) 1 else 0) * 1_000L) + (createdAt % 1000)
 
-        return semanticScore +
+        return constraintScore +
+                semanticScore +
                 sourceScore +
-                constraintScore +
                 timeScore +
                 flexibleScore +
                 tieBreaker

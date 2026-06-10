@@ -159,7 +159,7 @@ object AvailabilityEngine {
             val i = slotIndex.byPersonIndex[person to index] ?: return Int.MIN_VALUE
             val slot = slots[i]
 
-            if (!canAssignToSlot(req, slot)) {
+            if (!AssignmentRules.canAssign(req, slot)) {
                 return Int.MIN_VALUE
             }
 
@@ -298,8 +298,10 @@ object AvailabilityEngine {
                 slotIndex.byIndex[index]
                     .orEmpty()
                     .map { slots[it] }
-                    .filter { it.person in warningReq.allowedPersons &&
-                            !canAssignToSlot(warningReq, it) }
+                    .filter {
+                        it.person in warningReq.allowedPersons &&
+                                !AssignmentRules.canAssign(warningReq, it)
+                    }
             }
 
         val assignedReqs =
@@ -401,7 +403,7 @@ object AvailabilityEngine {
         val validPersons = req.allowedPersons.filter { person ->
             indices.all { index ->
                 val i = slotIndex.byPersonIndex[person to index] ?: return@filter false
-                canAssignToSlot(
+                AssignmentRules.canAssign(
                     req,
                     slots[i]
                 )
@@ -436,22 +438,6 @@ object AvailabilityEngine {
             }
         }
         return true
-    }
-
-    fun canAssignToSlot(
-        req: HouseholdRequirement,
-        slot: TimeSlot
-    ): Boolean {
-
-        if (slot.state.weight < req.targetState.weight) {
-            return true
-        }
-
-        if (slot.state.weight > req.targetState.weight) {
-            return false
-        }
-
-        return req.source.semantics.canCoexist(slot.effectiveSemantics)
     }
 
     fun canResolveToSlot(
