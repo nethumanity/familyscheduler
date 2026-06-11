@@ -8,6 +8,8 @@ import com.example.familyscheduler.domain.requirement.RequirementToggleOverride
 import com.example.familyscheduler.domain.slot.SlotState
 import com.example.familyscheduler.domain.slot.TimeSlot
 import com.example.familyscheduler.domain.time.TimeAxis
+import kotlin.collections.firstOrNull
+import kotlin.collections.orEmpty
 
 object AvailabilityEngine {
 
@@ -227,7 +229,15 @@ object AvailabilityEngine {
                 warningReq = warningReq
             )
 
-        return waiting + assigned
+        val reverse =
+            generateReverseProposals(
+                slots = slots,
+                slotIndex = slotIndex,
+                requirements = requirements,
+                warningReq = warningReq
+            )
+
+        return reverse + waiting + assigned
     }
 
     fun generateWaitingProposals(
@@ -377,6 +387,90 @@ object AvailabilityEngine {
             }
             .sortedBy { it.score(slots) }
             .take(2)
+    }
+
+    fun generateReverseProposals(
+        slots: List<TimeSlot>,
+        slotIndex: SlotIndex,
+        requirements: List<HouseholdRequirement>,
+        warningReq: HouseholdRequirement
+    ): List<FlexResolveProposal> {
+
+        if (warningReq.requiredCount > 1 || warningReq.allowedPersons.size < 2)
+            return emptyList()
+
+        val swapList = mutableListOf<FlexResolveProposal>()
+
+        warningReq.allowedPersons.forEach { person ->
+
+            val targetSlots =
+                warningReq.allIndices().flatMap { index ->
+                    slotIndex.byIndex[index]
+                        .orEmpty()
+                        .map { slots[it] }
+                        .filter {
+                            it.person == person &&
+                                    !AssignmentRules.canAssign(warningReq, it)
+                        }
+                }
+
+            val assignedReqs =
+                targetSlots.flatMap { slot ->
+                    // taskIdsが空のslotがひとつでもあれば、personの処理全体を終了する
+                    if (slot.taskIds.isEmpty()) return@forEach
+                    requirements.filter { it.sourceRuleId in slot.taskIds }
+                }.distinct()
+
+            val targetReqs =
+                assignedReqs
+                    .filter {
+                        it.requiredCount == 1 && it.allowedPersons.size == 2
+                    }
+                    .filter {
+                        it.prioritySeed >= warningReq.prioritySeed
+                    }
+                    .sortedByDescending { it.prioritySeed }
+
+            if (targetReqs.isEmpty()) return@forEach
+
+            for (targetReq in targetReqs) {
+
+                val reversedPerson = (targetReq.allowedPersons - person).singleOrNull()
+                    ?: continue
+
+                val targetIndices = targetReq.allIndices()
+                val targetStartIndex = targetIndices.first()
+
+                val reverseAssignable =
+                    targetIndices.all { index ->
+                        val slot =
+                            slotIndex.byIndex[index]
+                                .orEmpty()
+                                .map { slots[it] }
+                                .firstOrNull { it.person == reversedPerson }
+                                ?: return@all false
+
+                        AssignmentRules.canAssign(targetReq, slot)
+                    }
+
+                if (reverseAssignable)
+                    swapList +=
+                        FlexResolveProposal(
+                            type = ProposalType.REVERSE,
+                            resolvedRequirementId = warningReq.sourceRuleId,
+                            sourceRuleId = targetReq.sourceRuleId,
+                            requirementSource = targetReq.source,
+                            requirementName = targetReq.name,
+                            persons = listOf(reversedPerson),
+                            requiredCount = targetReq.requiredCount,
+                            initialIndex = targetStartIndex,
+                            candidateIndex = targetStartIndex,
+                            targetState = targetReq.targetState
+                        )
+            }
+        }
+
+        return swapList
     }
 
     private fun assignRemainingUnassignedToFree(

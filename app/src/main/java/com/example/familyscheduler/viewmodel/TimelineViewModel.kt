@@ -6,12 +6,14 @@ import androidx.lifecycle.viewModelScope
 import com.example.familyscheduler.domain.evaluation.AvailabilityEngine
 import com.example.familyscheduler.domain.evaluation.AvailabilityEvaluation
 import com.example.familyscheduler.domain.evaluation.FlexResolveProposal
+import com.example.familyscheduler.domain.evaluation.ProposalType
 import com.example.familyscheduler.domain.interaction.TimelineBlock
 import com.example.familyscheduler.domain.interaction.TimelineBlockBuilder
 import com.example.familyscheduler.domain.person.Person
 import com.example.familyscheduler.domain.requirement.HouseholdRequirement
 import com.example.familyscheduler.domain.requirement.HouseholdRequirementRule
 import com.example.familyscheduler.domain.requirement.RequirementBuilder
+import com.example.familyscheduler.domain.requirement.RequirementModeToday
 import com.example.familyscheduler.domain.requirement.RequirementOverride
 import com.example.familyscheduler.domain.requirement.RequirementSemantics
 import com.example.familyscheduler.domain.requirement.RequirementShiftOverride
@@ -61,6 +63,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalTime
+import kotlin.collections.component1
+import kotlin.collections.component2
 
 class TimelineViewModel(
     private val templateRepository: TemplateRepository,
@@ -754,94 +758,189 @@ class TimelineViewModel(
     fun applyFlexResolveProposal(
         proposal: FlexResolveProposal
     ) {
-
         viewModelScope.launch {
 
-            when (proposal.requirementSource) {
+            when (proposal.type) {
 
-                RequirementSource.USER -> {
-                    val existOverride =
-                        _uiState.value.overrides
-                            .filterIsInstance<RequirementShiftOverride>()
-                            .firstOrNull {
-                                it.ruleId == proposal.sourceRuleId &&
-                                        it.date == _currentDate.value
-                            }
+                ProposalType.REVERSE -> applyReverseProposal(proposal)
 
-                    val deltaSteps =
-                        (proposal.candidateIndex - proposal.initialIndex) +
-                                (existOverride?.deltaSteps ?: 0)
+                else -> applyShiftProposal(proposal)
+            }
 
-                    val before = existOverride
-                    val new = RequirementShiftOverride(
-                        ruleId = proposal.sourceRuleId,
-                        date = _currentDate.value,
-                        deltaSteps = deltaSteps
-                    )
+            dismissWarningDialog()
+        }
+    }
 
-                    requirementOverrideRepository.replace(new)
+    private suspend fun applyReverseProposal(
+        proposal: FlexResolveProposal
+    ) {
+        val careState =
+            _dailyOverviewUiState.value.careStateItems.firstOrNull { item ->
+                proposal.sourceRuleId in item.requirementIds
+            }
 
-                    _events.emit(
-                        UiEvent.ShowUndoProposal(
-                            onUndo = {
-                                viewModelScope.launch {
-                                    if (before != null) {
-                                        requirementOverrideRepository.replace(before)
-                                    } else {
-                                        requirementOverrideRepository.delete(new)
-                                    }
-                                }
-                            }
-                        )
-                    )
+        if (careState == null) {
+
+            val requirement =
+                _dailyOverviewUiState.value.requirementItems.first { item ->
+                    proposal.sourceRuleId == item.requirementId
                 }
-                RequirementSource.NURSERY_DROP_OFF, RequirementSource.NURSERY_PICKUP -> {
-                    val event =
-                        _uiState.value.childCareEvents
-                            .firstOrNull { it.eventId == proposal.sourceRuleId }
-                            ?: return@launch
 
-                    val label = when (proposal.requirementSource) {
-                        RequirementSource.NURSERY_DROP_OFF -> ChildCareLabel.NURSERY_DROP_OFF
-                        RequirementSource.NURSERY_PICKUP -> ChildCareLabel.NURSERY_PICKUP
-                        else -> return@launch
-                    }
+            val newMode =
+                when (requirement.mode) {
+                    RequirementModeToday.REVERSE -> RequirementModeToday.AUTO
+                    else -> RequirementModeToday.REVERSE
+                }
 
-                    val beforeMap = event.childIds.associateWith { childId ->
-                        _uiState.value.routineShiftOverrides.firstOrNull {
-                            it.childId == childId &&
-                                    it.date == _currentDate.value &&
-                                    it.eventType == label
+            requirementOverrideRepository.replace(
+                override = RequirementToggleOverride(
+                    ruleId = requirement.requirementId,
+                    date = _currentDate.value,
+                    mode = newMode
+                )
+            )
+
+            _events.emit(
+                UiEvent.ShowUndoProposal(
+                    onUndo = {
+                        viewModelScope.launch {
+                            requirementOverrideRepository.replace(
+                                override = RequirementToggleOverride(
+                                    ruleId = requirement.requirementId,
+                                    date = _currentDate.value,
+                                    mode = requirement.mode
+                                )
+                            )
                         }
                     }
+                )
+            )
 
-                    val news = event.childIds.map { childId ->
-                        RoutineShiftOverride(
-                            childId = childId,
-                            date = _currentDate.value,
-                            eventType = label,
-                            nurseryTime = TimeAxis.all[proposal.candidateIndex]
-                        )
+        } else {
+
+            val newMode =
+                when (careState.mode) {
+                    RequirementModeToday.REVERSE -> RequirementModeToday.AUTO
+                    else -> RequirementModeToday.REVERSE
+                }
+
+            careState.requirementIds.forEach { id ->
+
+                requirementOverrideRepository.replace(
+                    override = RequirementToggleOverride(
+                        ruleId = id,
+                        date = _currentDate.value,
+                        mode = newMode
+                    )
+                )
+            }
+
+            _events.emit(
+                UiEvent.ShowUndoProposal(
+                    onUndo = {
+                        viewModelScope.launch {
+                            careState.requirementIds.forEach { id ->
+                                requirementOverrideRepository.replace(
+                                    override = RequirementToggleOverride(
+                                        ruleId = id,
+                                        date = _currentDate.value,
+                                        mode = careState.mode
+                                    )
+                                )
+                            }
+                        }
                     }
+                )
+            )
+        }
+    }
 
-                    news.forEach { routineShiftOverrideRepository.replace(it) }
+    private suspend fun applyShiftProposal(
+        proposal: FlexResolveProposal
+    ) {
+        when (proposal.requirementSource) {
 
-                    _events.emit(
-                        UiEvent.ShowUndoProposal(
-                            onUndo = {
-                                viewModelScope.launch {
-                                    news.forEach { routineShiftOverrideRepository.delete(it) }
-                                    beforeMap.forEach { (_, before) ->
-                                        before?.let { routineShiftOverrideRepository.replace(it) }
-                                    }
+            RequirementSource.USER -> {
+                val existOverride =
+                    _uiState.value.overrides
+                        .filterIsInstance<RequirementShiftOverride>()
+                        .firstOrNull {
+                            it.ruleId == proposal.sourceRuleId &&
+                                    it.date == _currentDate.value
+                        }
+
+                val deltaSteps =
+                    (proposal.candidateIndex - proposal.initialIndex) +
+                            (existOverride?.deltaSteps ?: 0)
+
+                val before = existOverride
+                val new = RequirementShiftOverride(
+                    ruleId = proposal.sourceRuleId,
+                    date = _currentDate.value,
+                    deltaSteps = deltaSteps
+                )
+
+                requirementOverrideRepository.replace(new)
+
+                _events.emit(
+                    UiEvent.ShowUndoProposal(
+                        onUndo = {
+                            viewModelScope.launch {
+                                if (before != null) {
+                                    requirementOverrideRepository.replace(before)
+                                } else {
+                                    requirementOverrideRepository.delete(new)
                                 }
                             }
-                        )
+                        }
+                    )
+                )
+            }
+            RequirementSource.NURSERY_DROP_OFF, RequirementSource.NURSERY_PICKUP -> {
+                val event =
+                    _uiState.value.childCareEvents
+                        .firstOrNull { it.eventId == proposal.sourceRuleId }
+                        ?: return
+
+                val label = when (proposal.requirementSource) {
+                    RequirementSource.NURSERY_DROP_OFF -> ChildCareLabel.NURSERY_DROP_OFF
+                    RequirementSource.NURSERY_PICKUP -> ChildCareLabel.NURSERY_PICKUP
+                    else -> return
+                }
+
+                val beforeMap = event.childIds.associateWith { childId ->
+                    _uiState.value.routineShiftOverrides.firstOrNull {
+                        it.childId == childId &&
+                                it.date == _currentDate.value &&
+                                it.eventType == label
+                    }
+                }
+
+                val news = event.childIds.map { childId ->
+                    RoutineShiftOverride(
+                        childId = childId,
+                        date = _currentDate.value,
+                        eventType = label,
+                        nurseryTime = TimeAxis.all[proposal.candidateIndex]
                     )
                 }
-                else -> {}
+
+                news.forEach { routineShiftOverrideRepository.replace(it) }
+
+                _events.emit(
+                    UiEvent.ShowUndoProposal(
+                        onUndo = {
+                            viewModelScope.launch {
+                                news.forEach { routineShiftOverrideRepository.delete(it) }
+                                beforeMap.forEach { (_, before) ->
+                                    before?.let { routineShiftOverrideRepository.replace(it) }
+                                }
+                            }
+                        }
+                    )
+                )
             }
-            dismissWarningDialog()
+            else -> {}
         }
     }
 
