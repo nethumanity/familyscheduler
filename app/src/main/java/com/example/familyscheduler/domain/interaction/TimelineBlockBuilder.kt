@@ -38,7 +38,7 @@ class TimelineBlockBuilder {
         return mapNotNull { rule ->
             val mode =
                 resolveMode(
-                    id = rule.id,
+                    rule = rule,
                     modeMap = modeMap
                 )
 
@@ -114,14 +114,24 @@ class TimelineBlockBuilder {
     }
 
     private fun resolveMode(
-        id: String,
+        rule: HouseholdRequirementRule,
         modeMap: Map<String, RequirementToggleOverride>
     ): RequirementModeToday {
 
-        modeMap[id]
-            ?.let { return it.mode }
+        val mode =
+            modeMap[rule.id]?.mode
+                ?: return RequirementModeToday.AUTO
 
-        return RequirementModeToday.AUTO
+        return when {
+
+            mode == RequirementModeToday.REVERSE && rule.requiredCount != 1
+                -> RequirementModeToday.AUTO
+
+            mode == RequirementModeToday.SOLO && rule.requiredCount != 2
+                -> RequirementModeToday.AUTO
+
+            else -> mode
+        }
     }
 
     private fun findAssignedPersons(
