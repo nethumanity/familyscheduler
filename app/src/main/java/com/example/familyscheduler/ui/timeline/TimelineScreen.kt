@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.sp
 import com.example.familyscheduler.R
 import com.example.familyscheduler.domain.evaluation.AvailabilityState
 import com.example.familyscheduler.domain.person.Person
+import com.example.familyscheduler.domain.requirement.RequirementModeToday
 import com.example.familyscheduler.domain.time.TimeAxis
 import com.example.familyscheduler.ui.components.SlotStateSelectionSheet
 import com.example.familyscheduler.ui.components.WarningDialog
@@ -240,6 +241,18 @@ fun TimelineScreen(
             initialPage = state.initialPage,
             onDismiss = {
                 viewModel.dismissWarningDialog()
+            },
+            onApplySolo = {
+                viewModel.applyRequirementMode(
+                    requirementIds = it.requirementIds,
+                    mode = RequirementModeToday.SOLO
+                )
+            },
+            onApplyCanceled = {
+                viewModel.applyRequirementMode(
+                    requirementIds = it.requirementIds,
+                    mode = RequirementModeToday.CANCELED
+                )
             },
             onApplyProposal = {
                 viewModel.applyFlexResolveProposal(it)

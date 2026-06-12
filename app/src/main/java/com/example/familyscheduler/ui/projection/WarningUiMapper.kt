@@ -23,6 +23,7 @@ fun TimelineBlock.toWarningUiModel(
 
     val personStates =
         PersonAvailabilityUiModel(
+            assignablePersons = assignablePersons,
             blockingPersons = blockingPersons,
             requiredCount = requiredCount
         )

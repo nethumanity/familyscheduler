@@ -784,6 +784,47 @@ class TimelineViewModel(
         _warningDialogState.value = null
     }
 
+    fun applyRequirementMode(
+        requirementIds: List<String>,
+        mode: RequirementModeToday
+    ) {
+        viewModelScope.launch {
+
+            val date = _currentDate.value
+
+            requirementIds.forEach { id ->
+                requirementOverrideRepository.replace(
+                    override = RequirementToggleOverride(
+                        ruleId = id,
+                        date = date,
+                        mode = mode
+                    )
+                )
+            }
+
+            _events.emit(
+                UiEvent.ShowUndoToggle(
+                    onUndo = {
+                        viewModelScope.launch {
+
+                            requirementIds.forEach { id ->
+                                requirementOverrideRepository.replace(
+                                    override = RequirementToggleOverride(
+                                        ruleId = id,
+                                        date = date,
+                                        mode = RequirementModeToday.AUTO
+                                    )
+                                )
+                            }
+                        }
+                    }
+                )
+            )
+
+            dismissWarningDialog()
+        }
+    }
+
     fun applyFlexResolveProposal(
         proposal: FlexResolveProposal
     ) {
@@ -803,6 +844,8 @@ class TimelineViewModel(
     private suspend fun applyReverseProposal(
         proposal: FlexResolveProposal
     ) {
+        val date = _currentDate.value
+
         val careState =
             _dailyOverviewUiState.value.careStateItems.firstOrNull { item ->
                 proposal.sourceRuleId in item.requirementIds
@@ -824,7 +867,7 @@ class TimelineViewModel(
             requirementOverrideRepository.replace(
                 override = RequirementToggleOverride(
                     ruleId = requirement.requirementId,
-                    date = _currentDate.value,
+                    date = date,
                     mode = newMode
                 )
             )
@@ -836,7 +879,7 @@ class TimelineViewModel(
                             requirementOverrideRepository.replace(
                                 override = RequirementToggleOverride(
                                     ruleId = requirement.requirementId,
-                                    date = _currentDate.value,
+                                    date = date,
                                     mode = requirement.mode
                                 )
                             )
@@ -858,7 +901,7 @@ class TimelineViewModel(
                 requirementOverrideRepository.replace(
                     override = RequirementToggleOverride(
                         ruleId = id,
-                        date = _currentDate.value,
+                        date = date,
                         mode = newMode
                     )
                 )
@@ -872,7 +915,7 @@ class TimelineViewModel(
                                 requirementOverrideRepository.replace(
                                     override = RequirementToggleOverride(
                                         ruleId = id,
-                                        date = _currentDate.value,
+                                        date = date,
                                         mode = careState.mode
                                     )
                                 )
@@ -887,6 +930,8 @@ class TimelineViewModel(
     private suspend fun applyShiftProposal(
         proposal: FlexResolveProposal
     ) {
+        val date = _currentDate.value
+
         when (proposal.requirementSource) {
 
             RequirementSource.USER -> {
@@ -900,7 +945,7 @@ class TimelineViewModel(
                 val before = existOverride
                 val new = RequirementShiftOverride(
                     ruleId = proposal.sourceRuleId,
-                    date = _currentDate.value,
+                    date = date,
                     deltaSteps = deltaSteps
                 )
 
@@ -939,7 +984,7 @@ class TimelineViewModel(
                 val news = event.childIds.map { childId ->
                     RoutineShiftOverride(
                         childId = childId,
-                        date = _currentDate.value,
+                        date = date,
                         eventType = label,
                         nurseryTime = TimeAxis.all[proposal.candidateIndex]
                     )

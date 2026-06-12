@@ -122,7 +122,7 @@ fun DailyOverviewSheet(
         }
 
         // =========================
-        // 育児担当切替
+        // 育児担当
         // =========================
         if (careStateItems.isNotEmpty()) {
             item {

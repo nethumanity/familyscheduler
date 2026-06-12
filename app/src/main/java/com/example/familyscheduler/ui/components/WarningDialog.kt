@@ -36,6 +36,8 @@ fun WarningDialog(
     proposalsById: Map<String, List<FlexResolveProposal>>,
     initialPage: Int,
     onDismiss: () -> Unit,
+    onApplySolo: (WarningUiModel) -> Unit,
+    onApplyCanceled: (WarningUiModel) -> Unit,
     onApplyProposal: (FlexResolveProposal) -> Unit
 ) {
     val pagerState = rememberPagerState(
@@ -58,11 +60,6 @@ fun WarningDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("閉じる")
-            }
-        },
-        dismissButton = {
             if (currentProposals.isNotEmpty()) {
                 TextButton(
                     enabled = selectedProposal != null,
@@ -72,6 +69,11 @@ fun WarningDialog(
                 ) {
                     Text("この提案を実行")
                 }
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("閉じる")
             }
         },
         title = {
@@ -85,13 +87,34 @@ fun WarningDialog(
                     val warning = warningPages[page]
 
                     val proposals =
-                        proposalsById[warning.dialogKey.ruleId]
-                            ?: emptyList()
+                        proposalsById[warning.dialogKey.ruleId].orEmpty()
 
                     Column(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Text(renderMissingReason(warning))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            if (warning.cancelApplicable == true) {
+                                TextButton(
+                                    onClick = { onApplyCanceled(warning) }
+                                ) {
+                                    Text("予定をキャンセル")
+                                }
+                            }
+                            Box(
+                                modifier = Modifier.weight(1f)
+                            ) { }
+                            if (warning.soloApplicable == true) {
+                                TextButton(
+                                    onClick = { onApplySolo(warning) }
+                                ) {
+                                    Text("${warning.personStates.assignablePersons.single().label} 1人で対応")
+                                }
+                            }
+                        }
 
                         if (proposals.isNotEmpty()) {
                             HorizontalDivider()

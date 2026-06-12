@@ -179,6 +179,21 @@ fun MainScreen() {
                     }
                 }
 
+                is UiEvent.ShowUndoToggle -> {
+
+                    sheetSnackbarHostState.currentSnackbarData?.dismiss()
+
+                    val result = sheetSnackbarHostState.showSnackbar(
+                        message = event.message,
+                        actionLabel = "元に戻す",
+                        duration = SnackbarDuration.Short
+                    )
+
+                    if (result == SnackbarResult.ActionPerformed) {
+                        event.onUndo()
+                    }
+                }
+
                 is UiEvent.ShowUndoProposal -> {
 
                     sheetSnackbarHostState.currentSnackbarData?.dismiss()
