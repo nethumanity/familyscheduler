@@ -58,7 +58,7 @@ object AvailabilityEngine {
 
         return AvailabilityResult(
             slots = workingSlots,
-            evaluations = evaluations,
+            evaluationsByIndex = evaluations.associateBy { it.index },
             proposalsByRequirementId = proposals.groupBy { it.resolvedRequirementId }
         )
     }

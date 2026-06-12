@@ -308,7 +308,7 @@ fun MainScreen() {
                     LaunchedEffect(editingTarget?.requirementId) {
                         val id = editingTarget?.requirementId ?: return@LaunchedEffect
 
-                        val rule = uiState.rules.firstOrNull { it.id == id }
+                        val rule = uiState.ruleMap[id]
                             ?: return@LaunchedEffect
 
                         rule.let {

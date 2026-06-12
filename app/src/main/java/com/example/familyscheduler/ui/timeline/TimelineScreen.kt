@@ -61,8 +61,10 @@ fun TimelineScreen(
 
     val indices = uiState.settings.timelineIndices
 
-    val ruleMap = remember(uiState.rules) { uiState.rules.associateBy { it.id } }
-    val slotMap = remember(uiState.slots) { uiState.slots.groupBy { it.index } }
+    val ruleNameMap = uiState.ruleNameMap
+    val slotsByIndexPerson = uiState.slotsByIndexPerson
+    val slotsByPersonState = uiState.slotsByPersonState
+    val evaluationsByIndex = uiState.evaluationsByIndex
 
     var editingSlot by remember { mutableStateOf<Pair<Int, Person>?>(null) }
 
@@ -105,20 +107,17 @@ fun TimelineScreen(
                 val index = indices.first + offset
 
                 val timeText = TimeAxis.timeLabelAt(index)
-                val rowSlots = slotMap[index] ?: emptyList()
-                val rowSlotMap = remember(rowSlots) { rowSlots.associateBy { it.person } }
+                val evaluation = evaluationsByIndex[index]
 
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(48.dp)
                         .border(0.5.dp, Color.LightGray)
-                        .pointerInput(persons) {
+                        .pointerInput(index, persons, evaluation) {
 
                             detectTapGestures(
                                 onTap = {
-                                    val evaluation = uiState.evaluationsByIndex[index]
-
                                     if (evaluation?.state == AvailabilityState.WARN) {
                                         viewModel.openFirstWarningDialog(index)
                                     }
@@ -155,8 +154,6 @@ fun TimelineScreen(
                             fontSize = 12.sp
                         )
 
-                        val evaluation = uiState.evaluationsByIndex[index]
-
                         if (evaluation?.state == AvailabilityState.WARN) {
                             Spacer(modifier = Modifier.height(2.dp))
                             Icon(
@@ -170,11 +167,11 @@ fun TimelineScreen(
 
                     // 各personのslot
                     persons.forEach { person ->
-                        val slot = rowSlotMap[person]
-                        val taskNames = remember(slot, ruleMap) {
-                            slot?.taskIds?.mapNotNull { ruleMap[it]?.taskName }
+                        val slot =
+                            slotsByIndexPerson[index]?.get(person)
+                        val taskNames =
+                            slot?.taskIds?.mapNotNull { ruleNameMap[it] }
                                 ?: emptyList()
-                        }
 
                         Box(
                             modifier = Modifier
@@ -202,7 +199,7 @@ fun TimelineScreen(
 
         TimelineOverlay(
             settings = uiState.settings,
-            slots = uiState.slots,
+            slotsByPersonState = slotsByPersonState,
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .padding(top = 60.dp)

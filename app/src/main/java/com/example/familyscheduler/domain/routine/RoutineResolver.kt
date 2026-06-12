@@ -8,24 +8,24 @@ class RoutineResolver {
     fun resolve(
         routines: List<ChildRoutineInput>,
         date: LocalDate,
-        childOverrides: Map<Pair<String, LocalDate>, ChildTodayRoutine>,
-        routineShiftOverrides: List<RoutineShiftOverride>
+        toggleOverrides: Map<Pair<String, LocalDate>, ChildTodayRoutine>,
+        routineShiftByIdEvent: Map<Pair<String, ChildCareLabel>, RoutineShiftOverride>
     ): List<ResolvedChildRoutine> {
 
         val base = routines.map { routine ->
-            resolveSingle(routine, date, childOverrides)
+            resolveSingle(routine, date, toggleOverrides)
         }
 
-        return applyRoutineOverrides(base, routineShiftOverrides, date)
+        return applyRoutineOverrides(base, routineShiftByIdEvent)
     }
 
     private fun resolveSingle(
         routine: ChildRoutineInput,
         date: LocalDate,
-        childOverrides: Map<Pair<String, LocalDate>, ChildTodayRoutine>
+        toggleOverrides: Map<Pair<String, LocalDate>, ChildTodayRoutine>
     ): ResolvedChildRoutine {
 
-        val override = childOverrides[routine.childId to date]
+        val override = toggleOverrides[routine.childId to date]
 
         val todayRoutine =
             override ?: defaultRoutine(routine, date.dayOfWeek)
@@ -59,17 +59,13 @@ class RoutineResolver {
 
     private fun applyRoutineOverrides(
         routines: List<ResolvedChildRoutine>,
-        overrides: List<RoutineShiftOverride>,
-        date: LocalDate
+        routineShiftByIdEvent: Map<Pair<String, ChildCareLabel>, RoutineShiftOverride>
     ): List<ResolvedChildRoutine> {
-
-        val shiftMap = overrides
-            .associateBy { it.childId to it.date to it.eventType }
 
         return routines.map { routine ->
 
-            val startShift = shiftMap[routine.childId to date to ChildCareLabel.NURSERY_DROP_OFF]
-            val endShift = shiftMap[routine.childId to date to ChildCareLabel.NURSERY_PICKUP]
+            val startShift = routineShiftByIdEvent[routine.childId to ChildCareLabel.NURSERY_DROP_OFF]
+            val endShift = routineShiftByIdEvent[routine.childId to ChildCareLabel.NURSERY_PICKUP]
 
             routine.copy(
                 nurseryStart = startShift?.nurseryTime ?: routine.nurseryStart,

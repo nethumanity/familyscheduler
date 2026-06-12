@@ -1,6 +1,5 @@
 package com.example.familyscheduler.viewmodel
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.familyscheduler.domain.evaluation.AvailabilityEngine
@@ -10,7 +9,6 @@ import com.example.familyscheduler.domain.evaluation.ProposalType
 import com.example.familyscheduler.domain.interaction.TimelineBlock
 import com.example.familyscheduler.domain.interaction.TimelineBlockBuilder
 import com.example.familyscheduler.domain.person.Person
-import com.example.familyscheduler.domain.requirement.HouseholdRequirement
 import com.example.familyscheduler.domain.requirement.HouseholdRequirementRule
 import com.example.familyscheduler.domain.requirement.RequirementBuilder
 import com.example.familyscheduler.domain.requirement.RequirementModeToday
@@ -19,6 +17,7 @@ import com.example.familyscheduler.domain.requirement.RequirementSemantics
 import com.example.familyscheduler.domain.requirement.RequirementShiftOverride
 import com.example.familyscheduler.domain.requirement.RequirementSource
 import com.example.familyscheduler.domain.requirement.RequirementToggleOverride
+import com.example.familyscheduler.domain.requirement.TimeRangeHouseholdRequirement
 import com.example.familyscheduler.domain.requirement.repository.HouseholdRequirementRepository
 import com.example.familyscheduler.domain.requirement.repository.RequirementOverrideRepository
 import com.example.familyscheduler.domain.routine.ChildCareEvent
@@ -63,8 +62,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalTime
-import kotlin.collections.component1
-import kotlin.collections.component2
 
 class TimelineViewModel(
     private val templateRepository: TemplateRepository,
@@ -96,19 +93,18 @@ class TimelineViewModel(
         val date: LocalDate,
         val templates: List<DailyTemplate>,
         val dailyStates: List<DailyState>,
-        val overrides: List<RequirementOverride>,
         val childRoutines: List<ChildRoutineInput>,
-        val routineShiftOverrides: List<RoutineShiftOverride>,
-        val childCareEvents: List<ChildCareEvent>,
-        val slots: List<TimeSlot>,
+        val routineShiftByIdEvent: Map<Pair<String, ChildCareLabel>, RoutineShiftOverride>,
+        val childCareEventMap: Map<String, ChildCareEvent>,
+        val ruleMap: Map <String, HouseholdRequirementRule>,
+        val ruleNameMap: Map<String, String>,
+        val requirementOverrideMap: Map<String, List<RequirementOverride>>,
+        val requirementShiftMap: Map<String, RequirementShiftOverride>,
         val slotsByIndex: Map<Int, List<TimeSlot>>,
-        val slotsByPersonIndex: Map<Pair<Person, Int>, TimeSlot>,
-        val evaluations: List<AvailabilityEvaluation>,
+        val slotsByIndexPerson: Map<Int, Map<Person, TimeSlot>>,
+        val slotsByPersonState: Map<Pair<Person, SlotState>, List<TimeSlot>>,
         val evaluationsByIndex: Map<Int, AvailabilityEvaluation>,
         val proposalsById: Map<String, List<FlexResolveProposal>>,
-        val requirements: List<HouseholdRequirement>,
-        val rules: List<HouseholdRequirementRule>,
-        val ruleNameMap: Map<String, String>,
         val settings: SettingsUiState,
         val timelineBlocks: List<TimelineBlock>
     )
@@ -128,19 +124,18 @@ class TimelineViewModel(
             date = LocalDate.now(),
             templates = emptyList(),
             dailyStates = emptyList(),
-            overrides = emptyList(),
             childRoutines = emptyList(),
-            routineShiftOverrides = emptyList(),
-            childCareEvents = emptyList(),
-            slots = emptyList(),
+            routineShiftByIdEvent = emptyMap(),
+            childCareEventMap = emptyMap(),
+            ruleMap = emptyMap(),
+            ruleNameMap = emptyMap(),
+            requirementOverrideMap = emptyMap(),
+            requirementShiftMap = emptyMap(),
             slotsByIndex = emptyMap(),
-            slotsByPersonIndex = emptyMap(),
-            evaluations = emptyList(),
+            slotsByIndexPerson = emptyMap(),
+            slotsByPersonState = emptyMap(),
             evaluationsByIndex = emptyMap(),
             proposalsById = emptyMap(),
-            requirements = emptyList(),
-            rules = emptyList(),
-            ruleNameMap = emptyMap(),
             settings = SettingsUiState(),
             timelineBlocks = emptyList()
         )
@@ -274,7 +269,6 @@ class TimelineViewModel(
                 )
 
             }.collect { state ->
-                Log.d("Solver", buildSolverLog(state.evaluations))
                 _uiState.value = state
                 _dailyOverviewUiState.value = buildDailyOverviewUiState(state)
             }
@@ -353,8 +347,11 @@ class TimelineViewModel(
         val slots = states.flatMap { it.slots }
 
         // ② ChildRoutine → Rule
+        val routineShiftByIdEvent =
+            shiftOverrides.associateBy { it.childId to it.eventType }
+
         val resolved =
-            routineResolver.resolve(routines, date, toggleOverrides, shiftOverrides)
+            routineResolver.resolve(routines, date, toggleOverrides, routineShiftByIdEvent)
 
         val routineResult =
             childRoutineBuilder.build(date, resolved)
@@ -366,11 +363,18 @@ class TimelineViewModel(
             (rules.filter { it.source != RequirementSource.CHILD_ROUTINE }) + childRules
 
         // ③ Requirement生成
+        val modeMap =
+            overrides
+                .filterIsInstance<RequirementToggleOverride>()
+                .associateBy { it.ruleId }
+
+        val requirementShiftMap =
+            overrides
+                .filterIsInstance<RequirementShiftOverride>()
+                .associateBy { it.ruleId }
+
         val requirements =
-            requirementBuilder.build(
-                mergedRules,
-                overrides
-            )
+            requirementBuilder.build(mergedRules, modeMap, requirementShiftMap)
 
         // ④ Solver
         val result =
@@ -380,38 +384,64 @@ class TimelineViewModel(
                 overrides = overrides
             )
 
-        val slotsByIndex = result.slots.groupBy { it.index }
-        val slotsByPersonIndex = result.slots.associateBy { it.person to it.index }
-        val evaluationsByIndex = result.evaluations.associateBy { it.index }
-        val proposalsById = result.proposalsByRequirementId
-        val ruleNameMap = mergedRules.associate { it.id to it.taskName }
-
         // ⑤ Interaction
+        val reqMap =
+            requirements
+                .filterIsInstance<TimeRangeHouseholdRequirement>()
+                .associateBy { it.sourceRuleId }
+
+        val slotsByIndex =
+            result.slots.groupBy { it.index }
+
         val timelineBlocks =
             timelineBlockBuilder.build(
                 rules = mergedRules,
-                requirements = requirements,
+                reqMap = reqMap,
                 slotsByIndex = slotsByIndex,
-                requirementOverrides = overrides
+                modeMap = modeMap
             )
+
+        // ⑥ TimelineUiState
+        val childCareEventMap =
+            routineResult.events.associateBy { it.eventId }
+
+        val ruleMap =
+            mergedRules.associateBy { it.id }
+
+        val ruleNameMap =
+            mergedRules.associate { it.id to it.taskName }
+
+        val requirementOverrideMap =
+            overrides.groupBy { it.ruleId }
+
+        val slotsByIndexPerson =
+            slotsByIndex.mapValues { (_, slotsAtIndex) ->
+                slotsAtIndex.associateBy { it.person }
+            }
+
+        val slotsByPersonState =
+            result.slots.groupBy { it.person to it.state }
+
+        val evaluationsByIndex = result.evaluationsByIndex
+
+        val proposalsById = result.proposalsByRequirementId
 
         return TimelineUiState(
             date = date,
             templates = templates,
             dailyStates = states,
-            overrides = overrides,
             childRoutines = routines,
-            routineShiftOverrides = shiftOverrides,
-            childCareEvents = routineResult.events,
-            slots = result.slots,
+            routineShiftByIdEvent = routineShiftByIdEvent,
+            childCareEventMap = childCareEventMap,
+            ruleMap = ruleMap,
+            ruleNameMap = ruleNameMap,
+            requirementOverrideMap = requirementOverrideMap,
+            requirementShiftMap = requirementShiftMap,
             slotsByIndex = slotsByIndex,
-            slotsByPersonIndex = slotsByPersonIndex,
-            evaluations = result.evaluations,
+            slotsByIndexPerson = slotsByIndexPerson,
+            slotsByPersonState = slotsByPersonState,
             evaluationsByIndex = evaluationsByIndex,
             proposalsById = proposalsById,
-            requirements = requirements,
-            rules = mergedRules,
-            ruleNameMap = ruleNameMap,
             settings = settings,
             timelineBlocks = timelineBlocks
         )
@@ -486,9 +516,9 @@ class TimelineViewModel(
 
                 block.toRequirementUiModel(
                     name = name,
-                    requirementShiftOverrides = state.overrides.filterIsInstance<RequirementShiftOverride>(),
-                    routineShiftOverrides = state.routineShiftOverrides,
-                    events = state.childCareEvents,
+                    requirementShiftMap = state.requirementShiftMap,
+                    routineShiftByIdEvent = state.routineShiftByIdEvent,
+                    childCareEventMap = state.childCareEventMap,
                 )
             }
 
@@ -555,12 +585,11 @@ class TimelineViewModel(
 
     fun deleteRequirement(ruleId: String) {
 
-        val rule = _uiState.value.rules
-            .find { it.id == ruleId }
+        val rule = _uiState.value.ruleMap[ruleId]
             ?: return
 
-        val overrides = _uiState.value.overrides
-            .filter { it.ruleId == ruleId }
+        val overrides = _uiState.value.requirementOverrideMap[ruleId]
+            ?: emptyList()
 
         val payload = RequirementUndoPayload(
             requirement = rule,
@@ -635,7 +664,7 @@ class TimelineViewModel(
             val slots = template.expandToSlots()
 
             val state = DailyState(
-                date = currentDate.value,
+                date = _currentDate.value,
                 person = person,
                 templateName = template.name,
                 slots = slots
@@ -656,7 +685,7 @@ class TimelineViewModel(
 
     fun deleteTemplate(templateId: String) {
 
-        val template = uiState.value.templates
+        val template = _uiState.value.templates
             .find { it.id == templateId }
             ?: return
 
@@ -862,12 +891,7 @@ class TimelineViewModel(
 
             RequirementSource.USER -> {
                 val existOverride =
-                    _uiState.value.overrides
-                        .filterIsInstance<RequirementShiftOverride>()
-                        .firstOrNull {
-                            it.ruleId == proposal.sourceRuleId &&
-                                    it.date == _currentDate.value
-                        }
+                    _uiState.value.requirementShiftMap[proposal.sourceRuleId]
 
                 val deltaSteps =
                     (proposal.candidateIndex - proposal.initialIndex) +
@@ -898,8 +922,7 @@ class TimelineViewModel(
             }
             RequirementSource.NURSERY_DROP_OFF, RequirementSource.NURSERY_PICKUP -> {
                 val event =
-                    _uiState.value.childCareEvents
-                        .firstOrNull { it.eventId == proposal.sourceRuleId }
+                    _uiState.value.childCareEventMap[proposal.sourceRuleId]
                         ?: return
 
                 val label = when (proposal.requirementSource) {
@@ -908,13 +931,10 @@ class TimelineViewModel(
                     else -> return
                 }
 
-                val beforeMap = event.childIds.associateWith { childId ->
-                    _uiState.value.routineShiftOverrides.firstOrNull {
-                        it.childId == childId &&
-                                it.date == _currentDate.value &&
-                                it.eventType == label
+                val beforeMap =
+                    event.childIds.associateWith { childId ->
+                        _uiState.value.routineShiftByIdEvent[childId to label]
                     }
-                }
 
                 val news = event.childIds.map { childId ->
                     RoutineShiftOverride(
@@ -946,59 +966,34 @@ class TimelineViewModel(
 
     fun clearProposal(ruleId: String) {
 
-        val targetReq = _uiState.value.rules
-            .firstOrNull { it.id == ruleId }
+        val targetRule = _uiState.value.ruleMap[ruleId]
             ?: return
 
-        when (targetReq.source) {
+        when (targetRule.source) {
 
             RequirementSource.USER -> {
                 viewModelScope.launch {
-                    val override =
-                        _uiState.value.overrides
-                            .filterIsInstance<RequirementShiftOverride>()
-                            .firstOrNull {
-                                it.ruleId == ruleId &&
-                                        it.date == _currentDate.value
-                                        //&& it.isFromProposal
-                            } ?: return@launch
+                    val override = _uiState.value.requirementShiftMap[ruleId]
+                        ?: return@launch
 
                     requirementOverrideRepository.delete(override)
                 }
             }
             RequirementSource.NURSERY_DROP_OFF, RequirementSource.NURSERY_PICKUP -> {
                 viewModelScope.launch {
-                    val event =
-                        _uiState.value.childCareEvents
-                            .firstOrNull { it.eventId == ruleId }
-                            ?: return@launch
+                    val event = _uiState.value.childCareEventMap[ruleId]
+                        ?: return@launch
 
                     val overrides = event.childIds.mapNotNull { childId ->
-                        _uiState.value.routineShiftOverrides.firstOrNull {
-                            it.childId == childId &&
-                                    it.date == _currentDate.value &&
-                                    it.eventType == event.label
-                                    //&& it.isFromProposal
-                        }
+                        _uiState.value.routineShiftByIdEvent[childId to event.label]
                     }
+
                     overrides.forEach {
                         routineShiftOverrideRepository.delete(it)
                     }
                 }
             }
             else -> return
-        }
-    }
-
-    private fun buildSolverLog(evaluations: List<AvailabilityEvaluation>): String {
-        return buildString {
-            appendLine("=== SOLVER DETAIL ===")
-
-            evaluations.forEach {
-                appendLine("eval: $it")
-            }
-
-            appendLine("=================")
         }
     }
 }

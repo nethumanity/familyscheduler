@@ -2,10 +2,8 @@ package com.example.familyscheduler.domain.interaction
 
 import com.example.familyscheduler.domain.evaluation.AssignmentRules
 import com.example.familyscheduler.domain.person.Person
-import com.example.familyscheduler.domain.requirement.HouseholdRequirement
 import com.example.familyscheduler.domain.requirement.HouseholdRequirementRule
 import com.example.familyscheduler.domain.requirement.RequirementModeToday
-import com.example.familyscheduler.domain.requirement.RequirementOverride
 import com.example.familyscheduler.domain.requirement.RequirementSemantics
 import com.example.familyscheduler.domain.requirement.RequirementToggleOverride
 import com.example.familyscheduler.domain.requirement.TimeRangeHouseholdRequirement
@@ -16,22 +14,16 @@ class TimelineBlockBuilder {
 
     fun build(
         rules: List<HouseholdRequirementRule>,
-        requirements: List<HouseholdRequirement>,
+        reqMap: Map<String, TimeRangeHouseholdRequirement>,
         slotsByIndex: Map<Int, List<TimeSlot>>,
-        requirementOverrides: List<RequirementOverride>
+        modeMap: Map<String, RequirementToggleOverride>
     ): List<TimelineBlock> {
-
-        // できればTimelineUiModelで生成する
-        val reqMap =
-            requirements
-                .filterIsInstance<TimeRangeHouseholdRequirement>()
-                .associateBy { it.sourceRuleId }
 
         val items =
             rules.buildItems(
                 reqMap = reqMap,
                 slotsByIndex = slotsByIndex,
-                requirementOverrides = requirementOverrides
+                modeMap = modeMap
             )
 
         return mergeAdjacent(items)
@@ -40,18 +32,19 @@ class TimelineBlockBuilder {
     private fun List<HouseholdRequirementRule>.buildItems(
         reqMap: Map<String, TimeRangeHouseholdRequirement>,
         slotsByIndex: Map<Int, List<TimeSlot>>,
-        requirementOverrides: List<RequirementOverride>
+        modeMap: Map<String, RequirementToggleOverride>
     ): List<TimelineBlock> {
 
         return mapNotNull { rule ->
             val mode =
                 resolveMode(
                     id = rule.id,
-                    requirementOverrides = requirementOverrides
+                    modeMap = modeMap
                 )
 
             val req = reqMap[rule.id]
 
+            // CANCELED rule has no requirement
             if (req == null) {
                 TimelineBlock(
                     startIndex = TimeAxis.indexOf(rule.timeRange.start),
@@ -108,7 +101,6 @@ class TimelineBlockBuilder {
                     requirementIds = listOf(req.sourceRuleId),
                     allowedActions =
                         resolveAllowedActions(
-                            rule = rule,
                             mode = mode,
                             assignablePersons = assignablePersons,
                             req = req,
@@ -123,15 +115,11 @@ class TimelineBlockBuilder {
 
     private fun resolveMode(
         id: String,
-        requirementOverrides: List<RequirementOverride>
+        modeMap: Map<String, RequirementToggleOverride>
     ): RequirementModeToday {
 
-        requirementOverrides
-            .filterIsInstance<RequirementToggleOverride>()
-            .firstOrNull { it.ruleId == id }
-            ?.let {
-                return it.mode
-            }
+        modeMap[id]
+            ?.let { return it.mode }
 
         return RequirementModeToday.AUTO
     }
@@ -213,7 +201,6 @@ class TimelineBlockBuilder {
     }
 
     private fun resolveAllowedActions(
-        rule: HouseholdRequirementRule,
         mode: RequirementModeToday,
         assignablePersons: List<Person>,
         req: TimeRangeHouseholdRequirement,
@@ -225,12 +212,11 @@ class TimelineBlockBuilder {
         val actions = mutableSetOf<BlockAction>()
 
         val hasSoloAlternative =
-            assignablePersons.size == 1 && rule.requiredCount == 2  //ruleではなくreq?
+            assignablePersons.size == 1 && req.requiredCount == 2
 
         val hasReverseAlternative =
-            assignablePersons.size > rule.requiredCount ||          //ruleではなくreq?
+            assignablePersons.size > req.requiredCount ||
                     resolveReverseAssignabilityInDeadlock(
-                        rule = rule,
                         req = req,
                         assignablePersons = assignablePersons,
                         blockingPersons = blockingPersons,
@@ -238,7 +224,7 @@ class TimelineBlockBuilder {
                         reqMap = reqMap
                     )
 
-        if (rule.source.semantics == RequirementSemantics.TASK) {
+        if (req.source.semantics == RequirementSemantics.TASK) {
             actions += BlockAction.EDIT
             actions += BlockAction.CANCEL
         }
@@ -261,7 +247,6 @@ class TimelineBlockBuilder {
     }
 
     private fun resolveReverseAssignabilityInDeadlock(
-        rule: HouseholdRequirementRule,
         req: TimeRangeHouseholdRequirement,
         assignablePersons: List<Person>,
         blockingPersons: List<Person>,
@@ -270,7 +255,7 @@ class TimelineBlockBuilder {
     ): Boolean {
 
         if (
-            rule.requiredCount != 1 ||                              //ruleではなくreq?
+            req.requiredCount != 1 ||
             assignablePersons.size != 1 ||
             blockingPersons.size != 1
         ) {
@@ -293,7 +278,7 @@ class TimelineBlockBuilder {
 
             val blockingPriority =
                 slot.taskIds.maxOf { id ->
-                    reqMap[id]?.prioritySeed ?: 0
+                    reqMap[id]?.prioritySeed ?: Long.MAX_VALUE
                 }
 
             req.prioritySeed > blockingPriority

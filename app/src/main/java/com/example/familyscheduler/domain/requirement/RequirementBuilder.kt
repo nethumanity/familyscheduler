@@ -7,18 +7,12 @@ class RequirementBuilder {
 
     fun build(
         rules: List<HouseholdRequirementRule>,
-        overrides: List<RequirementOverride>
+        modeMap: Map<String, RequirementToggleOverride>,
+        requirementShiftMap: Map<String, RequirementShiftOverride>
     ): List<HouseholdRequirement> {
-
-        // できればTimelineUiModelで生成する
-        val modeMap = overrides
-            .filterIsInstance<RequirementToggleOverride>()
-            .associateBy { it.ruleId }
 
         val activeRules =
             applyToggleOverrides(rules, modeMap)
-
-
 
         return activeRules
             .map { rule ->
@@ -27,7 +21,7 @@ class RequirementBuilder {
                         effectiveRequiredCount(rule, modeMap)
                 )
             }
-            .let { applyShiftOverrides(it, overrides) }
+            .let { applyShiftOverrides(it, requirementShiftMap) }
     }
 
     private fun applyToggleOverrides(
@@ -63,12 +57,8 @@ class RequirementBuilder {
 
     private fun applyShiftOverrides(
         requirements: List<HouseholdRequirement>,
-        overrides: List<RequirementOverride>
+        requirementShiftMap: Map<String, RequirementShiftOverride>
     ): List<HouseholdRequirement> {
-
-        val shiftMap = overrides
-            .filterIsInstance<RequirementShiftOverride>()
-            .associateBy { it.ruleId }
 
         return requirements.map { req ->
 
@@ -76,7 +66,7 @@ class RequirementBuilder {
 
             val ruleId = req.sourceRuleId
 
-            val shift = shiftMap[ruleId] ?: return@map req
+            val shift = requirementShiftMap[ruleId] ?: return@map req
 
             val delta = shift.deltaSteps
 

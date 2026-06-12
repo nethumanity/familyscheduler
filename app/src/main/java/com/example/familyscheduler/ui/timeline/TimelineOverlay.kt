@@ -9,13 +9,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.example.familyscheduler.domain.person.Person
+import com.example.familyscheduler.domain.slot.SlotState
 import com.example.familyscheduler.domain.slot.TimeSlot
 import com.example.familyscheduler.ui.state.SettingsUiState
 
 @Composable
 fun TimelineOverlay(
     settings: SettingsUiState,
-    slots: List<TimeSlot>,
+    slotsByPersonState: Map<Pair<Person, SlotState>, List<TimeSlot>>,
     modifier: Modifier = Modifier
 ) {
     if (!settings.showLegend && !settings.showTotal) return
@@ -29,7 +31,7 @@ fun TimelineOverlay(
     ) {
 
         if (settings.showTotal) {
-            TotalSection(slots)
+            TotalSection(slotsByPersonState)
         }
 
         if (settings.showLegend) {

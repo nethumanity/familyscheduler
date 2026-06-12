@@ -5,15 +5,16 @@ import com.example.familyscheduler.domain.interaction.TimelineBlock
 import com.example.familyscheduler.domain.requirement.RequirementSemantics
 import com.example.familyscheduler.domain.requirement.RequirementShiftOverride
 import com.example.familyscheduler.domain.routine.ChildCareEvent
+import com.example.familyscheduler.domain.routine.ChildCareLabel
 import com.example.familyscheduler.domain.routine.RoutineShiftOverride
 import com.example.familyscheduler.domain.time.TimeAxis
 import com.example.familyscheduler.ui.projection.StatusUiModel.Canceled.toStatusUiModel
 
 fun TimelineBlock.toRequirementUiModel(
     name: String,
-    requirementShiftOverrides: List<RequirementShiftOverride>,
-    routineShiftOverrides: List<RoutineShiftOverride>,
-    events: List<ChildCareEvent>
+    requirementShiftMap: Map<String, RequirementShiftOverride>,
+    routineShiftByIdEvent: Map<Pair<String, ChildCareLabel>, RoutineShiftOverride>,
+    childCareEventMap: Map<String, ChildCareEvent>
 ): RequirementUiModel {
 
     val requirementId = requirementIds.first()
@@ -23,21 +24,16 @@ fun TimelineBlock.toRequirementUiModel(
     val isProposalApplied =
         when (semantics) {
             RequirementSemantics.TASK -> {
-                requirementShiftOverrides
-                    .any {
-                        it.ruleId == requirementId
-                    }
+                requirementShiftMap[requirementId] != null
             }
             RequirementSemantics.EVENT -> {
-                val event = events
-                    .firstOrNull { it.eventId == requirementId }
-                event?.let {
-                    routineShiftOverrides
-                        .any {
-                            it.childId in event.childIds && // 1人でもoverrideならtrue
-                                    it.eventType == event.label
-                        }
-                } ?: false
+                val event = childCareEventMap[requirementId]
+
+                // 1人でもoverrideならtrue
+                event?.childIds
+                    ?.any { childId ->
+                        routineShiftByIdEvent[childId to event.label] != null
+                    } ?: false
             }
             else -> false
         }

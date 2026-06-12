@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -23,13 +22,10 @@ import com.example.familyscheduler.ui.presentation.LocalePresentation
 import com.example.familyscheduler.ui.presentation.SlotStatePresentation
 
 @Composable
-fun TotalSection(slots: List<TimeSlot>) {
-
-    val grouped = remember(slots) { slots.groupBy { it.person to it.state } }
-
+fun TotalSection(
+    slotsByPersonState: Map<Pair<Person, SlotState>, List<TimeSlot>>
+) {
     val stepMinutes = TimeAxis.stepMinutes
-
-
 
     Column {
 
@@ -39,9 +35,9 @@ fun TotalSection(slots: List<TimeSlot>) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     val fatherSlots =
-                        grouped[Person.FATHER to state]?.size ?: 0
+                        slotsByPersonState[Person.FATHER to state]?.size ?: 0
                     val motherSlots =
-                        grouped[Person.MOTHER to state]?.size ?: 0
+                        slotsByPersonState[Person.MOTHER to state]?.size ?: 0
                     val fatherHours = fatherSlots * stepMinutes / 60.0
                     val motherHours = motherSlots * stepMinutes / 60.0
 
