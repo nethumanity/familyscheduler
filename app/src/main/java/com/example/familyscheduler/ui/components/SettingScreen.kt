@@ -116,16 +116,16 @@ fun SettingsScreen(
             SettingsNumberItem(
                 title = "表示開始時刻",
                 value = uiState.timelineStartIndex,
-                displayText = TimeAxis.timeLabelAt(uiState.timelineStartIndex) + "（固定）",
-                onValueChange = {} // viewModel未実装
+                displayText = TimeAxis.timeLabelAt(uiState.timelineStartIndex),
+                onValueChange = viewModel::updateTimelineStartIndex
             )
         }
         item {
             SettingsNumberItem(
                 title = "表示終了時刻",
                 value = uiState.timelineEndIndex,
-                displayText = TimeAxis.timeLabelAt(uiState.timelineEndIndex + 1) + "（固定）",
-                onValueChange = {} // viewModel未実装
+                displayText = TimeAxis.timeLabelAt(uiState.timelineEndIndex + 1),
+                onValueChange = viewModel::updateTimelineEndIndex
             )
         }
         item {  // 製品版では表示しない、あるいは、削除？
