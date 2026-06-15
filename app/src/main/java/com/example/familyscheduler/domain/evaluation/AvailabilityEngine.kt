@@ -450,7 +450,10 @@ object AvailabilityEngine {
                                 .firstOrNull { it.person == reversedPerson }
                                 ?: return@all false
 
-                        AssignmentRules.canAssign(targetReq, slot)
+                        AssignmentRules.canReverseAssign(targetReq, slot) { id ->
+                            requirements.firstOrNull { it.sourceRuleId == id }
+                                ?.prioritySeed
+                        }
                     }
 
                 if (reverseAssignable)

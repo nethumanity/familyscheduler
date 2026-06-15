@@ -282,16 +282,9 @@ class TimelineBlockBuilder {
                     .firstOrNull { it.person == blockingPerson }
                     ?: return@all false
 
-            if (slot.taskIds.isEmpty()) {
-                return@all req.targetState.weight >= slot.state.weight
+            AssignmentRules.canReverseAssign(req, slot) { id ->
+                reqMap[id]?.prioritySeed
             }
-
-            val blockingPriority =
-                slot.taskIds.maxOf { id ->
-                    reqMap[id]?.prioritySeed ?: Long.MAX_VALUE
-                }
-
-            req.prioritySeed > blockingPriority
         }
     }
 

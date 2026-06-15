@@ -28,4 +28,26 @@ object AssignmentRules {
             slot.effectiveSemantics
         )
     }
+
+    fun canReverseAssign(
+        req: HouseholdRequirement,
+        slot: TimeSlot,
+        priorityResolver: (String) -> Long?
+    ): Boolean {
+
+        if (canAssign(req, slot)) {
+            return true
+        }
+
+        if (slot.taskIds.isEmpty()) {
+            return false
+        }
+
+        val blockingPriority =
+            slot.taskIds.maxOf { id ->
+                priorityResolver(id) ?: Long.MAX_VALUE
+            }
+
+        return req.prioritySeed > blockingPriority
+    }
 }
