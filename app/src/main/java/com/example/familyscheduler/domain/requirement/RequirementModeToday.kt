@@ -52,8 +52,8 @@ enum class RequirementModeToday {
                 when (this) {
                     AUTO -> CANCELED
                     CANCELED -> AUTO
-                    SOLO -> AUTO
-                    REVERSE -> AUTO
+                    SOLO -> CANCELED
+                    REVERSE -> CANCELED
                 }
         }
     }

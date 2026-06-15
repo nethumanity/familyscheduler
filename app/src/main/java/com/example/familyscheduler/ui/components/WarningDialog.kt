@@ -20,6 +20,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -96,22 +97,26 @@ fun WarningDialog(
 
                         Row(
                             modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)
                         ) {
-                            if (warning.cancelApplicable == true) {
+                            if (warning.cancelApplicable) {
                                 TextButton(
                                     onClick = { onApplyCanceled(warning) }
                                 ) {
                                     Text("予定をキャンセル")
                                 }
                             }
-                            Box(
-                                modifier = Modifier.weight(1f)
-                            ) { }
-                            if (warning.soloApplicable == true) {
-                                TextButton(
-                                    onClick = { onApplySolo(warning) }
-                                ) {
-                                    Text("${warning.personStates.assignablePersons.single().label} 1人で対応")
+
+                            if (warning.soloApplicable) {
+                                val person =
+                                    warning.personStates.assignablePersons.singleOrNull()
+
+                                person?.let {
+                                    TextButton(
+                                        onClick = { onApplySolo(warning) }
+                                    ) {
+                                        Text("${it.label} 1人で対応")
+                                    }
                                 }
                             }
                         }
