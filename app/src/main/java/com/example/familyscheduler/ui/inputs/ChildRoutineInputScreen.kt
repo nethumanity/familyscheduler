@@ -96,7 +96,7 @@ fun ChildRoutineInputScreen(
         }
         item {
             TimeDropdownPicker(
-                label = "就寝",
+                label = "就寝（寝かしつけ開始）",
                 selectedTime = form.sleepTime,
                 onTimeSelected = viewModel::updateSleepTime
             )
@@ -158,13 +158,13 @@ fun ChildRoutineInputScreen(
                 )
 
                 TimeDropdownPicker(
-                    label = "最早時刻（任意）",
+                    label = "最早時刻（任意：開園時刻など）",
                     selectedTime = form.nurseryStartEarliest,
                     onTimeSelected = viewModel::updateNurseryStartEarliest
                 )
 
                 TimeDropdownPicker(
-                    label = "最遅時刻（任意）",
+                    label = "最遅時刻（任意：登園終了時刻など）",
                     selectedTime = form.nurseryStartLatest,
                     onTimeSelected = viewModel::updateNurseryStartLatest
                 )
@@ -180,13 +180,13 @@ fun ChildRoutineInputScreen(
                 )
 
                 TimeDropdownPicker(
-                    label = "最早時刻（任意）",
+                    label = "最早時刻（任意：降園開始時刻など）",
                     selectedTime = form.nurseryEndEarliest,
                     onTimeSelected = viewModel::updateNurseryEndEarliest
                 )
 
                 TimeDropdownPicker(
-                    label = "最遅時刻（任意）",
+                    label = "最遅時刻（任意：閉園時刻など）",
                     selectedTime = form.nurseryEndLatest,
                     onTimeSelected = viewModel::updateNurseryEndLatest
                 )

@@ -13,5 +13,9 @@ enum class ChildCareLabel(
     NURSERY_PICKUP(
         taskName = "お迎え",
         source = RequirementSource.NURSERY_PICKUP
+    ),
+    BEDTIME(
+        taskName = "寝かしつけ",
+        source = RequirementSource.BEDTIME
     )
 }

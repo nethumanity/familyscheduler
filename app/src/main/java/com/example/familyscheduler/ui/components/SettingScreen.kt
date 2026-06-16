@@ -27,6 +27,11 @@ fun SettingsScreen(
     val uiState by viewModel.uiState.collectAsState()
     val step = TimeAxis.stepMinutes
 
+    fun durationText(value: Int): String {
+        val minutes = value * step
+        return if (minutes == 0) "設定しない" else "$minutes 分"
+    }
+
     LazyColumn (
         modifier = Modifier
             .fillMaxSize()
@@ -75,26 +80,26 @@ fun SettingsScreen(
         }
         item {
             SettingsNumberItem(
-                title = "寝かしつけ所用時間",
-                value = uiState.bedtimeSteps,
-                displayText = "${uiState.bedtimeSteps * step} 分（固定）",
-                onValueChange = {} // viewModel::updateBedtime
-            )
-        }
-        item {
-            SettingsNumberItem(
                 title = "登園所用時間",
                 value = uiState.dropOffSteps,
-                displayText = "${uiState.dropOffSteps * step} 分（固定）",
-                onValueChange = {} // viewModel::updateDropOff
+                displayText = durationText(uiState.dropOffSteps),
+                onValueChange = viewModel::updateDropOff
             )
         }
         item {
             SettingsNumberItem(
                 title = "お迎え所用時間",
                 value = uiState.pickupSteps,
-                displayText = "${uiState.pickupSteps * step} 分（固定）",
-                onValueChange = {} // viewModel::updatePickup
+                displayText = durationText(uiState.pickupSteps),
+                onValueChange = viewModel::updatePickup
+            )
+        }
+        item {
+            SettingsNumberItem(
+                title = "寝かしつけ所用時間",
+                value = uiState.bedtimeSteps,
+                displayText = durationText(uiState.bedtimeSteps),
+                onValueChange = viewModel::updateBedtime
             )
         }
         item { SettingsSectionTitle("表示") }

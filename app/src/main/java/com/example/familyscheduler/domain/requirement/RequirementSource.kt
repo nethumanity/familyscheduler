@@ -6,5 +6,6 @@ enum class RequirementSource(
     USER(RequirementSemantics.TASK),
     CHILD_ROUTINE(RequirementSemantics.STATE),
     NURSERY_DROP_OFF(RequirementSemantics.EVENT),
-    NURSERY_PICKUP(RequirementSemantics.EVENT)
+    NURSERY_PICKUP(RequirementSemantics.EVENT),
+    BEDTIME(RequirementSemantics.EVENT)
 }

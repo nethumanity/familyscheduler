@@ -354,7 +354,7 @@ class TimelineViewModel(
             routineResolver.resolve(routines, date, toggleOverrides, routineShiftByIdEvent)
 
         val routineResult =
-            childRoutineBuilder.build(date, resolved)
+            childRoutineBuilder.build(date, resolved, settings)
 
         val childRules =
             childCareRuleConverter.convert(routineResult.blocks, settings)

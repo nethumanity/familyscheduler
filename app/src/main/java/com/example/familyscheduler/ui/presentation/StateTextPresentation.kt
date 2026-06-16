@@ -53,8 +53,6 @@ object StateTextPresentation {
                     }
 
                     else -> {
-                        // 挙動を検証中、元はif (status.persons.size == 2)
-                        // TimelineBlockBuilderのロジックも同時に検証中
                         when {
                             status.persons.size == 2 -> {
                                 buildReverseAssignableText (

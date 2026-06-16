@@ -13,7 +13,10 @@ class SettingsViewModel(
 ) : ViewModel() {
     val uiState: StateFlow<SettingsUiState> = repository.settings
     private fun clampStep(value: Int): Int {
-        return value.coerceIn(1, 30)
+        return value.coerceIn(1, 10)
+    }
+    private fun zeroAllowedClampStep(value: Int): Int {
+        return value.coerceIn(0, 10)
     }
     private fun clampTimelineIndex(index: Int): Int {
         return index.coerceIn(0, TimeAxis.all.lastIndex)
@@ -26,7 +29,7 @@ class SettingsViewModel(
     }
     fun updateBedtime(value: Int) {
         viewModelScope.launch {
-            repository.update { it.copy(bedtimeSteps = clampStep(value)) }
+            repository.update { it.copy(bedtimeSteps = zeroAllowedClampStep(value)) }
         }
     }
     fun updateDropOff(value: Int) {
