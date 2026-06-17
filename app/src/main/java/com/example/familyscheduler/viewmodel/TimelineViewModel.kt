@@ -47,7 +47,6 @@ import com.example.familyscheduler.ui.projection.WarningUiModel
 import com.example.familyscheduler.ui.projection.toCareStateUiModel
 import com.example.familyscheduler.ui.projection.toRequirementUiModel
 import com.example.familyscheduler.ui.projection.toWarningUiModel
-import com.example.familyscheduler.ui.state.EditingTarget
 import com.example.familyscheduler.ui.state.GuideState
 import com.example.familyscheduler.ui.state.SettingsUiState
 import com.example.familyscheduler.ui.state.repository.SettingsRepository
@@ -160,9 +159,6 @@ class TimelineViewModel(
 
     private val _guideState = MutableStateFlow(GuideState())
     val guideState: StateFlow<GuideState> = _guideState
-
-    private val _editingTarget = MutableStateFlow<EditingTarget?>(null)
-    val editingTarget: StateFlow<EditingTarget?> = _editingTarget
 
     init {
         // -------------------------------
@@ -574,15 +570,6 @@ class TimelineViewModel(
         }
     }
 
-    fun startEditRequirement(ruleId: String) {
-
-        if (_editingTarget.value != null) return
-
-        _editingTarget.value = EditingTarget(
-            requirementId = ruleId
-        )
-    }
-
     fun deleteRequirement(ruleId: String) {
 
         val rule = _uiState.value.ruleMap[ruleId]
@@ -600,19 +587,11 @@ class TimelineViewModel(
             requirementOverrideRepository.deleteAllByRuleId(ruleId)
             householdRequirementRepository.delete(ruleId)
 
-            // 編集中なら解除
-            if (_editingTarget.value?.requirementId == ruleId) {
-                _editingTarget.value = null
-            }
-
             _events.emit(
                 UiEvent.ShowUndoDelete(
                     onUndo = { undoDeleteRequirement(payload) }
                 )
             )
-
-            // UI通知（任意）
-            //_deleteCompleted.emit(Unit)
         }
     }
 
@@ -674,15 +653,6 @@ class TimelineViewModel(
         }
     }
 
-    fun startEditTemplate(templateId: String) {
-
-        if (_editingTarget.value != null) return
-
-        _editingTarget.value = EditingTarget(
-            templateId = templateId
-        )
-    }
-
     fun deleteTemplate(templateId: String) {
 
         val template = _uiState.value.templates
@@ -692,19 +662,11 @@ class TimelineViewModel(
         viewModelScope.launch {
             templateRepository.delete(templateId)
 
-            // 編集中なら解除
-            if (_editingTarget.value?.templateId == templateId) {
-                _editingTarget.value = null
-            }
-
             _events.emit(
                 UiEvent.ShowUndoDelete(
                     onUndo = { undoDeleteTemplate(template) }
                 )
             )
-
-            // UI通知（任意）
-            //_deleteCompleted.emit(Unit)
         }
     }
 
@@ -713,10 +675,6 @@ class TimelineViewModel(
         viewModelScope.launch {
             templateRepository.save(template)
         }
-    }
-
-    fun clearEditingTarget() {
-        _editingTarget.value = null
     }
 
     // 日付変更

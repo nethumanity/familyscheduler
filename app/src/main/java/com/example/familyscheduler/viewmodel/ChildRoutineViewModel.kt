@@ -1,22 +1,19 @@
 package com.example.familyscheduler.viewmodel
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.familyscheduler.domain.routine.ChildRoutineInput
 import com.example.familyscheduler.domain.routine.ChildTodayRoutine
 import com.example.familyscheduler.domain.routine.RoutineOverrideSnapshot
 import com.example.familyscheduler.domain.routine.RoutineShiftOverride
-import com.example.familyscheduler.domain.routine.repository.RoutineToggleOverrideRepository
 import com.example.familyscheduler.domain.routine.repository.ChildRoutineRepository
 import com.example.familyscheduler.domain.routine.repository.RoutineShiftOverrideRepository
-import com.example.familyscheduler.ui.utilities.ChildRoutineUndoPayload
-import com.example.familyscheduler.ui.state.EditingTarget
+import com.example.familyscheduler.domain.routine.repository.RoutineToggleOverrideRepository
 import com.example.familyscheduler.ui.event.UiEvent
+import com.example.familyscheduler.ui.utilities.ChildRoutineUndoPayload
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
@@ -41,15 +38,37 @@ class ChildRoutineViewModel(
         val form: ChildRoutineUiState = ChildRoutineUiState()
     )
 
+    data class ChildRoutineUiState(
+        val id: String? = null,
+        val name: String = "",
+        val wakeUpTime: LocalTime = LocalTime.of(7, 0),
+        val sleepTime: LocalTime = LocalTime.of(21, 0),
+
+        val hasNursery: Boolean = true,
+        val daysOfWeek: Set<DayOfWeek> =
+            setOf(
+                DayOfWeek.MONDAY,
+                DayOfWeek.TUESDAY,
+                DayOfWeek.WEDNESDAY,
+                DayOfWeek.THURSDAY,
+                DayOfWeek.FRIDAY
+            ),
+
+        val nurseryStart: LocalTime = LocalTime.of(8, 0),
+        val nurseryStartEarliest: LocalTime? = null,
+        val nurseryStartLatest: LocalTime? = null,
+
+        val nurseryEnd: LocalTime = LocalTime.of(17, 0),
+        val nurseryEndEarliest: LocalTime? = null,
+        val nurseryEndLatest: LocalTime? = null
+    )
+
     val childRoutines = repository.getAllFlow()
     val toggleOverrides = routineToggleOverrideRepository.getAllFlow()
     val shiftOverrides = routineShiftOverrideRepository.getAllFlow()
 
     private val _events = MutableSharedFlow<UiEvent>()
     val events = _events.asSharedFlow()
-
-    private val _editingTarget = MutableStateFlow<EditingTarget?>(null)
-    val editingTarget: StateFlow<EditingTarget?> = _editingTarget
 
     private val _formState = MutableStateFlow(ChildRoutineUiState())
 
@@ -173,8 +192,6 @@ class ChildRoutineViewModel(
 
             _formState.value = ChildRoutineUiState()
             _saveCompleted.emit(Unit)
-
-            Log.d("RoutineSave", "Saved routine: $routine")
         }
     }
 
@@ -185,8 +202,8 @@ class ChildRoutineViewModel(
         val wakeUp = requireNotNull(state.wakeUpTime)
         val sleep = requireNotNull(state.sleepTime)
 
-        val start = state.nurseryStart ?: LocalTime.NOON
-        val end = state.nurseryEnd ?: start
+        val start = state.nurseryStart
+        val end = state.nurseryEnd
 
         val startEarliest =
             (state.nurseryStartEarliest ?: start)
@@ -219,30 +236,9 @@ class ChildRoutineViewModel(
         )
     }
 
-    data class ChildRoutineUiState(
-        val id: String? = null,
-        val name: String = "",
-        val wakeUpTime: LocalTime = LocalTime.of(7, 0),
-        val sleepTime: LocalTime = LocalTime.of(21, 0),
-
-        val hasNursery: Boolean = true,
-        val daysOfWeek: Set<DayOfWeek> =
-            setOf(
-                DayOfWeek.MONDAY,
-                DayOfWeek.TUESDAY,
-                DayOfWeek.WEDNESDAY,
-                DayOfWeek.THURSDAY,
-                DayOfWeek.FRIDAY
-            ),
-
-        val nurseryStart: LocalTime = LocalTime.of(8, 0),
-        val nurseryStartEarliest: LocalTime? = null,
-        val nurseryStartLatest: LocalTime? = null,
-
-        val nurseryEnd: LocalTime = LocalTime.of(17, 0),
-        val nurseryEndEarliest: LocalTime? = null,
-        val nurseryEndLatest: LocalTime? = null
-    )
+    fun resetForm() {
+        _formState.value = ChildRoutineUiState()
+    }
 
     fun load(childId: String) {
 
@@ -272,10 +268,6 @@ class ChildRoutineViewModel(
         }
     }
 
-    fun clearEditingTarget() {
-        _editingTarget.value = null
-    }
-
     fun toggleTodayRoutine(
         child: ChildRoutineInput,
         date: LocalDate
@@ -285,8 +277,6 @@ class ChildRoutineViewModel(
             val current = resolveTodayRoutine(child, date, uiState.value.overrides)
 
             val next = current.next(child)
-
-            Log.d("override", "current=$current next=$next")
 
             routineToggleOverrideRepository.replace(
                 child.childId,
@@ -303,7 +293,6 @@ class ChildRoutineViewModel(
     ): ChildTodayRoutine {
 
         overrides[child.childId to date]?.let {
-            Log.d("override", "override found $it")
             return it
         }
 
@@ -314,15 +303,6 @@ class ChildRoutineViewModel(
         } else {
             ChildTodayRoutine.HOME
         }
-    }
-
-    fun startEditChildRoutine(childId: String) {
-
-        if (_editingTarget.value != null) return
-
-        _editingTarget.value = EditingTarget(
-            childRoutineId = childId
-        )
     }
 
     fun deleteChildRoutine(childId: String) {
@@ -343,19 +323,11 @@ class ChildRoutineViewModel(
             routineShiftOverrideRepository.deleteAllByChildId(childId)
             repository.delete(childId)
 
-            // 編集中なら解除
-            if (_editingTarget.value?.childRoutineId == childId) {
-                _editingTarget.value = null
-            }
-
             _events.emit(
                 UiEvent.ShowUndoDelete(
                     onUndo = { undoDeleteChildRoutine(payload) }
                 )
             )
-
-            // UI通知（任意）
-            //_deleteCompleted.emit(Unit)
         }
     }
 

@@ -34,6 +34,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import androidx.room.Room
 import com.example.familyscheduler.data.local.AppDatabase
 import com.example.familyscheduler.data.repository.DataStoreSettingsRepository
@@ -76,6 +77,7 @@ import com.example.familyscheduler.viewmodel.factory.SettingsViewModelFactory
 import com.example.familyscheduler.viewmodel.factory.TemplateEditViewModelFactory
 import com.example.familyscheduler.viewmodel.factory.TimelineViewModelFactory
 import com.example.familyscheduler.viewmodel.factory.WeeklyTaskViewModelFactory
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.merge
 import java.time.LocalDate
 
@@ -279,18 +281,26 @@ fun MainScreen() {
                     )
                 }
 
-                composable("child_input") {
+                composable(
+                    route = "child_input?childId={childId}",
+                    arguments = listOf(
+                        navArgument("childId") {
+                            nullable = true
+                            defaultValue = null
+                        }
+                    )
+                ) { backStackEntry ->
 
                     val viewModel = childRoutineViewModel
 
-                    val editingTarget by viewModel.editingTarget.collectAsState()
+                    val childId = backStackEntry.arguments?.getString("childId")
 
-                    LaunchedEffect(editingTarget?.childRoutineId) {
-                        val id = editingTarget?.childRoutineId
+                    LaunchedEffect(childId) {
 
-                        if (id != null) {
-                            viewModel.load(id)
-                            viewModel.clearEditingTarget()
+                        if (childId == null) {
+                            viewModel.resetForm()
+                        } else {
+                            viewModel.load(childId)
                         }
                     }
 
@@ -303,7 +313,15 @@ fun MainScreen() {
                     )
                 }
 
-                composable("add_task") {
+                composable(
+                    route = "add_task?ruleId={ruleId}",
+                    arguments = listOf(
+                        navArgument("ruleId") {
+                            nullable = true
+                            defaultValue = null
+                        }
+                    )
+                ) { backStackEntry ->
 
                     val oneTimeViewModel: OneTimeTaskViewModel =
                         viewModel(
@@ -315,27 +333,31 @@ fun MainScreen() {
                             factory = WeeklyTaskViewModelFactory(householdRequirementRepository)
                         )
 
-                    val editingTarget by timelineViewModel.editingTarget.collectAsState()
-                    val uiState by timelineViewModel.uiState.collectAsState()
+                    val ruleId = backStackEntry.arguments?.getString("ruleId")
 
                     var selectedTab by remember { mutableStateOf(0) }
 
-                    LaunchedEffect(editingTarget?.requirementId) {
-                        val id = editingTarget?.requirementId ?: return@LaunchedEffect
+                    LaunchedEffect(ruleId) {
 
-                        val rule = uiState.ruleMap[id]
-                            ?: return@LaunchedEffect
-
-                        rule.let {
-                            selectedTab = if (it.date != null) 0 else 1
-
-                            when {
-                                it.date != null -> oneTimeViewModel.load(it)
-                                else -> weeklyViewModel.load(it)
-                            }
+                        if (ruleId == null) {
+                            oneTimeViewModel.resetForm()
+                            weeklyViewModel.resetForm()
+                            selectedTab = 0
+                            return@LaunchedEffect
                         }
 
-                        timelineViewModel.clearEditingTarget()
+                        val rule = householdRequirementRepository.getById(ruleId).first()
+                            ?: return@LaunchedEffect
+
+                        val taskType =
+                            if (rule.date != null) 0 else 1
+
+                        selectedTab = taskType
+
+                        when(taskType) {
+                            0 -> oneTimeViewModel.load(ruleId)
+                            1 -> weeklyViewModel.load(ruleId)
+                        }
                     }
 
                     AddTaskScreen(
@@ -376,32 +398,33 @@ fun MainScreen() {
                     )
                 }
 
-                composable("schedule_input/{personName}") { backStackEntry ->
+                composable(
+                    route = "schedule_input/{personName}?templateId={templateId}",
+                    arguments = listOf(
+                        navArgument("templateId") {
+                            nullable = true
+                            defaultValue = null
+                        }
+                    )
+                ) { backStackEntry ->
 
                     val personName = backStackEntry.arguments?.getString("personName")
                     val person = Person.valueOf(personName!!)
 
                     val templateEditViewModel: TemplateEditViewModel =
                         viewModel(
-                            factory = TemplateEditViewModelFactory(
-                                templateRepository,
-                                person
-                            )
+                            factory = TemplateEditViewModelFactory(templateRepository)
                         )
 
-                    val editingTarget by timelineViewModel.editingTarget.collectAsState()
-                    val uiState by timelineViewModel.uiState.collectAsState()
+                    val templateId = backStackEntry.arguments?.getString("templateId")
 
-                    LaunchedEffect(editingTarget?.templateId) {
-                        val target = editingTarget ?: return@LaunchedEffect
+                    LaunchedEffect(templateId, person) {
 
-                        if (target.isTemplate()) {
-                            val template = uiState.templates.firstOrNull { it.id == target.templateId }
-                                ?: return@LaunchedEffect
-                            template.let {
-                                templateEditViewModel.load(it)
-                            }
-                            timelineViewModel.clearEditingTarget()
+                        if (templateId == null) {
+                            templateEditViewModel.resetForm()
+                            templateEditViewModel.updatePerson(person)
+                        } else {
+                            templateEditViewModel.load(templateId)
                         }
                     }
 
@@ -437,9 +460,8 @@ fun MainScreen() {
                                         navController.navigate("child_input")
                                     },
                                     onEditChildRoutine = { childId ->
-                                        childRoutineViewModel.startEditChildRoutine(childId)
                                         sheet = null
-                                        navController.navigate("child_input")
+                                        navController.navigate("child_input?childId=$childId")
                                     }
                                 )
                             }
@@ -448,9 +470,8 @@ fun MainScreen() {
                                 DailyOverviewSheet(
                                     viewModel = timelineViewModel,
                                     onEditRequirement = { ruleId ->
-                                        timelineViewModel.startEditRequirement(ruleId)
                                         sheet = null
-                                        navController.navigate("add_task")
+                                        navController.navigate("add_task?ruleId=$ruleId")
                                     }
                                 )
                             }
@@ -464,9 +485,8 @@ fun MainScreen() {
                                         navController.navigate("schedule_input/${person.name}")
                                     },
                                     onEditTemplate = { templateId, person ->
-                                        timelineViewModel.startEditTemplate(templateId)
                                         sheet = null
-                                        navController.navigate("schedule_input/${person.name}")
+                                        navController.navigate("schedule_input/${person.name}?templateId=$templateId")
                                     },
                                     onDeleteTemplate = { templateId ->
                                         timelineViewModel.deleteTemplate(templateId)

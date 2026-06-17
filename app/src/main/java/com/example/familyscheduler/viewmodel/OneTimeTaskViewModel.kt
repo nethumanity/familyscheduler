@@ -1,6 +1,5 @@
 package com.example.familyscheduler.viewmodel
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.familyscheduler.domain.person.Person
@@ -15,6 +14,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -87,8 +87,6 @@ class OneTimeTaskViewModel(
             repository.save(rule)
 
             _saveCompleted.emit(Unit)
-
-            Log.d("OneTimeSave", "Saved rule: $rule")
         }
     }
 
@@ -101,11 +99,11 @@ class OneTimeTaskViewModel(
 
         val allowedPersons: List<Person> =
             if (input.isTwoPersonTask) {
-                Person.values().toList()
+                Person.entries.toList()
             } else {
                 when (input.allowedPersonOption) {
                     AllowedPersonOption.EITHER ->
-                        Person.values().toList()
+                        Person.entries.toList()
 
                     AllowedPersonOption.FATHER_ONLY ->
                         listOf(Person.FATHER)
@@ -145,54 +143,64 @@ class OneTimeTaskViewModel(
         )
     }
 
-    fun load(rule: HouseholdRequirementRule) {
+    fun resetForm() {
+        _uiState.value = OneTimeTaskUiState()
+    }
 
-        val start = rule.timeRange.start
-        val end = rule.timeRange.end
+    fun load(ruleId: String) {
 
-        val isTwoPerson = rule.requiredCount >= 2
+        viewModelScope.launch {
 
-        val allowedOption =
-            if (isTwoPerson) {
-                AllowedPersonOption.EITHER
-            } else {
-                when (rule.allowedPersons) {
-                    listOf(Person.FATHER) -> AllowedPersonOption.FATHER_ONLY
-                    listOf(Person.MOTHER) -> AllowedPersonOption.MOTHER_ONLY
-                    else -> AllowedPersonOption.EITHER
+            val rule = repository.getById(ruleId).first()
+                ?: return@launch
+
+            val start = rule.timeRange.start
+            val end = rule.timeRange.end
+
+            val isTwoPerson = rule.requiredCount >= 2
+
+            val allowedOption =
+                if (isTwoPerson) {
+                    AllowedPersonOption.EITHER
+                } else {
+                    when (rule.allowedPersons) {
+                        listOf(Person.FATHER) -> AllowedPersonOption.FATHER_ONLY
+                        listOf(Person.MOTHER) -> AllowedPersonOption.MOTHER_ONLY
+                        else -> AllowedPersonOption.EITHER
+                    }
                 }
-            }
 
-        val isFlexible =
-            rule.flexWindowSlots.backward > 0 ||
-                    rule.flexWindowSlots.forward > 0
+            val isFlexible =
+                rule.flexWindowSlots.backward > 0 ||
+                        rule.flexWindowSlots.forward > 0
 
-        val stepMinutes = TimeAxis.stepMinutes
+            val stepMinutes = TimeAxis.stepMinutes
 
-        val durationSteps = (java.time.Duration.between(start, end).toMinutes() / stepMinutes).toInt()
+            val durationSteps = (java.time.Duration.between(start, end).toMinutes() / stepMinutes).toInt()
 
-        val flexBackwardSteps =
-            if (isFlexible) {
-                rule.flexWindowSlots.backward
-            } else 0
+            val flexBackwardSteps =
+                if (isFlexible) {
+                    rule.flexWindowSlots.backward
+                } else 0
 
-        val flexForwardSteps =
-            if (isFlexible) {
-                rule.flexWindowSlots.forward
-            } else 0
+            val flexForwardSteps =
+                if (isFlexible) {
+                    rule.flexWindowSlots.forward
+                } else 0
 
-        _uiState.value = OneTimeTaskUiState(
-            id = rule.id,
-            date = rule.date ?: LocalDate.now(),
-            taskName = rule.taskName,
-            targetState = rule.targetState,
-            isTwoPersonTask = isTwoPerson,
-            allowedPersonOption = allowedOption,
-            startTime = start,
-            durationSteps = durationSteps,
-            isFlexible = isFlexible,
-            flexBackwardSteps = flexBackwardSteps,
-            flexForwardSteps = flexForwardSteps
-        )
+            _uiState.value = OneTimeTaskUiState(
+                id = rule.id,
+                date = rule.date ?: LocalDate.now(),
+                taskName = rule.taskName,
+                targetState = rule.targetState,
+                isTwoPersonTask = isTwoPerson,
+                allowedPersonOption = allowedOption,
+                startTime = start,
+                durationSteps = durationSteps,
+                isFlexible = isFlexible,
+                flexBackwardSteps = flexBackwardSteps,
+                flexForwardSteps = flexForwardSteps
+            )
+        }
     }
 }
