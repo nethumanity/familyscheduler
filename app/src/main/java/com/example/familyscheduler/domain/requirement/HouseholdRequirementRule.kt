@@ -7,6 +7,7 @@ import com.example.familyscheduler.domain.time.TimeAxis
 import com.example.familyscheduler.domain.time.TimeRange
 import java.time.DayOfWeek
 import java.time.LocalDate
+import java.time.LocalTime
 import java.util.UUID
 
 data class HouseholdRequirementRule(
@@ -27,7 +28,19 @@ data class HouseholdRequirementRule(
     ): TimeRangeHouseholdRequirement {
 
         val startIndex = TimeAxis.indexOf(timeRange.start)
-        val endIndex = TimeAxis.indexOf(timeRange.end)
+
+        val endIndex =
+            when {
+                timeRange.end == LocalTime.MIDNIGHT &&
+                        timeRange.start != LocalTime.MIDNIGHT ->
+                    TimeAxis.all.size
+
+                timeRange.end < timeRange.start ->
+                    TimeAxis.all.size
+
+                else ->
+                    TimeAxis.indexOf(timeRange.end)
+            }
 
         return TimeRangeHouseholdRequirement(
             sourceRuleId = id,

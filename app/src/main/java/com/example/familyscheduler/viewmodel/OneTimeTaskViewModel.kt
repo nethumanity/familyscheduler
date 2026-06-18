@@ -155,7 +155,9 @@ class OneTimeTaskViewModel(
                 ?: return@launch
 
             val start = rule.timeRange.start
-            val end = rule.timeRange.end
+
+            val durationSteps =
+                (rule.timeRange.durationMinutes() / TimeAxis.stepMinutes).toInt()
 
             val isTwoPerson = rule.requiredCount >= 2
 
@@ -173,10 +175,6 @@ class OneTimeTaskViewModel(
             val isFlexible =
                 rule.flexWindowSlots.backward > 0 ||
                         rule.flexWindowSlots.forward > 0
-
-            val stepMinutes = TimeAxis.stepMinutes
-
-            val durationSteps = (java.time.Duration.between(start, end).toMinutes() / stepMinutes).toInt()
 
             val flexBackwardSteps =
                 if (isFlexible) {

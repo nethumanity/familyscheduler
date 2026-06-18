@@ -100,7 +100,6 @@ object AvailabilityEngine {
             } else {
                 assignBlock(req, slots, slotIndex, reverseRuleIds)
             }
-
         }
         return warnings
     }

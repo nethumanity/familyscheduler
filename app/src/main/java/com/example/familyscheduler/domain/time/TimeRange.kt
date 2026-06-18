@@ -1,5 +1,6 @@
 package com.example.familyscheduler.domain.time
 
+import java.time.Duration
 import java.time.LocalTime
 
 data class TimeRange(
@@ -27,5 +28,16 @@ data class TimeRange(
 
     fun overlaps(other: TimeRange): Boolean {
         return start < other.end && other.start < end
+    }
+
+    fun durationMinutes(): Long {
+        var result =
+            Duration.between(start, end).toMinutes()
+
+        if (result < 0) {
+            result += 24 * 60
+        }
+
+        return result
     }
 }
