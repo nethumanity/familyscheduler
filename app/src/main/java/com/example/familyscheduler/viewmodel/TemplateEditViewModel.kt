@@ -77,8 +77,8 @@ class TemplateEditViewModel(
     val saveCompleted = _saveCompleted.asSharedFlow()
 
     private fun TemplateEditUiState.recompute(): TemplateEditUiState {
-        val all = toSchedules()
-        return copy(overlaps = all.findOverlaps())
+        val normalized = TemplateNormalizer.normalize(toSchedules())
+        return copy(overlaps = normalized.findOverlaps())
     }
 
     fun updateTemplateName(name: String) =
@@ -105,7 +105,7 @@ class TemplateEditViewModel(
     }
 
     fun updateNoWork(value: Boolean) =
-        _uiState.update { it.copy(noWork = value) }
+        _uiState.update { it.copy(noWork = value).recompute() }
 
     fun updateWorkStart(time: LocalTime) {
         _uiState.update { it.copy(workStart = time).recompute() }
@@ -116,7 +116,7 @@ class TemplateEditViewModel(
     }
 
     fun updateNoGoCommute(value: Boolean) =
-        _uiState.update { it.copy(noGoCommute = value) }
+        _uiState.update { it.copy(noGoCommute = value).recompute() }
 
     fun updateGoCommuteStart(time: LocalTime) {
         _uiState.update { it.copy(goCommuteStart = time).recompute() }
@@ -127,7 +127,7 @@ class TemplateEditViewModel(
     }
 
     fun updateNoBackCommute(value: Boolean) =
-        _uiState.update { it.copy(noBackCommute = value) }
+        _uiState.update { it.copy(noBackCommute = value).recompute() }
 
     fun updateBackCommuteStart(time: LocalTime) {
         _uiState.update { it.copy(backCommuteStart = time).recompute() }
@@ -253,7 +253,6 @@ class TemplateEditViewModel(
 
     fun isValid(state: TemplateEditUiState): Boolean {
         return state.templateName.isNotBlank()
-                //&& state.overlaps.isEmpty()
     }
 
     fun saveTemplate() {

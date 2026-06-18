@@ -23,11 +23,25 @@ data class TimeRange(
         }
     }
 
-    fun contains(time: LocalTime): Boolean =
-        !time.isBefore(start) && time.isBefore(end)
-
     fun overlaps(other: TimeRange): Boolean {
-        return start < other.end && other.start < end
+
+        val startA = TimeAxis.indexOf(start)
+
+        val endA =
+            if (end == LocalTime.MIDNIGHT)
+                TimeAxis.all.size
+            else
+                TimeAxis.indexOf(end)
+
+        val startB = TimeAxis.indexOf(other.start)
+
+        val endB =
+            if (other.end == LocalTime.MIDNIGHT)
+                TimeAxis.all.size
+            else
+                TimeAxis.indexOf(other.end)
+
+        return startA < endB && startB < endA
     }
 
     fun durationMinutes(): Long {
