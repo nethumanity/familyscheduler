@@ -13,6 +13,7 @@ class ChildRoutineViewModelFactory(
     private val routineShiftOverrideRepository: RoutineShiftOverrideRepository
 ) : ViewModelProvider.Factory {
 
+    @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
 
         return ChildRoutineViewModel(

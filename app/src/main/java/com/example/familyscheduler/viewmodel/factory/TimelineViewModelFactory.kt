@@ -33,6 +33,7 @@ class TimelineViewModelFactory(
     private val settingsRepository: SettingsRepository
 ) : ViewModelProvider.Factory {
 
+    @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(
         modelClass: Class<T>
     ): T {

@@ -9,9 +9,9 @@ class TemplateEditViewModelFactory(
     private val repository: TemplateRepository
 ) : ViewModelProvider.Factory {
 
+    @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(TemplateEditViewModel::class.java)) {
-            @Suppress("UNCHECKED_CAST")
             return TemplateEditViewModel(repository) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")

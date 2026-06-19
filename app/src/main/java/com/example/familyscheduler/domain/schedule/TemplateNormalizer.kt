@@ -43,7 +43,7 @@ object TemplateNormalizer {
                     schedule.copy(
                         timeRange = TimeRange(
                             start = rawStart,
-                            end = nextSlot(axisEnd)
+                            end = LocalTime.MIDNIGHT
                         )
                     )
                 )
@@ -81,14 +81,4 @@ object TemplateNormalizer {
             time > axisEnd -> axisEnd
             else -> time
         }
-
-    private fun nextSlot(time: LocalTime): LocalTime {
-
-        val idx = TimeAxis.indexOf(time)
-
-        return if (idx == -1 || idx == TimeAxis.all.lastIndex)
-            LocalTime.MIDNIGHT
-        else
-            TimeAxis.all[idx + 1]
-    }
 }

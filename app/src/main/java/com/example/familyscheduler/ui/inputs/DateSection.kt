@@ -22,7 +22,7 @@ fun DateSection(
 
     val datePickerState = rememberDatePickerState(
         initialSelectedDateMillis = state.date
-            ?.atStartOfDay(ZoneId.systemDefault())
+            .atStartOfDay(ZoneId.systemDefault())
             ?.toInstant()
             ?.toEpochMilli()
     )
@@ -37,7 +37,7 @@ fun DateSection(
             onClick = { showDialog = true }
         ) {
             Text(
-                state.date?.format(DateTimeFormatter.ISO_DATE)
+                state.date.format(DateTimeFormatter.ISO_DATE)
                     ?: "日付を選択"
             )
         }

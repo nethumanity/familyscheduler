@@ -20,7 +20,6 @@ data class RequirementShiftOverride(
     override val ruleId: String,
     override val date: LocalDate,
     val deltaSteps: Int
-    //val isFromProposal: Boolean = false // 将来、ユーザーの手動操作によるShiftが発生するなら必要なフラグ
 ) : RequirementOverride {
     override val type = RequirementOverrideType.SHIFT
 }

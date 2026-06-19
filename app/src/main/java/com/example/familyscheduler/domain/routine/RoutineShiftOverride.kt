@@ -8,5 +8,4 @@ data class RoutineShiftOverride(
     val date: LocalDate,
     val eventType: ChildCareLabel,
     val nurseryTime: LocalTime
-    //val isFromProposal: Boolean = false // 将来、ユーザーの手動操作によるShiftが発生するなら必要なフラグ
 )

@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalCoroutinesApi::class)
+
 package com.example.familyscheduler.viewmodel
 
 import androidx.lifecycle.ViewModel
@@ -51,6 +53,7 @@ import com.example.familyscheduler.ui.state.GuideState
 import com.example.familyscheduler.ui.state.SettingsUiState
 import com.example.familyscheduler.ui.state.repository.SettingsRepository
 import com.example.familyscheduler.ui.utilities.RequirementUndoPayload
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
