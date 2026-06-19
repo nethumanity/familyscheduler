@@ -94,7 +94,7 @@ fun FooterBar(
                     modifier = Modifier.size(24.dp)
                 )
             },
-            label = { Text("予定を追加") }
+            label = { Text("予定追加") }
         )
 
         NavigationBarItem(

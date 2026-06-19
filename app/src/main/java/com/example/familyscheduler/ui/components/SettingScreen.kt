@@ -133,7 +133,8 @@ fun SettingsScreen(
                 onValueChange = viewModel::updateTimelineEndIndex
             )
         }
-        item {  // 製品版では表示しない、あるいは、削除？
+        /* 製品版では表示しない
+        item {
             SettingsNumberItem(
                 title = "単位時間",
                 value = uiState.timelineStepMinutes,
@@ -141,5 +142,6 @@ fun SettingsScreen(
                 onValueChange = {} // viewModel未実装
             )
         }
+        */
     }
 }
